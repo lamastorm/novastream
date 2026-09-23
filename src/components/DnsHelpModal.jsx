@@ -30,7 +30,7 @@ export default function DnsHelpModal({ isOpen, onClose }) {
         "Dans la barre de recherche des paramètres tout en haut à droite, tapez simplement « DNS ».",
         "Descendez jusqu'à la section « Système » et activez l'interrupteur « Utiliser le DNS sécurisé ».",
         "Sélectionnez « Cloudflare (1.1.1.1) » ou « Google (Public DNS) » dans le menu déroulant.",
-        "Revenez sur NovaStream et rechargez : tous les lecteurs (VidLink, Vidmoly, Uqload) se débloquent instantanément !",
+        "Revenez sur Erodium et rechargez : tous les lecteurs (VidLink, Vidmoly, Uqload) se débloquent instantanément !",
       ],
     },
     chrome: {
@@ -43,7 +43,7 @@ export default function DnsHelpModal({ isOpen, onClose }) {
         "Cliquez sur « Confidentialité et sécurité » dans le menu de gauche, puis sur « Sécurité ».",
         "Descendez jusqu'à la section « Paramètres avancés » et repérez « Utiliser un DNS sécurisé ».",
         "Activez l'option, cochez « Avec : » et sélectionnez « Cloudflare (1.1.1.1) » ou « Google (Public DNS) ».",
-        "Rechargez NovaStream : tous les lecteurs sont instantanément débloqués !",
+        "Rechargez Erodium : tous les lecteurs sont instantanément débloqués !",
       ],
     },
     brave: {
@@ -56,7 +56,7 @@ export default function DnsHelpModal({ isOpen, onClose }) {
         "Allez dans « Confidentialité et sécurité » puis « Sécurité ».",
         "Activez « Utiliser un DNS sécurisé ».",
         "Sélectionnez le fournisseur « Cloudflare (1.1.1.1) ».",
-        "Rechargez votre page NovaStream !",
+        "Rechargez votre page Erodium !",
       ],
     },
     edge: {
@@ -69,7 +69,7 @@ export default function DnsHelpModal({ isOpen, onClose }) {
         "Cliquez sur « Confidentialité, recherche et services ».",
         "Dans la section « Sécurité », activez « Utiliser un DNS sécurisé ».",
         "Choisissez « Un fournisseur de services » et sélectionnez « Cloudflare (1.1.1.1) ».",
-        "Actualisez NovaStream.",
+        "Actualisez Erodium.",
       ],
     },
     firefox: {
@@ -202,16 +202,16 @@ export default function DnsHelpModal({ isOpen, onClose }) {
           </div>
 
           {/* Shortcut Box */}
-          <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 flex items-center justify-between gap-3 text-xs">
+          <div className="p-3 rounded-xl bg-orange-950/30 border border-orange-500/30 flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+              <Sparkles className="w-4 h-4 text-orange-400 flex-shrink-0" />
               <span className="text-zinc-300">
-                <strong>Raccourci Opera GX :</strong> Tapez <code className="px-1.5 py-0.5 rounded bg-black/50 text-indigo-300 font-mono">Alt + P</code> puis tapez <em>DNS</em> dans la recherche.
+                <strong>Raccourci Opera GX :</strong> Tapez <code className="px-1.5 py-0.5 rounded bg-black/50 text-orange-300 font-mono">Alt + P</code> puis tapez <em>DNS</em> dans la recherche.
               </span>
             </div>
             <button
               onClick={() => handleCopy("opera://settings/system")}
-              className="px-2.5 py-1 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-[11px] whitespace-nowrap cursor-pointer transition-colors"
+              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow-sm"
             >
               Copier l'URL
             </button>

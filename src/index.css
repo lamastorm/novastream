@@ -2,7 +2,7 @@
 
 @layer base {
   body {
-    @apply bg-[#0b0c10] text-[#e0e2ec] font-sans antialiased overflow-x-hidden;
+    @apply bg-[#000000] text-[#f4f4f5] font-sans antialiased overflow-x-hidden;
     margin: 0;
     padding: 0;
   }
@@ -17,46 +17,60 @@
     max-width: 100%;
     border: none;
     text-align: left;
+    background: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.08) 0%, #000000 70%);
   }
 }
 
-/* Custom modern scrollbar */
+/* Custom modern scrollbar - Thème Orange & Noir brillant */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0e1017;
+  background: #050505;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2e3f;
+  background: #27272a;
   border-radius: 4px;
+  border: 1px solid rgba(249, 115, 22, 0.2);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4f46e5;
+  background: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.8);
 }
 
-/* Glassmorphism utility */
+/* Glassmorphism utility - Noir brillant & bordures orangées subtiles */
 .glass {
-  background: rgba(18, 20, 29, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 8, 10, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(249, 115, 22, 0.15);
 }
 
-/* Glass-card: optimized for silky-smooth 60-120 FPS scrolling without GPU blur thrashing */
+/* Glass-card: Carte noir brillant avec lueur orange électrique au survol */
 .glass-card {
-  background: #141722;
+  background: #09090b;
   border: 1px solid rgba(255, 255, 255, 0.07);
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: transform;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 12px 35px -5px rgba(249, 115, 22, 0.3);
 }
 
-/* Off-screen row virtualization for zero lag */
+/* Boutons et Accents Orange Brillant */
+.glow-orange {
+  box-shadow: 0 0 25px -4px rgba(249, 115, 22, 0.5);
+}
+
+.glow-orange-sm {
+  box-shadow: 0 0 15px -2px rgba(249, 115, 22, 0.4);
+}
+
+/* Off-screen row virtualization */
 .media-row-container {
   content-visibility: auto;
   contain-intrinsic-size: 320px;

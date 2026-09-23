@@ -183,7 +183,7 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
       {!isPlaying && (
         <button
           onClick={togglePlay}
-          className="absolute z-20 p-5 rounded-full bg-indigo-600/90 hover:bg-indigo-500 text-white shadow-2xl hover:scale-110 transition-all border border-white/20"
+          className="absolute z-20 p-5 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-2xl hover:scale-110 transition-all border border-orange-400/30 cursor-pointer shadow-orange-600/30"
         >
           <Play className="w-8 h-8 fill-white ml-0.5" />
         </button>
@@ -203,7 +203,7 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
             max={duration || 100}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:h-2 transition-all"
+            className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-orange-500 hover:h-2 transition-all"
           />
         </div>
 
@@ -259,7 +259,7 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
                 step={0.05}
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                className="w-16 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
               />
             </div>
 
@@ -274,7 +274,7 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
             <div className="relative">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 title="Options de lecture"
               >
                 <Settings className="w-4 h-4" />
@@ -289,8 +289,8 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
                       <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                         <button
                           onClick={() => handleQualityChange(-1)}
-                          className={`text-left px-2 py-1 rounded ${
-                            selectedQuality === -1 ? "bg-indigo-600 text-white font-bold" : "text-zinc-300 hover:bg-white/5"
+                          className={`text-left px-2 py-1 rounded cursor-pointer ${
+                            selectedQuality === -1 ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold" : "text-zinc-300 hover:bg-white/5"
                           }`}
                         >
                           Auto (Adaptatif)
@@ -299,8 +299,8 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
                           <button
                             key={lvl.index}
                             onClick={() => handleQualityChange(lvl.index)}
-                            className={`text-left px-2 py-1 rounded ${
-                              selectedQuality === lvl.index ? "bg-indigo-600 text-white font-bold" : "text-zinc-300 hover:bg-white/5"
+                            className={`text-left px-2 py-1 rounded cursor-pointer ${
+                              selectedQuality === lvl.index ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold" : "text-zinc-300 hover:bg-white/5"
                             }`}
                           >
                             {lvl.height}p ({lvl.bitrate} kbps)
@@ -318,8 +318,8 @@ export default function HlsPlayer({ streamUrl, title, poster, onEnded, onVideoRe
                         <button
                           key={speed}
                           onClick={() => handleSpeedChange(speed)}
-                          className={`px-1.5 py-1 rounded text-center ${
-                            playbackRate === speed ? "bg-indigo-600 text-white font-bold" : "text-zinc-300 hover:bg-white/5"
+                          className={`px-1.5 py-1 rounded text-center cursor-pointer ${
+                            playbackRate === speed ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold" : "text-zinc-300 hover:bg-white/5"
                           }`}
                         >
                           {speed}x

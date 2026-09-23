@@ -50,20 +50,20 @@ export const getServerDetails = (server, media, selectedLanguage) => {
         flag: "🇫🇷",
         flagDisplay: "🇫🇷",
         audio: "Vrai Doublage Français (VF Officielle)",
-        subs: "Audio français direct (Pas besoin de STFR)",
-        badge: "🇫🇷 VF Anime-Sama",
+        subs: "Audio français direct (Sans sous-titres obligatoires)",
+        badge: "🇫🇷 VF Erodium",
         subBadge: "VF Officielle",
-        description: "Doublage français officiel via Anime-Sama (Crunchyroll/ADN). Zéro coupure, lecteur Sibnet direct.",
+        description: "Doublage français officiel via le Lecteur Erodium. Zéro coupure, hébergement haute vitesse.",
       };
     }
     return {
       flag: "🇯🇵 🇫🇷",
       flagDisplay: "🇯🇵 🇫🇷",
       audio: "Japonais (VO)",
-      subs: "Sous-titres Français incrustés (Anime-Sama)",
-      badge: "🇯🇵 VOSTFR Direct",
+      subs: "Sous-titres Français incrustés (Erodium)",
+      badge: "🇯🇵 VOSTFR Erodium",
       subBadge: "VOSTFR Officiel",
-      description: "Version japonaise sous-titrée français direct sans bug de sous-titres.",
+      description: "Version originale avec sous-titres français intégrés par Erodium.",
     };
   }
 
@@ -106,35 +106,31 @@ export const getServerDetails = (server, media, selectedLanguage) => {
 };
 
 export const LANGUAGE_OPTIONS = [
-  { id: "vf", label: "🇫🇷 VF (Français)", desc: "Pistes audio françaises directes (Doublage FR)" },
-  { id: "vostfr", label: "💬 VOSTFR (1080p)", desc: "Version originale sous-titrée en français HD" },
-  { id: "multi", label: "🌐 1080p / 4K", desc: "Qualité vidéo maximale avec sélection de langue audio et sous-titres" },
+  { id: "vf", label: "▶ VISIONNER EN VF 🇫🇷", desc: "Pistes audio françaises directes (Doublage FR)" },
+  { id: "vostfr", label: "▶ VISIONNER EN VOSTFR 🇯🇵", desc: "Version originale sous-titrée en français HD" },
+  { id: "multi", label: "▶ VISIONNER EN MULTI 🌐", desc: "Qualité vidéo maximale avec sélection de langue audio et sous-titres" },
 ];
 
 export const STREAMING_SERVERS = {
   // ==========================================
-  // --- SERVEURS VF (DOUBLAGE FRANÇAIS) ---
+  // --- SERVEURS VF (100% DOUBLAGE FRANÇAIS) ---
   // ==========================================
   vf: [
     {
-      id: "autoembed_co_vf",
-      name: "Serveur 1 (AutoEmbed FHD 1080p)",
+      id: "erodium_vf",
+      name: "Serveur 1 (Lecteur Erodium • VF 100% Officielle)",
       flag: "🇫🇷",
-      badge: "🇫🇷 VF Direct",
-      description: "Lecteur rapide haute définition direct avec piste audio française",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://autoembed.co/movie/tmdb/${id}`;
-        }
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
-      },
+      badge: "🇫🇷 VF Erodium",
+      isAnimeSama: true,
+      description: "Lecteur Erodium haute vitesse avec véritable doublage français direct sans coupure.",
+      getUrl: () => "",
     },
     {
       id: "frembed_surf_vf",
-      name: "Serveur 2 (FrEmbed • Vidmoly / Uqload / Sibnet)",
+      name: "Serveur 2 (FrEmbed • VidMoly / Uqload)",
       flag: "🇫🇷",
-      badge: "🇫🇷 VF Direct",
-      description: "Lecteurs français (Vidmoly, Uqload, Sibnet). Cliquez sur SERVEURS à gauche dans la vidéo pour changer d'hébergeur si besoin.",
+      badge: "🇫🇷 VF Miroir",
+      description: "Lecteurs français alternatifs (VidMoly, Uqload, Sibnet). Cliquez sur SERVEURS à gauche dans la vidéo si besoin.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
           return `https://frembed.surf/embed/movie/${id}?id=${id}`;
@@ -143,37 +139,11 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "multiembed_vf",
-      name: "Serveur 3 (MultiEmbed FR)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 HD Multi",
-      description: "Agrégateur multi-sources avec pistes françaises (VidCloud / UpCloud)",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-        }
-        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      },
-    },
-    {
-      id: "vidsrc_me_vf",
-      name: "Serveur 4 (VidSrc FR)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 VF 1080p",
-      description: "Lecteur VidSrc configuré avec priorité audio française",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.me/embed/movie?tmdb=${id}&ds_lang=fr`;
-        }
-        return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&ds_lang=fr`;
-      },
-    },
-    {
       id: "frembed_click",
-      name: "Serveur 5 (FrEmbed Miroir 2)",
+      name: "Serveur 3 (FrEmbed Miroir Secours)",
       flag: "🇫🇷",
-      badge: "🇫🇷 VF Miroir",
-      description: "Deuxième passerelle française de secours (Vidmoly / Sibnet)",
+      badge: "🇫🇷 VF Secours",
+      description: "Deuxième passerelle française de secours (VidMoly / Sibnet)",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
           return `https://frembed.click/api/film.php?id=${id}`;
@@ -417,29 +387,33 @@ export const STREAMING_SERVERS = {
   ],
 };
 
-export const ANIME_SAMA_VF_SERVER = {
-  id: "anime_sama_vf",
-  name: "Serveur 1 (Anime-Sama • VF 100% Officielle)",
+export const ERODIUM_VF_SERVER = {
+  id: "erodium_vf",
+  name: "Serveur 1 (Lecteur Erodium • VF 100% Officielle)",
   flag: "🇫🇷",
-  badge: "🇫🇷 VF Directe",
+  badge: "🇫🇷 VF Erodium",
   isAnimeSama: true,
-  description: "Vrai doublage français officiel (Crunchyroll/ADN) hébergé sur Sibnet & Vidmoly sans coupure ni pub.",
+  description: "Vrai doublage français officiel hébergé sur les serveurs rapides Erodium sans coupure ni pub.",
   getUrl: () => "",
 };
 
-export const ANIME_SAMA_VOSTFR_SERVER = {
-  id: "anime_sama_vostfr",
-  name: "Serveur 1 (Anime-Sama • VOSTFR HD)",
+export const ERODIUM_VOSTFR_SERVER = {
+  id: "erodium_vostfr",
+  name: "Serveur 1 (Lecteur Erodium • VOSTFR HD)",
   flag: "🇯🇵 🇫🇷",
-  badge: "🇯🇵 VOSTFR Direct",
+  badge: "🇯🇵 VOSTFR Erodium",
   isAnimeSama: true,
-  description: "Version originale japonaise avec sous-titres français officiels incrustés (Anime-Sama).",
+  description: "Version originale avec sous-titres français officiels intégrés par Erodium.",
   getUrl: () => "",
 };
+
+// Alias pour compatibilité
+export const ANIME_SAMA_VF_SERVER = ERODIUM_VF_SERVER;
+export const ANIME_SAMA_VOSTFR_SERVER = ERODIUM_VOSTFR_SERVER;
 
 /**
  * Retourne la liste optimisée des serveurs pour le média spécifié
- * Si le média est un animé, place Anime-Sama en tête de liste !
+ * Si le média est un animé, place le Lecteur Erodium en tête de liste !
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
@@ -447,10 +421,10 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
 
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
-      return [ANIME_SAMA_VF_SERVER, ...baseServers];
+      return [ERODIUM_VF_SERVER, ...baseServers.filter((s) => s.id !== "erodium_vf")];
     }
     if (lang === "vostfr") {
-      return [ANIME_SAMA_VOSTFR_SERVER, ...baseServers];
+      return [ERODIUM_VOSTFR_SERVER, ...baseServers.filter((s) => s.id !== "erodium_vostfr")];
     }
   }
 

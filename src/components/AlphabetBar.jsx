@@ -14,10 +14,10 @@ export default function AlphabetBar({ activeLetter, onSelectLetter }) {
 
       <button
         onClick={() => onSelectLetter(null)}
-        className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all ${
+        className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
           activeLetter === null
-            ? "bg-indigo-600 text-white shadow"
-            : "bg-zinc-800/70 text-zinc-400 hover:text-white hover:bg-zinc-700"
+            ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
+            : "bg-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800"
         }`}
       >
         TOUS
@@ -29,9 +29,9 @@ export default function AlphabetBar({ activeLetter, onSelectLetter }) {
           <button
             key={letter}
             onClick={() => onSelectLetter(isSelected ? null : letter)}
-            className={`w-7 h-7 flex-shrink-0 text-xs font-bold rounded-lg transition-all flex items-center justify-center ${
+            className={`w-7 h-7 flex-shrink-0 text-xs font-bold rounded-lg transition-all flex items-center justify-center cursor-pointer ${
               isSelected
-                ? "bg-pink-600 text-white shadow-md shadow-pink-600/30 scale-105"
+                ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-md shadow-orange-600/30 scale-105 border border-orange-400/50"
                 : "bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-white/5"
             }`}
           >

@@ -52,7 +52,12 @@ export default function PlayerModal({
   const needsVOSTFR = languageAdvisor.hasNoOfficialVF(media);
   const [selectedLanguage, setSelectedLanguage] = useState(() => {
     if (needsVOSTFR) return "vostfr";
-    return initialLanguage || localStorage.getItem("novastream_default_lang") || "vf";
+    return (
+      initialLanguage ||
+      localStorage.getItem("erodium_default_lang") ||
+      localStorage.getItem("novastream_default_lang") ||
+      "vf"
+    );
   });
   const [autoSwitchedNotice, setAutoSwitchedNotice] = useState(
     needsVOSTFR && initialLanguage === "vf"
@@ -231,6 +236,7 @@ export default function PlayerModal({
   // When language changes, reset server to first server of that language
   const handleLanguageChange = (langId) => {
     setSelectedLanguage(langId);
+    localStorage.setItem("erodium_default_lang", langId);
     localStorage.setItem("novastream_default_lang", langId);
     const newServers = getStreamingServersForMedia(currentMedia, langId);
     setSelectedServer(newServers[0]);
@@ -423,7 +429,7 @@ export default function PlayerModal({
   // Render Mini-Player Floating Window
   if (isMiniPlayer) {
     return (
-      <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-96 aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-indigo-500/50 flex flex-col animate-fade-in group">
+      <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-96 aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-orange-500/50 shadow-orange-500/20 flex flex-col animate-fade-in group">
         {/* Floating Mini Controls Header */}
         <div className="absolute top-0 inset-x-0 h-9 bg-gradient-to-b from-black/90 to-transparent z-30 px-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
           <span className="text-[11px] font-bold text-white truncate max-w-[170px]">
@@ -432,14 +438,14 @@ export default function PlayerModal({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsMiniPlayer(false)}
-              className="p-1 rounded-md bg-black/60 hover:bg-black text-white"
+              className="p-1 rounded-md bg-black/60 hover:bg-black text-white cursor-pointer"
               title="Agrandir en plein écran"
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onClose}
-              className="p-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white"
+              className="p-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white cursor-pointer"
               title="Fermer"
             >
               <X className="w-3.5 h-3.5" />
@@ -468,7 +474,7 @@ export default function PlayerModal({
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition-colors"
+            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-white/5 transition-colors cursor-pointer"
             title="Quitter le lecteur"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -479,7 +485,7 @@ export default function PlayerModal({
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
               {isTV && (
-                <span className="text-xs text-indigo-400 font-semibold">
+                <span className="text-xs text-orange-400 font-semibold">
                   Saison {season} • Épisode {episode}
                 </span>
               )}
@@ -498,13 +504,13 @@ export default function PlayerModal({
         {/* Top Controls: Language Selector + Episode switchers */}
         <div className="flex items-center gap-2">
           {/* Language Selector Dropdown / Pills */}
-          <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-zinc-900/90 border border-white/10 rounded-xl p-1 shadow-inner">
             {LANGUAGE_OPTIONS.map((lang) => {
               const isSelected = selectedLanguage === lang.id;
               const mediaOrigin = getMediaLanguageInfo(currentMedia);
               let displayLabel = lang.label;
               if (lang.id === "vostfr") {
-                displayLabel = `${mediaOrigin.flag}/🇫🇷 VOSTFR${mediaOrigin.isAnime ? " (Animé)" : ""}`;
+                displayLabel = `${mediaOrigin.flag || "🇯🇵"}/🇫🇷 VOSTFR${mediaOrigin.isAnime ? " (Animé)" : ""}`;
               } else if (lang.id === "vf") {
                 displayLabel = "🇫🇷 VF (Français)";
               } else if (lang.id === "multi") {
@@ -514,9 +520,9 @@ export default function PlayerModal({
                 <button
                   key={lang.id}
                   onClick={() => handleLanguageChange(lang.id)}
-                  className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                     isSelected
-                      ? "bg-indigo-600 text-white shadow-sm ring-1 ring-white/20"
+                      ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 border border-orange-400/50 scale-[1.02]"
                       : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                   }`}
                   title={lang.desc}
@@ -544,10 +550,10 @@ export default function PlayerModal({
                   setDrawerSeason(season);
                   setShowEpisodeDrawer(true);
                 }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 hover:text-white text-xs font-bold transition-all border border-indigo-500/40 hover:scale-105 cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-600/20 hover:bg-orange-600/40 text-orange-200 hover:text-white text-xs font-bold transition-all border border-orange-500/40 hover:scale-105 cursor-pointer shadow-sm"
                 title="Changer de saison ou choisir un épisode dans la liste"
               >
-                <List className="w-3.5 h-3.5 text-indigo-400" />
+                <List className="w-3.5 h-3.5 text-orange-400" />
                 <span>S{season} : EP {episode}</span>
                 <span className="text-[10px] text-zinc-400">▾</span>
               </button>
@@ -571,37 +577,37 @@ export default function PlayerModal({
                 }
                 setShowSubtitleTip((v) => !v);
               }}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedLanguage === "vostfr"
-                  ? "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-500/25"
-                  : "bg-zinc-800 text-zinc-300 hover:text-white border-white/5"
+                  ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-md shadow-orange-600/25"
+                  : "bg-zinc-900 text-zinc-300 hover:text-white border-white/5"
               }`}
               title="Activer les sous-titres français (VOSTFR)"
             >
-              <Languages className="w-3.5 h-3.5 text-purple-300" />
+              <Languages className="w-3.5 h-3.5 text-orange-300" />
               <span className="hidden sm:inline">Sous-titres FR</span>
             </button>
 
             {/* Subtitle helper popup */}
             {showSubtitleTip && (
-              <div className="absolute top-full right-0 mt-2 w-72 p-3 bg-zinc-900 border border-purple-500/40 rounded-xl shadow-2xl z-50 text-xs text-zinc-300 space-y-2 animate-fade-in">
+              <div className="absolute top-full right-0 mt-2 w-72 p-3 bg-zinc-900 border border-orange-500/40 rounded-xl shadow-2xl z-50 text-xs text-zinc-300 space-y-2 animate-fade-in">
                 <div className="flex items-center justify-between font-bold text-white">
-                  <span className="flex items-center gap-1.5 text-purple-400">
+                  <span className="flex items-center gap-1.5 text-orange-400">
                     <Sparkles className="w-4 h-4" />
                     Sous-titres Français (STFR)
                   </span>
                   <button
                     onClick={() => setShowSubtitleTip(false)}
-                    className="text-zinc-500 hover:text-white"
+                    className="text-zinc-500 hover:text-white cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <p className="text-[11px] leading-relaxed text-zinc-300">
-                  Les serveurs <strong>VidSrc</strong> et <strong>Smashy</strong> chargent automatiquement les pistes françaises.
+                  Les serveurs chargent automatiquement les pistes françaises.
                 </p>
                 <div className="p-2 rounded-lg bg-black/50 border border-white/5 text-[11px] space-y-1">
-                  <p className="font-semibold text-purple-300">💡 Pas de sous-titres affichés ?</p>
+                  <p className="font-semibold text-orange-300">💡 Pas de sous-titres affichés ?</p>
                   <p className="text-zinc-400">
                     Cliquez sur le bouton <strong>CC</strong> ou sur la <strong>roue crantée ⚙️</strong> en bas à droite de la vidéo et cochez <strong>« French / Français »</strong>.
                   </p>
@@ -611,9 +617,9 @@ export default function PlayerModal({
                     handleLanguageChange("vostfr");
                     setShowSubtitleTip(false);
                   }}
-                  className="w-full py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] transition-colors"
+                  className="w-full py-1.5 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-[11px] transition-colors cursor-pointer"
                 >
-                  Basculer sur Serveur 1 VOSTFR
+                  Basculer sur VOSTFR
                 </button>
               </div>
             )}
@@ -629,10 +635,10 @@ export default function PlayerModal({
           {/* Débloquer DNS FAI (Guide DoH Cloudflare / Google) */}
           <button
             onClick={() => setShowDnsModal(true)}
-            className="px-2.5 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-2.5 py-1.5 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/25 text-orange-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="Contourner le blocage FAI (activer le DNS Sécurisé Cloudflare en 15s)"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
             <span className="hidden md:inline">Débloquer DNS FAI</span>
           </button>
 
@@ -679,23 +685,23 @@ export default function PlayerModal({
 
       {/* Auto-Switched Notice Banner */}
       {autoSwitchedNotice && (
-        <div className="px-4 py-2.5 bg-gradient-to-r from-indigo-950 via-purple-950 to-indigo-950 border-b border-indigo-500/40 text-indigo-100 text-xs flex flex-wrap items-center justify-between gap-2 z-20 animate-fade-in shadow-lg">
+        <div className="px-4 py-2.5 bg-gradient-to-r from-orange-950/90 via-zinc-950 to-orange-950/90 border-b border-orange-500/40 text-orange-100 text-xs flex flex-wrap items-center justify-between gap-2 z-20 animate-fade-in shadow-lg">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0 animate-pulse" />
             <span>
-              ✨ <strong>Adaptation automatique :</strong> « {title} » ({currentMedia.original_language?.toUpperCase()}) n'a aucun doublage VF officiel. NovaStream a directement lancé <strong>VOSTFR (1080p)</strong> pour vous éviter toute erreur 404.
+              ✨ <strong>Adaptation automatique :</strong> « {title} » ({currentMedia.original_language?.toUpperCase()}) n'a aucun doublage VF officiel. Erodium a directement lancé <strong>VOSTFR (1080p)</strong> pour vous éviter toute erreur 404.
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleLanguageChange("vf")}
-              className="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/60 text-zinc-300 hover:text-white text-[11px] border border-white/10 transition-colors"
+              className="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/60 text-zinc-300 hover:text-white text-[11px] border border-white/10 transition-colors cursor-pointer"
             >
               Tester quand même en VF
             </button>
             <button
               onClick={() => setAutoSwitchedNotice(false)}
-              className="p-1 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              className="p-1 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
               title="Masquer"
             >
               <X className="w-3.5 h-3.5" />
@@ -709,16 +715,16 @@ export default function PlayerModal({
         selectedLanguage === "vf" &&
         currentMedia.original_language &&
         !["fr", "en"].includes(currentMedia.original_language) && (
-          <div className="px-4 py-2 bg-indigo-950/90 border-b border-indigo-500/30 text-indigo-200 text-xs flex flex-wrap items-center justify-between gap-2 z-20">
+          <div className="px-4 py-2 bg-orange-950/90 border-b border-orange-500/30 text-orange-200 text-xs flex flex-wrap items-center justify-between gap-2 z-20">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <span>
-                💡 <strong>« {title} »</strong> est une œuvre originale ({currentMedia.original_language.toUpperCase()}) : si le lecteur affiche <em>404 Content not found</em>, cliquez sur <strong>VOSTFR</strong> ou <strong>1080p / 4K</strong> (Smashy).
+                💡 <strong>« {title} »</strong> est une œuvre originale ({currentMedia.original_language.toUpperCase()}) : si le lecteur affiche <em>404 Content not found</em>, cliquez sur <strong>VOSTFR</strong> ou <strong>1080p / 4K</strong>.
               </span>
             </div>
             <button
               onClick={() => handleLanguageChange("vostfr")}
-              className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs whitespace-nowrap shadow-md transition-all flex items-center gap-1.5"
+              className="px-3 py-1 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs whitespace-nowrap shadow-md shadow-orange-600/30 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>💬 Passer en VOSTFR (1080p)</span>
             </button>
@@ -727,7 +733,7 @@ export default function PlayerModal({
 
       {/* Asian / Web Series Banner (e.g. The Loyal Pin, IdolFactory, GMMTV, Thai BL/GL) */}
       {isWebDrama && (
-        <div className="px-4 py-2 bg-gradient-to-r from-red-950/90 via-zinc-900 to-indigo-950/90 border-b border-red-500/40 text-xs flex flex-wrap items-center justify-between gap-2 z-20 animate-fade-in shadow-md">
+        <div className="px-4 py-2 bg-gradient-to-r from-red-950/90 via-zinc-900 to-orange-950/90 border-b border-red-500/40 text-xs flex flex-wrap items-center justify-between gap-2 z-20 animate-fade-in shadow-md">
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px] tracking-wide uppercase shadow-sm">
               Web Série
@@ -743,7 +749,7 @@ export default function PlayerModal({
                 setSelectedServer(pm);
                 setIframeKey((k) => k + 1);
               }}
-              className="px-2.5 py-1 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-orange-600/80 hover:bg-orange-600 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 cursor-pointer"
               title="Tester le serveur miroir VidSrc PM"
             >
               <span>⚡ Tester VidSrc PM</span>
@@ -830,7 +836,7 @@ export default function PlayerModal({
                   <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
                     <button
                       onClick={() => setPlayerMode("embed")}
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Play className="w-4 h-4 fill-white" />
                       <span>Regarder sur Serveur 1 VF (Gratuit)</span>
@@ -857,7 +863,7 @@ export default function PlayerModal({
                   </p>
                   <button
                     onClick={() => setPlayerMode("embed")}
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Play className="w-4 h-4 fill-white" />
                     <span>Basculer sur Serveur 1 VF</span>
@@ -875,17 +881,17 @@ export default function PlayerModal({
                   <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
                     <button
                       onClick={() => setPlayerMode("embed")}
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Play className="w-4 h-4 fill-white" />
-                      <span>Regarder sur Serveur 1 VF (AutoEmbed)</span>
+                      <span>Regarder sur Serveur 1 VF</span>
                     </button>
                     <button
                       onClick={() => {
                         setIsDemoActive(true);
                         setDirectStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
                       }}
-                      className="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold text-xs border border-white/10 transition-all"
+                      className="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold text-xs border border-white/10 transition-all cursor-pointer"
                     >
                       🐰 Tester le lecteur vidéo (Démo)
                     </button>
@@ -896,13 +902,13 @@ export default function PlayerModal({
           )
         ) : isResolving ? (
           <div className="flex flex-col items-center gap-3 text-zinc-400">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             <span className="text-sm font-semibold">Synchronisation des flux vidéo HD en cours...</span>
           </div>
         ) : activeServer?.isAnimeSama && isAnimeLoading ? (
           <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
-            <Loader2 className="w-10 h-10 animate-spin text-indigo-400" />
-            <h3 className="text-base font-bold text-white">Connexion à Anime-Sama...</h3>
+            <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+            <h3 className="text-base font-bold text-white">Connexion au Lecteur Erodium...</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
               Récupération du véritable doublage VF officiel pour « <strong>{title}</strong> » (Saison {season}, Épisode {episode})...
             </p>
@@ -912,7 +918,7 @@ export default function PlayerModal({
             <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
               <AlertCircle className="w-6 h-6 text-amber-400" />
             </div>
-            <h3 className="text-base font-bold text-white mb-2">Non indexé sur Anime-Sama</h3>
+            <h3 className="text-base font-bold text-white mb-2">Non disponible sur ce lecteur</h3>
             <p className="text-xs text-zinc-300 mb-5 max-w-md leading-relaxed">
               {animeError}
             </p>
@@ -922,9 +928,9 @@ export default function PlayerModal({
                 setSelectedServer(altServer);
                 setIframeKey((k) => k + 1);
               }}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer"
             >
-              ⚡ Basculer sur AutoEmbed (Lecteur standard)
+              ⚡ Basculer sur un autre lecteur
             </button>
           </div>
         ) : (
@@ -954,7 +960,7 @@ export default function PlayerModal({
                       </span>
                       <button
                         onClick={() => handleLanguageChange("vostfr")}
-                        className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs whitespace-nowrap shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 cursor-pointer ml-auto"
+                        className="px-3 py-1 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs whitespace-nowrap shadow-md shadow-orange-600/30 transition-all flex items-center gap-1.5 cursor-pointer ml-auto"
                       >
                         <span>▶️ Lancer en VOSTFR ({mediaOrigin.flag}/🇫🇷)</span>
                       </button>
@@ -1280,12 +1286,12 @@ export default function PlayerModal({
 
           {/* Servers & Language Guidance */}
           <div className="p-3 sm:p-4 border-t border-white/10 glass flex flex-col gap-2.5 z-20">
-            {/* Anime-Sama Alternate Players Row */}
+            {/* Erodium Alternate Players Row */}
             {selectedServer?.isAnimeSama && animeData?.players?.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto w-full pb-2 scrollbar-none border-b border-white/5 animate-fade-in">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 flex-shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Hébergeurs Anime-Sama :</span>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400 flex-shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                  <span>Hébergeurs Erodium :</span>
                 </div>
                 {animeData.players.map((p, idx) => (
                   <button
@@ -1296,11 +1302,11 @@ export default function PlayerModal({
                     }}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                       animeStreamUrl === p.url
-                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-105 border border-indigo-400"
+                        ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 scale-105 border border-orange-400"
                         : "bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 border border-white/5"
                     }`}
                   >
-                    {p.name}
+                    {p.name?.replace("Lecteur", "Hébergeur") || `Hébergeur ${idx + 1}`}
                   </button>
                 ))}
               </div>
@@ -1310,7 +1316,7 @@ export default function PlayerModal({
               {/* Server Selectors for the active language */}
               <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 mr-1 flex-shrink-0">
-                  <Server className="w-3.5 h-3.5 text-indigo-400" />
+                  <Server className="w-3.5 h-3.5 text-orange-400" />
                   <span>Lecteurs ({selectedLanguage.toUpperCase()}) :</span>
                 </div>
 
@@ -1336,8 +1342,8 @@ export default function PlayerModal({
                       }}
                       className={`text-xs px-3 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 border flex-shrink-0 cursor-pointer ${
                         isSelected
-                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold border-indigo-400 scale-[1.02] ring-1 ring-white/20"
-                          : "bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 border-white/5 hover:border-white/15"
+                          ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 font-bold border-orange-400 scale-[1.02] ring-1 ring-white/20"
+                          : "bg-zinc-850 hover:bg-zinc-800 text-zinc-300 border-white/5 hover:border-white/15"
                       }`}
                       title={details.description}
                     >
@@ -1354,7 +1360,7 @@ export default function PlayerModal({
                         className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
                           isSelected
                             ? "bg-white/20 text-white border border-white/30"
-                            : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                            : "bg-orange-500/20 text-orange-300 border border-orange-500/30"
                         }`}
                       >
                         {details.badge}
@@ -1380,7 +1386,7 @@ export default function PlayerModal({
                 {selectedLanguage === "vf" ? (
                   <button
                     onClick={() => handleLanguageChange("vostfr")}
-                    className="px-2.5 py-0.5 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-0.5 rounded bg-orange-600/80 hover:bg-orange-600 text-white font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                     title="Passer en VOSTFR sous-titré français"
                   >
                     <Languages className="w-3 h-3" />
@@ -1407,7 +1413,7 @@ export default function PlayerModal({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base">{activeDetails.flagDisplay}</span>
                     <span className="font-bold text-white">{selectedServer.name} :</span>
-                    <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">
+                    <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-semibold border border-orange-500/30">
                       🔊 {activeDetails.audio}
                     </span>
                     <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
@@ -1416,7 +1422,7 @@ export default function PlayerModal({
                     {selectedServer.badge?.includes("DoH") && (
                       <button
                         onClick={() => setShowDnsModal(true)}
-                        className="px-2 py-0.5 rounded bg-indigo-600/90 hover:bg-indigo-500 text-white font-bold text-[10px] shadow-sm flex items-center gap-1 cursor-pointer transition-colors"
+                        className="px-2 py-0.5 rounded bg-orange-600/90 hover:bg-orange-500 text-white font-bold text-[10px] shadow-sm flex items-center gap-1 cursor-pointer transition-colors"
                         title="Afficher les étapes simples pour débloquer ce lecteur chez votre FAI"
                       >
                         <ShieldCheck className="w-3 h-3" />
@@ -1583,7 +1589,7 @@ export default function PlayerModal({
             <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between gap-3 bg-zinc-900/60">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <List className="w-5 h-5 text-indigo-400" />
+                  <List className="w-5 h-5 text-orange-400" />
                   <h3 className="text-base sm:text-lg font-bold text-white truncate">
                     Choisir un épisode
                   </h3>
@@ -1616,7 +1622,7 @@ export default function PlayerModal({
                         onClick={() => setDrawerSeason(s.season_number)}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer border ${
                           isCurrentTab
-                            ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30"
+                            ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-md shadow-orange-600/30"
                             : "bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border-white/5"
                         }`}
                       >
@@ -1635,7 +1641,7 @@ export default function PlayerModal({
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5">
               {isLoadingDrawerEpisodes ? (
                 <div className="py-20 flex flex-col items-center justify-center gap-3 text-zinc-400">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+                  <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
                   <span className="text-xs font-semibold">Chargement des épisodes de la saison {drawerSeason}...</span>
                 </div>
               ) : drawerEpisodes.length === 0 ? (
@@ -1653,7 +1659,7 @@ export default function PlayerModal({
                       onClick={() => handleSelectEpisode(drawerSeason, ep.episode_number)}
                       className={`p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer flex gap-3 sm:gap-4 items-center group ${
                         isCurrentPlaying
-                          ? "bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-500/50 shadow-lg shadow-indigo-950/50"
+                          ? "bg-orange-950/40 border-orange-500 ring-1 ring-orange-500/50 shadow-lg shadow-orange-950/50"
                           : "bg-zinc-900/60 hover:bg-zinc-800/80 border-white/5 hover:border-white/10"
                       }`}
                     >
@@ -1674,7 +1680,7 @@ export default function PlayerModal({
 
                         {/* Play button overlay */}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 flex items-center justify-center shadow-lg">
                             <Play className="w-4 h-4 fill-white text-white translate-x-0.5" />
                           </div>
                         </div>
@@ -1690,14 +1696,14 @@ export default function PlayerModal({
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <h4
                             className={`text-xs sm:text-sm font-bold truncate ${
-                              isCurrentPlaying ? "text-indigo-300" : "text-zinc-200 group-hover:text-white"
+                              isCurrentPlaying ? "text-orange-300" : "text-zinc-200 group-hover:text-white"
                             }`}
                           >
                             {ep.name || `Épisode ${ep.episode_number}`}
                           </h4>
 
                           {isCurrentPlaying && (
-                            <span className="px-2 py-0.5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-[10px] font-bold flex items-center gap-1 flex-shrink-0">
+                            <span className="px-2 py-0.5 rounded-full bg-orange-600/30 border border-orange-500/40 text-orange-200 text-[10px] font-bold flex items-center gap-1 flex-shrink-0">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                               <span>En lecture</span>
                             </span>

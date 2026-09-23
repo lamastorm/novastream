@@ -578,7 +578,7 @@ export default function App() {
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <span>Résultats pour "{searchQuery}"</span>
                   {isSearching && (
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
                   )}
                 </h2>
                 <span className="text-xs text-zinc-400">
@@ -587,7 +587,7 @@ export default function App() {
               </div>
 
               {/* Search Category Filter Pills */}
-              <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1.5 rounded-2xl border border-white/10 self-start sm:self-auto overflow-x-auto">
+              <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1.5 rounded-2xl border border-white/10 self-start sm:self-auto overflow-x-auto shadow-inner">
                 {[
                   { id: "all", label: "🌟 Tout" },
                   { id: "movie", label: "🎬 Films" },
@@ -597,9 +597,9 @@ export default function App() {
                   <button
                     key={cat.id}
                     onClick={() => setSearchCategory(cat.id)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                       searchCategory === cat.id
-                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                        ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
                         : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -629,11 +629,11 @@ export default function App() {
                     <button
                       onClick={handleLoadMoreSearch}
                       disabled={loadingMoreSearch}
-                      className="flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-white/10 hover:border-indigo-500/40 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                      className="flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-white font-bold text-sm border border-white/10 hover:border-orange-500/40 shadow-lg hover:scale-105 transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {loadingMoreSearch ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
                           <span>Chargement de la page {searchPage + 1}...</span>
                         </>
                       ) : (
@@ -880,7 +880,7 @@ export default function App() {
                 <div className="flex flex-col gap-4 mb-6">
                   <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <Film className="w-6 h-6 text-indigo-400" />
+                      <Film className="w-6 h-6 text-orange-400" />
                       <span>Catalogue Films</span>
                     </h2>
                     <p className="text-xs text-zinc-400 mt-1">
@@ -904,10 +904,10 @@ export default function App() {
                         setSelectedGenre(null);
                         setSelectedPlatform(null);
                       }}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                         selectedGenre === null && selectedPlatform === null
-                          ? "bg-indigo-600 text-white shadow"
-                          : "bg-zinc-800 text-zinc-400 hover:text-white"
+                          ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
+                          : "bg-zinc-850 text-zinc-400 hover:text-white"
                       }`}
                     >
                       Tous les genres
@@ -919,10 +919,10 @@ export default function App() {
                           setSelectedGenre(g.id);
                           setSelectedPlatform(null);
                         }}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                           selectedGenre === g.id
-                            ? "bg-indigo-600 text-white shadow"
-                            : "bg-zinc-800 text-zinc-400 hover:text-white"
+                            ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
+                            : "bg-zinc-850 text-zinc-400 hover:text-white"
                         }`}
                       >
                         {g.name}
@@ -1433,7 +1433,7 @@ export default function App() {
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                   <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <Bookmark className="w-6 h-6 text-indigo-400" />
+                      <Bookmark className="w-6 h-6 text-orange-400" />
                       <span>Mes Favoris (Watchlist)</span>
                     </h2>
                     <p className="text-xs text-zinc-400 mt-1">
@@ -1452,11 +1452,11 @@ export default function App() {
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
                           a.href = url;
-                          a.download = `novastream-favoris-${new Date().toISOString().slice(0, 10)}.json`;
+                          a.download = `erodium-favoris-${new Date().toISOString().slice(0, 10)}.json`;
                           a.click();
                           URL.revokeObjectURL(url);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold border border-white/10 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold border border-white/10 transition-all cursor-pointer"
                       >
                         📥 Exporter
                       </button>
@@ -1479,6 +1479,7 @@ export default function App() {
                                 favorites.forEach((f) => {
                                   if (!merged.find((m) => m.id === f.id && m.media_type === f.media_type)) merged.push(f);
                                 });
+                                localStorage.setItem("erodium_watchlist", JSON.stringify(merged));
                                 localStorage.setItem("novastream_watchlist", JSON.stringify(merged));
                                 setFavorites(merged);
                               }
@@ -1518,9 +1519,9 @@ export default function App() {
                         <button
                           key={tab.id}
                           onClick={() => setWatchlistCategory(tab.id)}
-                          className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                          className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                             isSelected
-                              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                              ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
                               : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700"
                           }`}
                         >
@@ -1608,11 +1609,11 @@ export default function App() {
       {/* Footer */}
       <footer className="mt-16 border-t border-white/5 py-8 text-center text-xs text-zinc-500 glass">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} NovaStream</p>
+          <p>© {new Date().getFullYear()} Erodium • Films, Séries & Animes en Streaming HD</p>
           <div className="flex items-center gap-4 text-zinc-400">
             <button
               onClick={() => setSettingsOpen(true)}
-              className="hover:text-indigo-400 transition-colors"
+              className="hover:text-orange-400 transition-colors cursor-pointer"
             >
               Paramètres
             </button>
