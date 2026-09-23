@@ -52,6 +52,15 @@ export default function PlayerModal({
   onClose,
 }) {
   const [adBlockActive, setAdBlockActive] = useState(() => adBlocker.isEnabled);
+  const [strictPopupMode, setStrictPopupMode] = useState(() => adBlocker.strictMode);
+
+  useEffect(() => {
+    return adBlocker.addListener((type, val) => {
+      if (type === "toggle") setAdBlockActive(val);
+      if (type === "strictToggle") setStrictPopupMode(val);
+    });
+  }, []);
+
   const needsVOSTFR = languageAdvisor.hasNoOfficialVF(media);
   const [selectedLanguage, setSelectedLanguage] = useState(() => {
     if (needsVOSTFR) return "vostfr";
@@ -498,6 +507,7 @@ export default function PlayerModal({
           title={title}
           allowFullScreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          sandbox={adBlocker.getSandboxString(strictPopupMode)}
           className="w-full h-full border-0"
         />
       </div>
@@ -682,35 +692,60 @@ export default function PlayerModal({
           </button>
 
           {/* Bouclier Anti-Pub & Anti-Popups Mobile / TV / Console */}
-          <button
-            onClick={() => {
-              const nextVal = !adBlockActive;
-              setAdBlockActive(nextVal);
-              adBlocker.setEnabled(nextVal);
-              setIframeKey((k) => k + 1);
-            }}
-            data-focusable="true"
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-              adBlockActive
-                ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/80 shadow-emerald-500/20"
-                : "bg-zinc-800 text-zinc-400 border-white/5 hover:text-white"
-            }`}
-            title={
-              adBlockActive
-                ? "Bouclier Anti-Pub ACTIF : bloque 100% des pop-ups, publicités et redirections pour téléphones et consoles."
-                : "Bouclier Anti-Pub DÉSACTIVÉ : cliquez pour réactiver le blocage strict des pubs."
-            }
-          >
-            <ShieldCheck className={`w-3.5 h-3.5 ${adBlockActive ? "text-emerald-400" : "text-zinc-400"}`} />
-            <span className="hidden md:inline">Anti-Pub</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
-                adBlockActive ? "bg-emerald-500/30 text-emerald-200 border border-emerald-500/40" : "bg-zinc-700 text-zinc-400"
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                const nextVal = !adBlockActive;
+                setAdBlockActive(nextVal);
+                adBlocker.setEnabled(nextVal);
+                setIframeKey((k) => k + 1);
+              }}
+              data-focusable="true"
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                adBlockActive
+                  ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/80 shadow-emerald-500/20"
+                  : "bg-zinc-800 text-zinc-400 border-white/5 hover:text-white"
               }`}
+              title={
+                adBlockActive
+                  ? "Bouclier Anti-Pub ACTIF : bloque 100% des redirections vers d'autres pages sur mobile et console."
+                  : "Bouclier Anti-Pub DÉSACTIVÉ : cliquez pour réactiver le bouclier."
+              }
             >
-              {adBlockActive ? "ACTIF" : "OFF"}
-            </span>
-          </button>
+              <ShieldCheck className={`w-3.5 h-3.5 ${adBlockActive ? "text-emerald-400" : "text-zinc-400"}`} />
+              <span className="hidden md:inline">Bouclier Anti-Pub</span>
+              <span
+                className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
+                  adBlockActive ? "bg-emerald-500/30 text-emerald-200 border border-emerald-500/40" : "bg-zinc-700 text-zinc-400"
+                }`}
+              >
+                {adBlockActive ? "ACTIF" : "OFF"}
+              </span>
+            </button>
+
+            {adBlockActive && (
+              <button
+                onClick={() => {
+                  const nextStrict = !strictPopupMode;
+                  setStrictPopupMode(nextStrict);
+                  adBlocker.setStrictMode(nextStrict);
+                  setIframeKey((k) => k + 1);
+                }}
+                className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                  strictPopupMode
+                    ? "bg-amber-950/80 border-amber-500/60 text-amber-200 shadow-md shadow-amber-500/20"
+                    : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                }`}
+                title={
+                  strictPopupMode
+                    ? "Mode Strict ACTIF : Aucun nouvel onglet ou pop-up ne peut s'ouvrir. Cliquez pour repasser en mode standard."
+                    : "Mode Standard : Redirections bloquées. Cliquez pour activer le mode Strict (0 nouvel onglet)."
+                }
+              >
+                <span>{strictPopupMode ? "🛡️ 0 Pop-up" : "🛡️ Anti-Redir"}</span>
+              </button>
+            )}
+          </div>
 
           <button
             onClick={() => setIsMiniPlayer(true)}
@@ -1029,6 +1064,7 @@ export default function PlayerModal({
               title={title}
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              sandbox={adBlocker.getSandboxString(strictPopupMode)}
               style={videoFilter ? { filter: videoFilter, transition: "filter 0.3s" } : undefined}
               className="w-full h-full border-0 absolute inset-0"
             />

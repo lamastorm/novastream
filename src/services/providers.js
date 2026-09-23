@@ -144,7 +144,7 @@ export const VIDMOLY_VF_SERVER = {
   name: "Serveur 1 (VidMoly • VF Directe)",
   flag: "🇫🇷",
   badge: "🇫🇷 VidMoly VF",
-  description: "Lecteur VidMoly direct avec doublage français sans coupure.",
+  description: "Lecteur VidMoly direct avec doublage français officiel sans coupure.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
       return `https://frembed.surf/api/film.php?id=${id}`;
@@ -167,6 +167,104 @@ export const VIDMOLY_MIRROR_VF_SERVER = {
   },
 };
 
+export const AUTOEMBED_VF_SERVER = {
+  id: "autoembed_vf",
+  name: "Serveur 3 (AutoEmbed • FHD Multi-FR)",
+  flag: "⚡",
+  badge: "⚡ FHD Multi-FR",
+  description: "Lecteur moderne haute vitesse, zéro pub intrusive, avec piste audio française.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://autoembed.co/movie/tmdb/${id}`;
+    }
+    return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
+  },
+};
+
+export const VIDSRC_ME_VF_SERVER = {
+  id: "vidsrc_me_vf",
+  name: "Serveur 4 (VidSrc FR • 1080p VF)",
+  flag: "🇫🇷",
+  badge: "🇫🇷 VidSrc VF",
+  description: "Lecteur VidSrc éprouvé configuré avec doublage français.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://vidsrc.me/embed/movie?tmdb=${id}&ds_lang=fr`;
+    }
+    return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&ds_lang=fr`;
+  },
+};
+
+export const ANYEMBED_VF_SERVER = {
+  id: "anyembed_vf",
+  name: "Serveur 5 (AnyEmbed • Multi 1080p / 4K)",
+  flag: "🌐",
+  badge: "🌐 1080p/4K",
+  description: "Lecteur HD rapide avec pistes audio multiples au choix sans coupure.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
+    }
+    return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
+  },
+};
+
+export const VIDSRC_IN_VF_SERVER = {
+  id: "vidsrc_in_vf",
+  name: "Serveur 6 (VidSrc IN • STFR / VF)",
+  flag: "💬",
+  badge: "💬 FHD FR",
+  description: "Miroir rapide avec paramètres de langue française intégrés.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://vidsrc.in/embed/movie?tmdb=${id}&sub_lang=fra`;
+    }
+    return `https://vidsrc.in/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&sub_lang=fra`;
+  },
+};
+
+export const TWOEMBED_VF_SERVER = {
+  id: "twoembed_vf",
+  name: "Serveur 7 (2Embed 1080p)",
+  flag: "🌐",
+  badge: "🌐 1080p",
+  description: "Lecteur haute définition rapide.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://www.2embed.cc/embed/${id}`;
+    }
+    return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+  },
+};
+
+export const PLAY123_VF_SERVER = {
+  id: "play123_vf",
+  name: "Serveur 8 (123Embed Clean)",
+  flag: "🛡️",
+  badge: "🛡️ Clean",
+  description: "Miroir alternatif 1080p sans surcharge.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://play2.123embed.net/movie/${id}`;
+    }
+    return `https://play2.123embed.net/tv/${id}/${season}/${episode}`;
+  },
+};
+
+export const SMASHY_VF_SERVER = {
+  id: "smashy_vf",
+  name: "Serveur 9 (SmashyStream Multi)",
+  flag: "🌐",
+  badge: "🌐 Multi",
+  description: "Agrégateur multi-sources alternatif.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://embed.smashystream.com/playere.php?tmdb=${id}`;
+    }
+    return `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}`;
+  },
+};
+
 export const STREAMING_SERVERS = {
   // ==========================================
   // --- SERVEURS VF (100% DOUBLAGE FRANÇAIS) ---
@@ -174,6 +272,13 @@ export const STREAMING_SERVERS = {
   vf: [
     VIDMOLY_VF_SERVER,
     VIDMOLY_MIRROR_VF_SERVER,
+    AUTOEMBED_VF_SERVER,
+    VIDSRC_ME_VF_SERVER,
+    ANYEMBED_VF_SERVER,
+    VIDSRC_IN_VF_SERVER,
+    TWOEMBED_VF_SERVER,
+    PLAY123_VF_SERVER,
+    SMASHY_VF_SERVER,
   ],
 
   // ==========================================
@@ -396,8 +501,7 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     if (lang === "vf") {
       return [
         ERODIUM_VF_SERVER,
-        { ...VIDMOLY_VF_SERVER, name: "Serveur 2 (VidMoly • VF Directe)" },
-        { ...VIDMOLY_MIRROR_VF_SERVER, name: "Serveur 3 (VidMoly Miroir • VF)" },
+        ...baseServers.filter((s) => s.id !== "erodium_vf"),
       ];
     }
     if (lang === "vostfr") {
@@ -409,16 +513,15 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return baseServers;
   }
 
-  // CAS 2 : FILMS ET SÉRIES CLASSIQUES (NON-ANIMÉ) -> VidMoly en #1 et PAS D'AFFICHAGE ERODIUM !
+  // CAS 2 : FILMS ET SÉRIES CLASSIQUES (NON-ANIMÉ)
+  // - VidMoly est le lecteur de base #1 (VIDMOLY_VF_SERVER)
+  // - Erodium N'EST PAS affiché pour les films classiques
+  // - TOUS les serveurs miroirs et propres restent disponibles sans exception !
   if (lang === "vf") {
-    return [
-      VIDMOLY_VF_SERVER,
-      VIDMOLY_MIRROR_VF_SERVER,
-    ];
+    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf");
   }
 
   if (lang === "vostfr") {
-    // Exclure tout lecteur anime / Erodium pour les films classiques
     return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vostfr");
   }
 
