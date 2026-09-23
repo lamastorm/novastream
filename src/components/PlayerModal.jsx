@@ -249,6 +249,14 @@ export default function PlayerModal({
   // Keep server in sync when language or server list changes
   useEffect(() => {
     const servers = getStreamingServersForMedia(currentMedia, selectedLanguage);
+    const mediaInfo = getMediaLanguageInfo(currentMedia);
+
+    // If it's an anime, automatically default to Anime-Sama (Server 1)
+    if (mediaInfo.isAnime && servers[0]?.isAnimeSama && !selectedServer?.isAnimeSama) {
+      setSelectedServer(servers[0]);
+      return;
+    }
+
     if (!servers.some((s) => s.id === selectedServer?.id)) {
       setSelectedServer(servers[0]);
     }

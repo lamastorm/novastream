@@ -99,24 +99,51 @@ function findBestCard(cards, query) {
 export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 'vf' }) {
   if (!title) return { success: false, error: 'Paramètre "title" manquant' };
 
-  // Base domain with fallback
   const baseDomains = ['https://anime-sama.to', 'https://anime-sama.si'];
   let primaryBase = baseDomains[0];
 
+  // Generate intelligent search candidates for spin-offs and subtitles
+  // e.g. "Sword Art Online Alternative: Gun Gale Online" -> ["Sword Art Online Alternative: Gun Gale Online", "Sword Art Online Alternative", "Gun Gale Online", "Sword Art Online"]
+  const candidateQueries = [title];
+  if (title.includes(':')) {
+    const parts = title.split(':');
+    candidateQueries.push(parts[0].trim());
+    if (parts[1]?.trim()) candidateQueries.push(parts[1].trim());
+  }
+  if (title.includes('-')) {
+    const parts = title.split('-');
+    candidateQueries.push(parts[0].trim());
+  }
+  // Strip common anime subtitles / arcs
+  const baseFranchise = title.replace(/\s*(Alternative|Season|\(TV\)|Movie|Film|The Final|Part\s*\d+|Arc).*$/i, '').trim();
+  if (baseFranchise && !candidateQueries.includes(baseFranchise)) {
+    candidateQueries.push(baseFranchise);
+  }
+
+  let chosenSlug = null;
+  let chosenCard = null;
+
   try {
-    // 1. Search anime catalog
-    let searchRes;
-    try {
-      searchRes = await fetchText(`${primaryBase}/catalogue/?search=${encodeURIComponent(title)}`);
-    } catch {
-      primaryBase = baseDomains[1];
-      searchRes = await fetchText(`${primaryBase}/catalogue/?search=${encodeURIComponent(title)}`);
+    // 1. Search anime catalog with candidate queries until a match is found
+    for (const q of candidateQueries) {
+      let searchRes;
+      try {
+        searchRes = await fetchText(`${primaryBase}/catalogue/?search=${encodeURIComponent(q)}`);
+      } catch {
+        primaryBase = baseDomains[1];
+        searchRes = await fetchText(`${primaryBase}/catalogue/?search=${encodeURIComponent(q)}`);
+      }
+
+      const cards = parseAnimeCards(searchRes.body);
+      if (cards.length > 0) {
+        chosenCard = findBestCard(cards, q);
+        if (chosenCard?.slug) {
+          chosenSlug = chosenCard.slug;
+          break;
+        }
+      }
     }
 
-    const cards = parseAnimeCards(searchRes.body);
-    let chosenCard = findBestCard(cards, title);
-
-    let chosenSlug = chosenCard ? chosenCard.slug : null;
     if (!chosenSlug) {
       // Fallback slug generation
       chosenSlug = title.toLowerCase()
@@ -142,15 +169,42 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
     let targetFolder = `saison${sNum}`;
 
     if (panneaux.length > 0) {
-      const matched = panneaux.find(p => {
-        const lower = p.name.toLowerCase();
-        return (
-          lower === `saison ${sNum}` ||
-          lower.includes(`saison ${sNum}`) ||
-          lower.includes(`season ${sNum}`) ||
-          (sNum === 1 && (lower.includes('saison 1') || lower.includes('season 1') || lower === 'saison1'))
-        );
-      });
+      const titleLower = title.toLowerCase();
+      let matched = null;
+
+      // Check if title has a specific subtitle or spin-off that matches a panneau
+      // e.g. "Gun Gale Online" or "Alternative" -> "Alternative Gun Gale Online Saison 1"
+      for (const p of panneaux) {
+        const pLower = p.name.toLowerCase();
+        const pWords = pLower
+          .replace(/saison\s*\d+/g, '')
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .trim()
+          .split(/\s+/)
+          .filter(w => w.length > 3);
+
+        const hasKeywordMatch = pWords.length > 0 && pWords.some(w => titleLower.includes(w));
+        if (hasKeywordMatch) {
+          if (pLower.includes(`saison ${sNum}`) || (sNum === 1 && !pLower.includes('saison 2') && !pLower.includes('saison 3'))) {
+            matched = p;
+            break;
+          }
+        }
+      }
+
+      // Standard match by season number
+      if (!matched) {
+        matched = panneaux.find(p => {
+          const lower = p.name.toLowerCase();
+          return (
+            lower === `saison ${sNum}` ||
+            lower.startsWith(`saison ${sNum} `) ||
+            lower.includes(`saison ${sNum}`) ||
+            lower.includes(`season ${sNum}`) ||
+            (sNum === 1 && (lower.includes('saison 1') || lower.includes('season 1') || lower === 'saison1'))
+          );
+        });
+      }
 
       if (matched && matched.path) {
         targetFolder = matched.path.split('/')[0];
@@ -238,7 +292,6 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
 
 // Vercel Serverless Function Handler
 export default async function handler(req, res) {
-  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

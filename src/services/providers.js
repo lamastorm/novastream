@@ -6,12 +6,14 @@
  */
 export const getMediaLanguageInfo = (media) => {
   const origLang = (media?.original_language || "").toLowerCase();
+  const title = (media?.title || media?.name || "").toLowerCase();
   const isAnime =
     origLang === "ja" ||
     media?.genre_ids?.includes(16) ||
-    media?.genres?.some((g) => g.id === 16) ||
+    media?.genres?.some((g) => g.id === 16 || (g.name && g.name.toLowerCase().includes("anim"))) ||
     media?.source === "anilist" ||
-    media?.source === "mal";
+    media?.source === "mal" ||
+    /sword art online|gun gale|naruto|one piece|jujutsu|shingeki|titan|dragon ball|bleach|hunter|demon slayer|kimetsu|hero academia|solo leveling|death note|tokyo ghoul|chainsaw|frieren|kaiju|oshi no ko|danmachi|blue lock/i.test(title);
 
   const map = {
     ja: { flag: "🇯🇵", audio: "Japonais", name: "Japon (Animé)", isAnime: true },
