@@ -163,16 +163,16 @@ export const STREAMING_SERVERS = {
   // ==========================================
   vostfr: [
     {
-      id: "smashy_direct_vostfr",
-      name: "Serveur 1 (SmashyStream • Multi-STFR 1080p)",
+      id: "anyembed_direct_vostfr",
+      name: "Serveur 1 (AnyEmbed FHD • Multi-STFR)",
       flag: "💬",
       badge: "1080p CC",
-      description: "Sélectionnez Français dans l'icône CC ou la roue crantée du lecteur pour activer les sous-titres.",
+      description: "Lecteur moderne sans coupure. Cliquez sur CC pour sélectionner les sous-titres.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://player.smashystream.com/movie/${id}`;
+          return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
         }
-        return `https://player.smashystream.com/tv/${id}/${season}/${episode}`;
+        return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
       },
     },
     {
@@ -312,29 +312,16 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "vidlink_multi",
-      name: "Serveur 2 (VidLink 1080p / 4K)",
-      flag: "🌐",
-      badge: "🌐 4K / DoH",
-      description: "Lecteur ultra-rapide avec sélecteur de qualité 1080p/4K (Nécessite DNS Sécurisé si bloqué par FAI)",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidlink.pro/movie/${id}`;
-        }
-        return `https://vidlink.pro/tv/${id}/${season}/${episode}`;
-      },
-    },
-    {
-      id: "smashy_multi",
-      name: "Serveur 2 (SmashyStream • Choix 1080p / 4K)",
+      id: "anyembed_multi",
+      name: "Serveur 2 (AnyEmbed • Choix 1080p / 4K)",
       flag: "🌐",
       badge: "🌐 1080p / 4K",
       description: "Qualité maximale sans recompression avec pistes audio au choix",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://player.smashystream.com/movie/${id}`;
+          return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
         }
-        return `https://player.smashystream.com/tv/${id}/${season}/${episode}`;
+        return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
       },
     },
     {
