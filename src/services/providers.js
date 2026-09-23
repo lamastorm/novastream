@@ -42,6 +42,29 @@ export const getMediaLanguageInfo = (media) => {
 export const getServerDetails = (server, media, selectedLanguage) => {
   const mediaInfo = getMediaLanguageInfo(media);
 
+  if (server?.isAnimeSama) {
+    if (selectedLanguage === "vf") {
+      return {
+        flag: "🇫🇷",
+        flagDisplay: "🇫🇷",
+        audio: "Vrai Doublage Français (VF Officielle)",
+        subs: "Audio français direct (Pas besoin de STFR)",
+        badge: "🇫🇷 VF Anime-Sama",
+        subBadge: "VF Officielle",
+        description: "Doublage français officiel via Anime-Sama (Crunchyroll/ADN). Zéro coupure, lecteur Sibnet direct.",
+      };
+    }
+    return {
+      flag: "🇯🇵 🇫🇷",
+      flagDisplay: "🇯🇵 🇫🇷",
+      audio: "Japonais (VO)",
+      subs: "Sous-titres Français incrustés (Anime-Sama)",
+      badge: "🇯🇵 VOSTFR Direct",
+      subBadge: "VOSTFR Officiel",
+      description: "Version japonaise sous-titrée français direct sans bug de sous-titres.",
+    };
+  }
+
   if (selectedLanguage === "vf") {
     return {
       flag: "🇫🇷",
@@ -391,3 +414,44 @@ export const STREAMING_SERVERS = {
     },
   ],
 };
+
+export const ANIME_SAMA_VF_SERVER = {
+  id: "anime_sama_vf",
+  name: "Serveur 1 (Anime-Sama • VF 100% Officielle)",
+  flag: "🇫🇷",
+  badge: "🇫🇷 VF Directe",
+  isAnimeSama: true,
+  description: "Vrai doublage français officiel (Crunchyroll/ADN) hébergé sur Sibnet & Vidmoly sans coupure ni pub.",
+  getUrl: () => "",
+};
+
+export const ANIME_SAMA_VOSTFR_SERVER = {
+  id: "anime_sama_vostfr",
+  name: "Serveur 1 (Anime-Sama • VOSTFR HD)",
+  flag: "🇯🇵 🇫🇷",
+  badge: "🇯🇵 VOSTFR Direct",
+  isAnimeSama: true,
+  description: "Version originale japonaise avec sous-titres français officiels incrustés (Anime-Sama).",
+  getUrl: () => "",
+};
+
+/**
+ * Retourne la liste optimisée des serveurs pour le média spécifié
+ * Si le média est un animé, place Anime-Sama en tête de liste !
+ */
+export const getStreamingServersForMedia = (media, lang = "vf") => {
+  const mediaInfo = getMediaLanguageInfo(media);
+  const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
+
+  if (mediaInfo.isAnime) {
+    if (lang === "vf") {
+      return [ANIME_SAMA_VF_SERVER, ...baseServers];
+    }
+    if (lang === "vostfr") {
+      return [ANIME_SAMA_VOSTFR_SERVER, ...baseServers];
+    }
+  }
+
+  return baseServers;
+};
+

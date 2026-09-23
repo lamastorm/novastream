@@ -30,11 +30,13 @@ import {
   LANGUAGE_OPTIONS,
   getMediaLanguageInfo,
   getServerDetails,
+  getStreamingServersForMedia,
 } from "../services/providers";
 import { storage } from "../services/storage";
 import { tmdbApi } from "../api/tmdb";
 import { hlsExtractor } from "../services/hlsExtractor";
 import { languageAdvisor } from "../services/languageAdvisor";
+import { animeProvider } from "../services/animeProvider";
 import { useMediaLiveViewers, liveCounter } from "../services/liveCounter";
 import HlsPlayer from "./HlsPlayer";
 import EnhancerPanel from "./EnhancerPanel";
@@ -124,17 +126,25 @@ export default function PlayerModal({
     }
   }, [media]);
   
-  // Available servers for current language
-  const availableServers =
-    STREAMING_SERVERS[selectedLanguage] || STREAMING_SERVERS.vf;
-  
+  // Available servers for current media & language (Anime-Sama in #1 for animes)
+  const availableServers = getStreamingServersForMedia(currentMedia, selectedLanguage);
+
   const [selectedServer, setSelectedServer] = useState(() => {
-    const servers = STREAMING_SERVERS[needsVOSTFR ? "vostfr" : (initialLanguage || "vf")] || STREAMING_SERVERS.vf;
+    const servers = getStreamingServersForMedia(
+      currentMedia,
+      needsVOSTFR ? "vostfr" : initialLanguage || "vf"
+    );
     return servers[0];
   });
   const [season, setSeason] = useState(initialSeason);
   const [episode, setEpisode] = useState(initialEpisode);
   const [iframeKey, setIframeKey] = useState(0);
+
+  // État spécifique pour la passerelle officielle Anime-Sama
+  const [animeData, setAnimeData] = useState(null);
+  const [animeStreamUrl, setAnimeStreamUrl] = useState(null);
+  const [isAnimeLoading, setIsAnimeLoading] = useState(false);
+  const [animeError, setAnimeError] = useState(null);
 
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
@@ -222,14 +232,14 @@ export default function PlayerModal({
   const handleLanguageChange = (langId) => {
     setSelectedLanguage(langId);
     localStorage.setItem("novastream_default_lang", langId);
-    const newServers = STREAMING_SERVERS[langId] || STREAMING_SERVERS.vf;
+    const newServers = getStreamingServersForMedia(currentMedia, langId);
     setSelectedServer(newServers[0]);
     setIframeKey((k) => k + 1);
   };
 
   // Next Server helper (cycles through available servers for current language)
   const handleNextServer = () => {
-    const servers = STREAMING_SERVERS[selectedLanguage] || STREAMING_SERVERS.vf;
+    const servers = getStreamingServersForMedia(currentMedia, selectedLanguage);
     const currentIndex = servers.findIndex((s) => s.id === (selectedServer?.id || servers[0].id));
     const nextIndex = (currentIndex + 1) % servers.length;
     setSelectedServer(servers[nextIndex]);
@@ -238,11 +248,60 @@ export default function PlayerModal({
 
   // Keep server in sync when language or server list changes
   useEffect(() => {
-    const servers = STREAMING_SERVERS[selectedLanguage] || STREAMING_SERVERS.vf;
+    const servers = getStreamingServersForMedia(currentMedia, selectedLanguage);
     if (!servers.some((s) => s.id === selectedServer?.id)) {
       setSelectedServer(servers[0]);
     }
-  }, [selectedLanguage, selectedServer]);
+  }, [currentMedia, selectedLanguage, selectedServer]);
+
+  // Résolution automatique du flux pour le serveur officiel Anime-Sama
+  useEffect(() => {
+    if (!selectedServer?.isAnimeSama) return;
+    let isMounted = true;
+    setIsAnimeLoading(true);
+    setAnimeError(null);
+
+    const mediaTitle = currentMedia.title || currentMedia.name || "";
+    animeProvider
+      .getEpisodeStream({
+        title: mediaTitle,
+        season,
+        episode,
+        lang: selectedLanguage === "vostfr" ? "vostfr" : "vf",
+      })
+      .then((res) => {
+        if (!isMounted) return;
+        if (res && res.success && res.streamUrl) {
+          setAnimeData(res);
+          setAnimeStreamUrl(res.streamUrl);
+        } else {
+          setAnimeData(null);
+          setAnimeStreamUrl(null);
+          setAnimeError(res?.error || "Épisode non disponible sur Anime-Sama pour le moment.");
+        }
+        setIsAnimeLoading(false);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setAnimeData(null);
+        setAnimeStreamUrl(null);
+        setAnimeError(err.message || "Erreur de connexion à Anime-Sama");
+        setIsAnimeLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    selectedServer?.id,
+    selectedServer?.isAnimeSama,
+    currentMedia.id,
+    currentMedia.title,
+    currentMedia.name,
+    season,
+    episode,
+    selectedLanguage,
+  ]);
 
   // Register in History
   useEffect(() => {
@@ -321,7 +380,9 @@ export default function PlayerModal({
   }, [playerMode, currentMedia, season, episode, isDemoActive]);
 
   const activeServer = selectedServer || availableServers[0];
-  const currentEmbedUrl = activeServer
+  const currentEmbedUrl = activeServer?.isAnimeSama
+    ? animeStreamUrl || ""
+    : activeServer
     ? activeServer.getUrl(mediaType, currentMedia.id, season, episode, title)
     : "";
 
@@ -830,10 +891,38 @@ export default function PlayerModal({
             <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
             <span className="text-sm font-semibold">Synchronisation des flux vidéo HD en cours...</span>
           </div>
+        ) : activeServer?.isAnimeSama && isAnimeLoading ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+            <Loader2 className="w-10 h-10 animate-spin text-indigo-400" />
+            <h3 className="text-base font-bold text-white">Connexion à Anime-Sama...</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Récupération du véritable doublage VF officiel pour « <strong>{title}</strong> » (Saison {season}, Épisode {episode})...
+            </p>
+          </div>
+        ) : activeServer?.isAnimeSama && animeError && !animeStreamUrl ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
+              <AlertCircle className="w-6 h-6 text-amber-400" />
+            </div>
+            <h3 className="text-base font-bold text-white mb-2">Non indexé sur Anime-Sama</h3>
+            <p className="text-xs text-zinc-300 mb-5 max-w-md leading-relaxed">
+              {animeError}
+            </p>
+            <button
+              onClick={() => {
+                const altServer = availableServers.find((s) => !s.isAnimeSama) || availableServers[1];
+                setSelectedServer(altServer);
+                setIframeKey((k) => k + 1);
+              }}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+            >
+              ⚡ Basculer sur AutoEmbed (Lecteur standard)
+            </button>
+          </div>
         ) : (
           <div className="w-full h-full relative">
             <iframe
-              key={`${selectedServer.id}-${currentMedia.id}-${season}-${episode}-${iframeKey}`}
+              key={`${selectedServer.id}-${currentMedia.id}-${season}-${episode}-${iframeKey}-${animeStreamUrl || ""}`}
               src={currentEmbedUrl}
               title={title}
               allowFullScreen
@@ -843,7 +932,8 @@ export default function PlayerModal({
             />
 
             {/* In-Player Rescue Bar (Floating overlay at top of video) */}
-            {selectedLanguage === "vf" &&
+            {!activeServer?.isAnimeSama &&
+              selectedLanguage === "vf" &&
               currentMedia.original_language &&
               currentMedia.original_language !== "fr" && (() => {
                 const mediaOrigin = getMediaLanguageInfo(currentMedia);
@@ -1182,6 +1272,32 @@ export default function PlayerModal({
 
           {/* Servers & Language Guidance */}
           <div className="p-3 sm:p-4 border-t border-white/10 glass flex flex-col gap-2.5 z-20">
+            {/* Anime-Sama Alternate Players Row */}
+            {selectedServer?.isAnimeSama && animeData?.players?.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto w-full pb-2 scrollbar-none border-b border-white/5 animate-fade-in">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 flex-shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Hébergeurs Anime-Sama :</span>
+                </div>
+                {animeData.players.map((p, idx) => (
+                  <button
+                    key={p.url || idx}
+                    onClick={() => {
+                      setAnimeStreamUrl(p.url);
+                      setIframeKey((k) => k + 1);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                      animeStreamUrl === p.url
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-105 border border-indigo-400"
+                        : "bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 border border-white/5"
+                    }`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
               {/* Server Selectors for the active language */}
               <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
