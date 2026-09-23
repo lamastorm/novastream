@@ -194,21 +194,8 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "multiembed_vostfr",
-      name: "Serveur 2 (MultiEmbed HD • VidCloud)",
-      flag: "💬",
-      badge: "HD Multi",
-      description: "Multiples serveurs miroir (VidCloud / UpCloud) avec pistes de sous-titres FR.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-        }
-        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      },
-    },
-    {
       id: "vidsrc_to_vostfr",
-      name: "Serveur 3 (VidSrc TO • STFR HD)",
+      name: "Serveur 2 (VidSrc TO • STFR HD)",
       flag: "💬",
       badge: "FHD Direct",
       description: "Lecteur éprouvé avec sous-titres intégrés.",
@@ -221,7 +208,7 @@ export const STREAMING_SERVERS = {
     },
     {
       id: "autoembed_co_vostfr",
-      name: "Serveur 4 (AutoEmbed FHD • Spécial Animés & Films)",
+      name: "Serveur 3 (AutoEmbed FHD • 1080p)",
       flag: "💬",
       badge: "1080p FHD Direct",
       description: "Lecteur direct haute définition.",
@@ -234,10 +221,10 @@ export const STREAMING_SERVERS = {
     },
     {
       id: "frembed_surf_vostfr",
-      name: "Serveur 5 (FrEmbed STFR • Vidmoly / Sibnet)",
+      name: "Serveur 4 (VidMoly STFR • VF/VOSTFR)",
       flag: "🇫🇷",
       badge: "🇫🇷 STFR",
-      description: "Sous-titres français incrustés directement dans la vidéo (selon disponibilité du titre).",
+      description: "Sous-titres français incrustés directement dans la vidéo.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
           return `https://frembed.surf/api/film.php?id=${id}`;
@@ -247,7 +234,7 @@ export const STREAMING_SERVERS = {
     },
     {
       id: "vidsrc_pm_vostfr",
-      name: "Serveur 6 (VidSrc PM Miroir)",
+      name: "Serveur 5 (VidSrc PM Miroir)",
       flag: "💬",
       badge: "⚡ Miroir",
       description: "Miroir direct alternatif haute vitesse.",
@@ -272,21 +259,8 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "multiembed_vostfr",
-      name: "Serveur 7 (MultiEmbed FR)",
-      flag: "💬",
-      badge: "HD Multi",
-      description: "Multiples serveurs miroir (VidCloud / UpCloud) avec pistes de sous-titres FR.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-        }
-        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      },
-    },
-    {
       id: "vidsrc_in_vostfr",
-      name: "Serveur 8 (VidSrc IN Miroir)",
+      name: "Serveur 7 (VidSrc IN Miroir)",
       flag: "💬",
       badge: "1080p CC",
       description: "Miroir rapide avec paramètre de sous-titres français automatique.",
@@ -295,19 +269,6 @@ export const STREAMING_SERVERS = {
           return `https://vidsrc.in/embed/movie?tmdb=${id}&sub_lang=fra`;
         }
         return `https://vidsrc.in/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&sub_lang=fra`;
-      },
-    },
-    {
-      id: "frembed_vostfr",
-      name: "Serveur 9 (FrEmbed VOSTFR)",
-      flag: "💬",
-      badge: "STFR Direct",
-      description: "Lecteurs Vidmoly / Sibnet / Uqload en version originale sous-titrée français.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://frembed.click/api/film.php?id=${id}`;
-        }
-        return `https://frembed.art/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
       },
     },
   ],
@@ -382,21 +343,8 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "multiembed_multi",
-      name: "Serveur 6 (MultiEmbed HD)",
-      flag: "🌐",
-      badge: "🌐 HD Multi",
-      description: "Multiples serveurs miroir (VidCloud / UpCloud)",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-        }
-        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      },
-    },
-    {
       id: "play123_multi",
-      name: "Serveur 7 (123Embed Clean)",
+      name: "Serveur 6 (123Embed Clean)",
       flag: "🌐",
       badge: "🌐 1080p",
       description: "Miroir alternatif 1080p",
