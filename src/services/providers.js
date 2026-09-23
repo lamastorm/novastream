@@ -167,7 +167,7 @@ export const STREAMING_SERVERS = {
       name: "Serveur 1 (AutoEmbed FHD • Spécial Animés & Films)",
       flag: "💬",
       badge: "1080p FHD Direct",
-      description: "Lecteur direct ultra fluide sans pub intrusive, catalogue complet d'animés et de films.",
+      description: "Lecteur direct ultra fluide avec sous-titres officiels intégrés.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
           return `https://autoembed.co/movie/tmdb/${id}`;
@@ -176,24 +176,11 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "vidsrc_pm_vostfr",
-      name: "Serveur 2 (VidSrc PM • STFR Garanti 1080p)",
-      flag: "💬",
-      badge: "⚡ CC FR Direct",
-      description: "Miroir direct haute vitesse avec sous-titres français pré-activés automatiquement.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.pm/embed/movie/${id}?sub_lang=fra`;
-        }
-        return `https://vidsrc.pm/embed/tv/${id}/${season}/${episode}?sub_lang=fra`;
-      },
-    },
-    {
       id: "twoembed_vostfr",
-      name: "Serveur 3 (2Embed • Sous-titres Officiels)",
+      name: "Serveur 2 (2Embed • Sous-titres Officiels Intégrés)",
       flag: "💬",
       badge: "STFR Officiel",
-      description: "Lecteur stable avec sous-titres synchronisés officiels français.",
+      description: "Lecteur avec sous-titres français officiels intégrés directement dans le flux.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
           return `https://www.2embed.cc/embed/${id}`;
@@ -203,7 +190,7 @@ export const STREAMING_SERVERS = {
     },
     {
       id: "smashy_direct_vostfr",
-      name: "Serveur 4 (SmashyStream • Multi-STFR 1080p)",
+      name: "Serveur 3 (SmashyStream • Multi-STFR 1080p)",
       flag: "💬",
       badge: "1080p CC",
       description: "Sélectionnez Français dans l'icône CC ou la roue crantée du lecteur pour activer les sous-titres.",
@@ -212,6 +199,19 @@ export const STREAMING_SERVERS = {
           return `https://player.smashystream.com/movie/${id}`;
         }
         return `https://player.smashystream.com/tv/${id}/${season}/${episode}`;
+      },
+    },
+    {
+      id: "vidsrc_pm_vostfr",
+      name: "Serveur 4 (VidSrc PM Miroir)",
+      flag: "💬",
+      badge: "⚡ Miroir",
+      description: "Miroir direct alternatif haute vitesse.",
+      getUrl: (type, id, season = 1, episode = 1) => {
+        if (type === "movie") {
+          return `https://vidsrc.pm/embed/movie/${id}?sub_lang=fra`;
+        }
+        return `https://vidsrc.pm/embed/tv/${id}/${season}/${episode}?sub_lang=fra`;
       },
     },
     {
