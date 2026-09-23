@@ -144,12 +144,12 @@ export const VIDMOLY_VF_SERVER = {
   name: "Serveur 1 (VidMoly • VF Directe)",
   flag: "🇫🇷",
   badge: "🇫🇷 VidMoly VF",
-  description: "Lecteur VidMoly rapide avec doublage français direct sans coupure.",
+  description: "Lecteur VidMoly direct avec doublage français sans coupure.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
-      return `https://frembed.surf/embed/movie/${id}?id=${id}`;
+      return `https://frembed.surf/api/film.php?id=${id}`;
     }
-    return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
+    return `https://frembed.surf/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
   },
 };
 
@@ -240,9 +240,9 @@ export const STREAMING_SERVERS = {
       description: "Sous-titres français incrustés directement dans la vidéo (selon disponibilité du titre).",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://frembed.surf/embed/movie/${id}?id=${id}`;
+          return `https://frembed.surf/api/film.php?id=${id}`;
         }
-        return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
+        return `https://frembed.surf/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
       },
     },
     {
