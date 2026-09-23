@@ -163,21 +163,8 @@ export const STREAMING_SERVERS = {
   // ==========================================
   vostfr: [
     {
-      id: "frembed_surf_vostfr",
-      name: "Serveur 1 (FrEmbed STFR • Vidmoly / Sibnet)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 STFR Garanti",
-      description: "Sous-titres français incrustés directement dans la vidéo (Hardsub). Zéro bug et aucun quota de sous-titres.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://frembed.surf/embed/movie/${id}?id=${id}`;
-        }
-        return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
-      },
-    },
-    {
       id: "smashy_direct_vostfr",
-      name: "Serveur 2 (SmashyStream • Multi-STFR 1080p)",
+      name: "Serveur 1 (SmashyStream • Multi-STFR 1080p)",
       flag: "💬",
       badge: "1080p CC",
       description: "Sélectionnez Français dans l'icône CC ou la roue crantée du lecteur pour activer les sous-titres.",
@@ -190,7 +177,7 @@ export const STREAMING_SERVERS = {
     },
     {
       id: "multiembed_vostfr",
-      name: "Serveur 3 (MultiEmbed HD • VidCloud)",
+      name: "Serveur 2 (MultiEmbed HD • VidCloud)",
       flag: "💬",
       badge: "HD Multi",
       description: "Multiples serveurs miroir (VidCloud / UpCloud) avec pistes de sous-titres FR.",
@@ -199,6 +186,19 @@ export const STREAMING_SERVERS = {
           return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
         }
         return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+      },
+    },
+    {
+      id: "vidsrc_to_vostfr",
+      name: "Serveur 3 (VidSrc TO • STFR HD)",
+      flag: "💬",
+      badge: "FHD Direct",
+      description: "Lecteur éprouvé avec sous-titres intégrés.",
+      getUrl: (type, id, season = 1, episode = 1) => {
+        if (type === "movie") {
+          return `https://vidsrc.to/embed/movie/${id}`;
+        }
+        return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
       },
     },
     {
@@ -215,29 +215,29 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "twoembed_vostfr",
-      name: "Serveur 5 (2Embed • Sous-titres Officiels)",
-      flag: "💬",
-      badge: "STFR Officiel",
-      description: "Lecteur miroir avec sous-titres synchronisés.",
+      id: "frembed_surf_vostfr",
+      name: "Serveur 5 (FrEmbed STFR • Vidmoly / Sibnet)",
+      flag: "🇫🇷",
+      badge: "🇫🇷 STFR",
+      description: "Sous-titres français incrustés directement dans la vidéo (selon disponibilité du titre).",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://www.2embed.cc/embed/${id}`;
+          return `https://frembed.surf/embed/movie/${id}?id=${id}`;
         }
-        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+        return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
       },
     },
     {
-      id: "vidsrc_vostfr",
-      name: "Serveur 5 (VidSrc Direct • Sous-Titres FR)",
+      id: "vidsrc_pm_vostfr",
+      name: "Serveur 6 (VidSrc PM Miroir)",
       flag: "💬",
-      badge: "🇫🇷 CC Auto",
-      description: "Lecteur officiel VidSrc avec paramètre de langue française forcé.",
+      badge: "⚡ Miroir",
+      description: "Miroir direct alternatif haute vitesse.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://vidsrc.me/embed/movie?tmdb=${id}&sub_lang=fra`;
+          return `https://vidsrc.pm/embed/movie/${id}?sub_lang=fra`;
         }
-        return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&sub_lang=fra`;
+        return `https://vidsrc.pm/embed/tv/${id}/${season}/${episode}?sub_lang=fra`;
       },
     },
     {
