@@ -34,8 +34,17 @@ function MediaCard({
 
   return (
     <div
+      tabIndex={0}
+      role="button"
+      data-focusable="true"
       onClick={() => onSelect(item)}
-      className="group relative flex flex-col rounded-xl overflow-hidden glass-card cursor-pointer transition-transform duration-200 hover:scale-[1.03] flex-shrink-0"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(item);
+        }
+      }}
+      className="group relative flex flex-col rounded-xl overflow-hidden glass-card cursor-pointer transition-all duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-500 focus-visible:scale-[1.06] focus-visible:shadow-[0_0_30px_rgba(249,115,22,0.8)] focus-visible:z-20 flex-shrink-0 active:scale-95"
     >
       {/* Poster image container */}
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-900">
@@ -44,20 +53,20 @@ function MediaCard({
           alt={title}
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"
         />
 
-        {/* Gradient Overlay on Hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3 pointer-events-none group-hover:pointer-events-auto">
+        {/* Gradient Overlay on Hover & Focus (Visible on TV controller focus too) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3 pointer-events-none group-hover:pointer-events-auto group-focus-visible:pointer-events-auto">
           {/* Top Actions */}
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   isAnime
-                    ? "bg-pink-600/90 text-white"
+                    ? "bg-red-600/90 text-white"
                     : mediaTypeLabel === "Film"
-                    ? "bg-indigo-600/90 text-white"
+                    ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white"
                     : "bg-emerald-600/90 text-white"
                 }`}
               >
@@ -76,10 +85,10 @@ function MediaCard({
                 onToggleFavorite(item);
               }}
               title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-              className="p-1.5 rounded-lg bg-black/80 hover:bg-black text-white border border-white/10 transition-colors"
+              className="p-1.5 rounded-lg bg-black/80 hover:bg-black text-white border border-white/10 transition-colors cursor-pointer"
             >
               {isFavorite ? (
-                <BookmarkCheck className="w-4 h-4 text-indigo-400" />
+                <BookmarkCheck className="w-4 h-4 text-orange-400" />
               ) : (
                 <Bookmark className="w-4 h-4 text-white" />
               )}
@@ -87,7 +96,7 @@ function MediaCard({
           </div>
 
           {/* Centered Play Button */}
-          <div className="self-center w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/50 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-200">
+          <div className="self-center w-12 h-12 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center justify-center shadow-lg shadow-orange-600/50 transform translate-y-4 group-hover:translate-y-0 group-focus-visible:translate-y-0 transition-transform duration-200">
             <Play className="w-5 h-5 ml-0.5 fill-white" />
           </div>
 
@@ -108,7 +117,7 @@ function MediaCard({
 
       {/* Info footer */}
       <div className="p-3 flex flex-col justify-between flex-1 gap-1">
-        <h4 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-indigo-400 transition-colors">
+        <h4 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-orange-400 group-focus-visible:text-orange-400 transition-colors">
           {title}
         </h4>
         <div className="flex items-center justify-between text-xs text-zinc-400">

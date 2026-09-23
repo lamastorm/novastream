@@ -211,7 +211,7 @@ export default function DetailModal({
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 text-white uppercase tracking-wider">
                   {isTV ? "Série / Anime" : "Film"}
                 </span>
                 {isUnreleasedSeries && (
@@ -222,7 +222,7 @@ export default function DetailModal({
                 {langAdvice?.badge && (
                   <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                     isNoVF
-                      ? "bg-indigo-500/25 text-indigo-300 border-indigo-500/40"
+                      ? "bg-orange-500/20 text-orange-300 border-orange-500/40"
                       : "bg-zinc-800 text-zinc-300 border-white/10"
                   }`}>
                     {langAdvice.badge}
@@ -269,7 +269,7 @@ export default function DetailModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-8 space-y-6">
+        <div className="p-4 sm:p-8 space-y-6">
           {/* Main Action Bar */}
           {isUnreleasedSeries ? (
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-2">
@@ -280,29 +280,14 @@ export default function DetailModal({
               <p className="text-zinc-300 leading-relaxed">
                 La diffusion de cette série n'a pas encore commencé. Aucun épisode n'est pour l'instant disponible au visionnage.
               </p>
-              {title.toLowerCase().includes("harry potter") && (
-                <button
-                  onClick={() => {
-                    setActiveMedia({
-                      id: 671,
-                      media_type: "movie",
-                      title: "Harry Potter à l'école des sorciers",
-                    });
-                  }}
-                  className="mt-2 self-start flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>👉 Lancer plutôt le film culte « Harry Potter à l'école des sorciers » (2001)</span>
-                </button>
-              )}
             </div>
           ) : (
             <div className="space-y-3 pb-4 border-b border-white/5">
               {/* Notice d'adaptation linguistique si pas de VF */}
               {isNoVF && (
-                <div className="p-3.5 rounded-xl bg-indigo-950/70 border border-indigo-500/40 text-indigo-200 text-xs flex items-center justify-between gap-3 shadow-lg shadow-indigo-950/50">
+                <div className="p-3.5 rounded-xl bg-orange-950/50 border border-orange-500/40 text-orange-200 text-xs flex items-center justify-between gap-3 shadow-lg shadow-orange-950/50">
                   <div className="flex items-center gap-2.5">
-                    <Sparkles className="w-5 h-5 text-indigo-400 flex-shrink-0 animate-pulse" />
+                    <Sparkles className="w-5 h-5 text-orange-400 flex-shrink-0 animate-pulse" />
                     <div>
                       <span className="font-bold text-white">Adaptation automatique : </span>
                       <span>
@@ -311,7 +296,7 @@ export default function DetailModal({
                       </span>
                     </div>
                   </div>
-                  <span className="hidden sm:inline-block px-2.5 py-1 rounded-md bg-indigo-500/30 text-indigo-300 font-bold text-[11px] whitespace-nowrap border border-indigo-500/30">
+                  <span className="hidden sm:inline-block px-2.5 py-1 rounded-md bg-orange-500/30 text-orange-300 font-bold text-[11px] whitespace-nowrap border border-orange-500/30">
                     VOSTFR 1080p
                   </span>
                 </div>
@@ -320,6 +305,7 @@ export default function DetailModal({
               <div className="flex flex-wrap items-center gap-2.5 pt-1">
                 {/* Bouton VISIONNER EN VF 🇫🇷 */}
                 <button
+                  data-focusable="true"
                   onClick={() => {
                     setSelectedLang("vf");
                     const targetMedia = {
@@ -332,7 +318,7 @@ export default function DetailModal({
                     };
                     onPlay(targetMedia, isTV ? selectedSeason : 1, 1, "vf");
                   }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-orange-600/20 text-white font-extrabold text-xs uppercase tracking-wider border border-orange-500/50 hover:border-orange-500 shadow-lg shadow-orange-500/15 hover:shadow-orange-500/30 transition-all hover:scale-[1.02] cursor-pointer"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-orange-600/20 focus-visible:ring-4 focus-visible:ring-orange-500 focus-visible:scale-105 text-white font-extrabold text-xs uppercase tracking-wider border border-orange-500/50 hover:border-orange-500 shadow-lg shadow-orange-500/15 hover:shadow-orange-500/30 transition-all hover:scale-[1.02] cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-orange-400 text-orange-400" />
                   <span>VISIONNER EN VF 🇫🇷</span>
@@ -340,6 +326,7 @@ export default function DetailModal({
 
                 {/* Bouton VISIONNER EN VOSTFR 🇯🇵 */}
                 <button
+                  data-focusable="true"
                   onClick={() => {
                     setSelectedLang("vostfr");
                     const targetMedia = {
@@ -352,7 +339,7 @@ export default function DetailModal({
                     };
                     onPlay(targetMedia, isTV ? selectedSeason : 1, 1, "vostfr");
                   }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-[#151c2e] text-white font-extrabold text-xs uppercase tracking-wider border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer shadow-md"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-[#151c2e] focus-visible:ring-4 focus-visible:ring-blue-500 focus-visible:scale-105 text-white font-extrabold text-xs uppercase tracking-wider border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer shadow-md"
                 >
                   <Play className="w-3.5 h-3.5 fill-blue-400 text-blue-400" />
                   <span>VISIONNER EN VOSTFR 🇯🇵</span>
@@ -577,7 +564,7 @@ export default function DetailModal({
             <div className="pt-4 border-t border-white/5">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <Tv className="w-4 h-4 text-indigo-400" />
+                  <Tv className="w-4 h-4 text-orange-400" />
                   <h4 className="text-sm font-bold text-white uppercase tracking-wider">
                     Épisodes
                   </h4>
@@ -586,9 +573,10 @@ export default function DetailModal({
                 {/* Season Dropdown */}
                 <div className="relative">
                   <select
+                    data-focusable="true"
                     value={selectedSeason}
                     onChange={(e) => setSelectedSeason(Number(e.target.value))}
-                    className="appearance-none bg-zinc-800 text-white text-xs font-semibold px-4 py-2 pr-8 rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    className="appearance-none bg-zinc-850 text-white text-xs font-semibold px-4 py-2 pr-8 rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
                   >
                     {details.seasons
                       .filter((s) => s.season_number > 0)
@@ -612,6 +600,28 @@ export default function DetailModal({
                   {episodes.map((ep) => (
                     <div
                       key={ep.id}
+                      tabIndex={0}
+                      role="button"
+                      data-focusable="true"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          const targetMedia = {
+                            ...activeMedia,
+                            ...details,
+                            id: details?.id || activeMedia.id,
+                            media_type: isTV ? "tv" : "movie",
+                            title: details?.name || details?.title || activeMedia.title,
+                            original_language: details?.original_language || activeMedia.original_language,
+                          };
+                          onPlay(
+                            targetMedia,
+                            selectedSeason,
+                            ep.episode_number,
+                            isNoVF ? "vostfr" : selectedLang
+                          );
+                        }
+                      }}
                       onClick={() => {
                         const targetMedia = {
                           ...activeMedia,
@@ -628,7 +638,7 @@ export default function DetailModal({
                           isNoVF ? "vostfr" : selectedLang
                         );
                       }}
-                      className="group flex gap-3 p-2.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 hover:border-indigo-500/40 cursor-pointer transition-all"
+                      className="group flex gap-3 p-2.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-orange-500 focus-visible:bg-zinc-800 border border-white/5 hover:border-orange-500/40 cursor-pointer transition-all active:scale-95"
                     >
                       {/* Episode Thumbnail */}
                       <div className="relative w-24 h-16 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
@@ -651,7 +661,7 @@ export default function DetailModal({
                       {/* Episode Info */}
                       <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[10px] font-bold text-indigo-400">
+                          <span className="text-[10px] font-bold text-orange-400">
                             EP {ep.episode_number}
                           </span>
                           {ep.runtime && (
@@ -660,7 +670,7 @@ export default function DetailModal({
                             </span>
                           )}
                         </div>
-                        <h5 className="text-xs font-semibold text-white truncate group-hover:text-indigo-400 transition-colors">
+                        <h5 className="text-xs font-semibold text-white truncate group-hover:text-orange-400 group-focus-visible:text-orange-400 transition-colors">
                           {ep.name || `Épisode ${ep.episode_number}`}
                         </h5>
                         <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">

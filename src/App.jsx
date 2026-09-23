@@ -9,6 +9,7 @@ import AlphabetBar from "./components/AlphabetBar";
 import DetailModal from "./components/DetailModal";
 import PlayerModal from "./components/PlayerModal";
 import SettingsModal from "./components/SettingsModal";
+import BottomNav from "./components/BottomNav";
 import { tmdbApi } from "./api/tmdb";
 import { anilistApi } from "./api/anilist";
 import { jikanApi } from "./api/jikan";
@@ -16,6 +17,8 @@ import { tvmazeApi } from "./api/tvmaze";
 import { traktApi, traktLists } from "./api/trakt";
 import { storage } from "./services/storage";
 import { languageAdvisor } from "./services/languageAdvisor";
+import { deviceAdvisor } from "./services/deviceAdvisor";
+import { gamepadService } from "./services/gamepadService";
 import MoodSelector from "./components/MoodSelector";
 import {
   Film,
@@ -111,6 +114,46 @@ export default function App() {
     },
     [favoriteSet]
   );
+
+  // Initialize TV Mode & Gamepad Navigation (Xbox, PlayStation, TV)
+  useEffect(() => {
+    deviceAdvisor.applyMode();
+  }, []);
+
+  useEffect(() => {
+    gamepadService.init({
+      onBack: () => {
+        if (activePlayer) {
+          setActivePlayer(null);
+        } else if (selectedMedia) {
+          setSelectedMedia(null);
+        } else if (settingsOpen) {
+          setSettingsOpen(false);
+        }
+      },
+      onTabNext: () => {
+        const tabs = ["home", "movies", "series", "anime", "favorites"];
+        setActiveTab((curr) => {
+          const idx = tabs.indexOf(curr);
+          const next = tabs[(idx + 1) % tabs.length];
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return next;
+        });
+      },
+      onTabPrev: () => {
+        const tabs = ["home", "movies", "series", "anime", "favorites"];
+        setActiveTab((curr) => {
+          const idx = tabs.indexOf(curr);
+          const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return prev;
+        });
+      },
+      onSurprise: () => {
+        handleRandomSurprise();
+      },
+    });
+  }, [activePlayer, selectedMedia, settingsOpen]);
 
   // Load Initial Data
   useEffect(() => {
@@ -569,7 +612,7 @@ export default function App() {
       />
 
       {/* Main Page Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-8">
         {/* VIEW 1: SEARCH ACTIVE */}
         {searchQuery.trim() ? (
           <div>
@@ -1620,6 +1663,25 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile Bottom Navigation Bar (iOS & Android) */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setSelectedGenre(null);
+          setSelectedPlatform(null);
+          setSelectedLetter(null);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onOpenSearch={() => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(() => {
+            const input = document.querySelector('input[type="text"]');
+            if (input) input.focus();
+          }, 100);
+        }}
+      />
 
       {/* MODAL: DETAIL FICHE */}
       {selectedMedia && (

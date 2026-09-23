@@ -41,6 +41,7 @@ import { useMediaLiveViewers, liveCounter } from "../services/liveCounter";
 import HlsPlayer from "./HlsPlayer";
 import EnhancerPanel from "./EnhancerPanel";
 import DnsHelpModal from "./DnsHelpModal";
+import { gamepadService } from "../services/gamepadService";
 
 export default function PlayerModal({
   media,
@@ -332,29 +333,6 @@ export default function PlayerModal({
     };
   }, [currentMedia?.id]);
 
-  // Raccourcis clavier dans le lecteur
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ignorer si on tape dans un champ texte
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      } else if (e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
-        } else {
-          document.exitFullscreen().catch(() => {});
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   // When switching to HLS mode or changing episode, attempt to resolve direct stream
   useEffect(() => {
     if (playerMode === "hls" && !isDemoActive) {
@@ -422,6 +400,58 @@ export default function PlayerModal({
     setShowEpisodeDrawer(false);
   };
 
+  const containerRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const elem = containerRef.current || document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    // When PlayerModal opens, wire Gamepad B button to close modal
+    const prevBack = gamepadService.callbacks.onBack;
+    gamepadService.setCallbacks({ onBack: onClose });
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      } else if ((e.key === "f" || e.key === "F") && document.activeElement?.tagName !== "INPUT") {
+        toggleFullscreen();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      gamepadService.setCallbacks({ onBack: prevBack });
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [onClose]);
+
   const handleReload = () => {
     setIframeKey((prev) => prev + 1);
   };
@@ -468,7 +498,7 @@ export default function PlayerModal({
 
   // Regular Fullscreen / Cinema Mode
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-xl animate-fade-in">
+    <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-xl animate-fade-in">
       {/* Top Header Bar */}
       <div className="h-16 px-4 sm:px-6 flex items-center justify-between border-b border-white/10 glass z-20 relative">
         <div className="flex items-center gap-3 min-w-0">
@@ -654,10 +684,26 @@ export default function PlayerModal({
           {/* Reload Iframe button */}
           <button
             onClick={handleReload}
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors"
+            data-focusable="true"
+            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-orange-500"
             title="Recharger le lecteur"
           >
             <RotateCw className="w-4 h-4" />
+          </button>
+
+          {/* Toggle Fullscreen button (Mobile, TV, Xbox, PC) */}
+          <button
+            onClick={toggleFullscreen}
+            data-focusable="true"
+            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-orange-500 flex items-center gap-1.5"
+            title={isFullscreen ? "Quitter le plein écran (F)" : "Plein écran (F / Touche Y manette)"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4 text-orange-400" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+            <span className="hidden lg:inline text-xs font-semibold">{isFullscreen ? "Normal" : "Plein écran"}</span>
           </button>
 
           {/* Open in external tab button */}
@@ -665,7 +711,8 @@ export default function PlayerModal({
             href={currentEmbedUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors hidden sm:flex items-center gap-1.5 text-xs"
+            data-focusable="true"
+            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors hidden sm:flex items-center gap-1.5 text-xs focus-visible:ring-2 focus-visible:ring-orange-500"
             title="Ouvrir dans un nouvel onglet"
           >
             <ExternalLink className="w-4 h-4" />
@@ -675,8 +722,9 @@ export default function PlayerModal({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white transition-colors"
-            title="Fermer"
+            data-focusable="true"
+            className="p-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-orange-500"
+            title="Fermer (Touche B manette / Échap)"
           >
             <X className="w-5 h-5" />
           </button>
