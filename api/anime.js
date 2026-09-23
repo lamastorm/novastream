@@ -250,11 +250,13 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
     const players = [];
     if (eps1[epIndex]) {
       const u = eps1[epIndex];
-      const name = u.includes('sibnet') ? 'Sibnet (VF Rapide • Recommandé)' : 'Lecteur 1';
+      const name = u.includes('sibnet') ? 'Sibnet (VF Rapide • Recommandé)' : (u.includes('sendvid') ? 'Sendvid' : 'Lecteur 1');
       players.push({ name, url: u, type: 'sibnet' });
     }
     if (eps2[epIndex]) {
-      players.push({ name: 'Lecteur 2 (Miroir)', url: eps2[epIndex], type: 'alt' });
+      const u = eps2[epIndex];
+      const name = (u.includes('ansembed') || u.includes('vidmoly')) ? 'VidMoly (Recommandé)' : 'Lecteur 2 (Miroir)';
+      players.push({ name, url: u, type: 'alt' });
     }
     if (eps3[epIndex]) {
       const u = eps3[epIndex];
@@ -264,6 +266,18 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
     if (eps4[epIndex]) {
       players.push({ name: 'Lecteur 4', url: eps4[epIndex], type: 'alt' });
     }
+
+    // Prioritize working hosts: Sibnet (1) > VidMoly/AnsEmbed (2) > others > Sendvid (down)
+    players.sort((a, b) => {
+      const getPriority = (url) => {
+        if (url.includes('sibnet')) return 1;
+        if (url.includes('ansembed') || url.includes('vidmoly')) return 2;
+        if (url.includes('smoothpre') || url.includes('myvi')) return 3;
+        if (url.includes('sendvid')) return 10;
+        return 5;
+      };
+      return getPriority(a.url) - getPriority(b.url);
+    });
 
     if (players.length === 0) {
       return {
