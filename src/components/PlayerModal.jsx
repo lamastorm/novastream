@@ -258,8 +258,14 @@ export default function PlayerModal({
     const servers = getStreamingServersForMedia(currentMedia, selectedLanguage);
     const mediaInfo = getMediaLanguageInfo(currentMedia);
 
-    // If it's an anime, automatically default to Anime-Sama (Server 1)
+    // If it's an anime, automatically default to Lecteur Erodium (Server 1)
     if (mediaInfo.isAnime && servers[0]?.isAnimeSama && !selectedServer?.isAnimeSama) {
+      setSelectedServer(servers[0]);
+      return;
+    }
+
+    // If it's a classic film / series, ensure Erodium is NEVER active (switch to VidMoly #1)
+    if (!mediaInfo.isAnime && selectedServer?.isAnimeSama) {
       setSelectedServer(servers[0]);
       return;
     }
@@ -1310,22 +1316,22 @@ export default function PlayerModal({
         </div>
       ) : (
         <>
-          {/* FrEmbed Advisory Banner for DNS blocked hosts like Doodstream */}
-          {selectedServer.id.startsWith("frembed") && (
+          {/* VidMoly / FrEmbed Advisory Banner for DNS blocked hosts like Doodstream */}
+          {(selectedServer.id.startsWith("frembed") || selectedServer.id === "vidmoly_vf") && (
             <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/20 text-amber-300 text-xs flex flex-wrap items-center justify-between gap-2 z-20">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
                 <span>
-                  <strong>Astuce FrEmbed :</strong> Si le lecteur affiche <em>« Ce site est inaccessible »</em>, cliquez sur <strong>SERVEURS</strong> à gauche dans la vidéo et sélectionnez <strong>Vidmoly</strong> ou <strong>Uqload</strong> (Dood étant bloqué par les opérateurs français).
+                  <strong>Astuce VidMoly :</strong> Si le lecteur affiche <em>« Ce site est inaccessible »</em>, cliquez sur <strong>SERVEURS</strong> à gauche dans la vidéo et sélectionnez <strong>Vidmoly</strong> ou <strong>Uqload</strong> (Dood étant bloqué par les opérateurs français).
                 </span>
               </div>
               <button
                 onClick={() => {
-                  const altServer = availableServers.find((s) => !s.id.startsWith("frembed")) || availableServers[0];
+                  const altServer = availableServers.find((s) => !s.id.startsWith("frembed") && s.id !== "vidmoly_vf") || availableServers[1] || availableServers[0];
                   setSelectedServer(altServer);
                   setIframeKey((k) => k + 1);
                 }}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 text-[11px] font-bold transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 text-[11px] font-bold transition-colors cursor-pointer"
               >
                 ⚡ Passer sur {availableServers[0]?.name?.split("(")[0] || "Serveur 1"}
               </button>

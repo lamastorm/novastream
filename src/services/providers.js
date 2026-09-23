@@ -7,13 +7,17 @@
 export const getMediaLanguageInfo = (media) => {
   const origLang = (media?.original_language || "").toLowerCase();
   const title = (media?.title || media?.name || "").toLowerCase();
+  
+  // Détection stricte d'animé (Anime-Sama) : animation japonaise ou licences manga / anime
   const isAnime =
-    origLang === "ja" ||
-    media?.genre_ids?.includes(16) ||
-    media?.genres?.some((g) => g.id === 16 || (g.name && g.name.toLowerCase().includes("anim"))) ||
     media?.source === "anilist" ||
     media?.source === "mal" ||
-    /sword art online|gun gale|naruto|one piece|jujutsu|shingeki|titan|dragon ball|bleach|hunter|demon slayer|kimetsu|hero academia|solo leveling|death note|tokyo ghoul|chainsaw|frieren|kaiju|oshi no ko|danmachi|blue lock/i.test(title);
+    origLang === "ja" ||
+    ((origLang === "ko" || origLang === "zh") &&
+      (media?.genre_ids?.includes(16) || media?.genres?.some((g) => g.id === 16))) ||
+    /sword art online|gun gale|naruto|one piece|jujutsu|shingeki|titan|dragon ball|bleach|hunter|demon slayer|kimetsu|hero academia|solo leveling|death note|tokyo ghoul|chainsaw|frieren|kaiju|oshi no ko|danmachi|blue lock|boruto|black clover|haikyu|jojo|evangelion|dr\. stone|spy x family|vinland|slime|classroom of the elite|bungo stray dogs|wind breaker|mushoku tensei|overlord|fate\/|re:zero|kaiju no\. 8|dandadan|dungeon meshi|gintama|steins;gate|fullmetal|code geass|fairy tail|wakfu|radiant/i.test(
+      title
+    );
 
   const map = {
     ja: { flag: "🇯🇵", audio: "Japonais", name: "Japon (Animé)", isAnime: true },
@@ -67,6 +71,30 @@ export const getServerDetails = (server, media, selectedLanguage) => {
     };
   }
 
+  if (server?.id === "vidmoly_vf" || server?.id === "frembed_surf_vf") {
+    return {
+      flag: "🇫🇷",
+      flagDisplay: "🇫🇷",
+      audio: "Vrai Doublage Français (VidMoly VF)",
+      subs: "Non requis",
+      badge: "🇫🇷 VidMoly VF",
+      subBadge: "VF Directe",
+      description: "Lecteur VidMoly haute vitesse avec doublage français direct sans coupure.",
+    };
+  }
+
+  if (server?.id === "frembed_click") {
+    return {
+      flag: "🇫🇷",
+      flagDisplay: "🇫🇷",
+      audio: "Audio Français (Miroir)",
+      subs: "Non requis",
+      badge: "🇫🇷 VF Miroir",
+      subBadge: "VF Secours",
+      description: "Deuxième passerelle française VidMoly / Sibnet de secours.",
+    };
+  }
+
   if (selectedLanguage === "vf") {
     return {
       flag: "🇫🇷",
@@ -111,46 +139,41 @@ export const LANGUAGE_OPTIONS = [
   { id: "multi", label: "▶ VISIONNER EN MULTI 🌐", desc: "Qualité vidéo maximale avec sélection de langue audio et sous-titres" },
 ];
 
+export const VIDMOLY_VF_SERVER = {
+  id: "vidmoly_vf",
+  name: "Serveur 1 (VidMoly • VF Directe)",
+  flag: "🇫🇷",
+  badge: "🇫🇷 VidMoly VF",
+  description: "Lecteur VidMoly rapide avec doublage français direct sans coupure.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://frembed.surf/embed/movie/${id}?id=${id}`;
+    }
+    return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
+  },
+};
+
+export const VIDMOLY_MIRROR_VF_SERVER = {
+  id: "frembed_click",
+  name: "Serveur 2 (VidMoly Miroir • VF)",
+  flag: "🇫🇷",
+  badge: "🇫🇷 VF Miroir",
+  description: "Deuxième passerelle française VidMoly / Sibnet / Uqload de secours.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://frembed.click/api/film.php?id=${id}`;
+    }
+    return `https://frembed.art/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
+  },
+};
+
 export const STREAMING_SERVERS = {
   // ==========================================
   // --- SERVEURS VF (100% DOUBLAGE FRANÇAIS) ---
   // ==========================================
   vf: [
-    {
-      id: "erodium_vf",
-      name: "Serveur 1 (Lecteur Erodium • VF 100% Officielle)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 VF Erodium",
-      isAnimeSama: true,
-      description: "Lecteur Erodium haute vitesse avec véritable doublage français direct sans coupure.",
-      getUrl: () => "",
-    },
-    {
-      id: "frembed_surf_vf",
-      name: "Serveur 2 (FrEmbed • VidMoly / Uqload)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 VF Miroir",
-      description: "Lecteurs français alternatifs (VidMoly, Uqload, Sibnet). Cliquez sur SERVEURS à gauche dans la vidéo si besoin.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://frembed.surf/embed/movie/${id}?id=${id}`;
-        }
-        return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
-      },
-    },
-    {
-      id: "frembed_click",
-      name: "Serveur 3 (FrEmbed Miroir Secours)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 VF Secours",
-      description: "Deuxième passerelle française de secours (VidMoly / Sibnet)",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://frembed.click/api/film.php?id=${id}`;
-        }
-        return `https://frembed.art/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
-      },
-    },
+    VIDMOLY_VF_SERVER,
+    VIDMOLY_MIRROR_VF_SERVER,
   ],
 
   // ==========================================
@@ -412,22 +435,45 @@ export const ANIME_SAMA_VF_SERVER = ERODIUM_VF_SERVER;
 export const ANIME_SAMA_VOSTFR_SERVER = ERODIUM_VOSTFR_SERVER;
 
 /**
- * Retourne la liste optimisée des serveurs pour le média spécifié
- * Si le média est un animé, place le Lecteur Erodium en tête de liste !
+ * Retourne la liste optimisée des serveurs pour le média spécifié :
+ * - Pour les animés : place le Lecteur Erodium en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
+ * - Pour les films et séries classiques : place VidMoly en #1 (base) et N'AFFICHE PAS Erodium !
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
   const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
 
+  // CAS 1 : C'EST UN ANIMÉ -> Erodium en Lecteur #1 !
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
-      return [ERODIUM_VF_SERVER, ...baseServers.filter((s) => s.id !== "erodium_vf")];
+      return [
+        ERODIUM_VF_SERVER,
+        { ...VIDMOLY_VF_SERVER, name: "Serveur 2 (VidMoly • VF Directe)" },
+        { ...VIDMOLY_MIRROR_VF_SERVER, name: "Serveur 3 (VidMoly Miroir • VF)" },
+      ];
     }
     if (lang === "vostfr") {
-      return [ERODIUM_VOSTFR_SERVER, ...baseServers.filter((s) => s.id !== "erodium_vostfr")];
+      return [
+        ERODIUM_VOSTFR_SERVER,
+        ...baseServers.filter((s) => s.id !== "erodium_vostfr"),
+      ];
     }
+    return baseServers;
   }
 
-  return baseServers;
+  // CAS 2 : FILMS ET SÉRIES CLASSIQUES (NON-ANIMÉ) -> VidMoly en #1 et PAS D'AFFICHAGE ERODIUM !
+  if (lang === "vf") {
+    return [
+      VIDMOLY_VF_SERVER,
+      VIDMOLY_MIRROR_VF_SERVER,
+    ];
+  }
+
+  if (lang === "vostfr") {
+    // Exclure tout lecteur anime / Erodium pour les films classiques
+    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vostfr");
+  }
+
+  return baseServers.filter((s) => !s.isAnimeSama);
 };
 
