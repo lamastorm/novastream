@@ -42,6 +42,7 @@ import HlsPlayer from "./HlsPlayer";
 import EnhancerPanel from "./EnhancerPanel";
 import DnsHelpModal from "./DnsHelpModal";
 import { gamepadService } from "../services/gamepadService";
+import { adBlocker } from "../services/adBlocker";
 
 export default function PlayerModal({
   media,
@@ -50,6 +51,7 @@ export default function PlayerModal({
   initialLanguage = "vf",
   onClose,
 }) {
+  const [adBlockActive, setAdBlockActive] = useState(() => adBlocker.isEnabled);
   const needsVOSTFR = languageAdvisor.hasNoOfficialVF(media);
   const [selectedLanguage, setSelectedLanguage] = useState(() => {
     if (needsVOSTFR) return "vostfr";
@@ -496,6 +498,7 @@ export default function PlayerModal({
           title={title}
           allowFullScreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          sandbox={adBlocker.getSandboxString()}
           className="w-full h-full border-0"
         />
       </div>
@@ -671,11 +674,43 @@ export default function PlayerModal({
           {/* Débloquer DNS FAI (Guide DoH Cloudflare / Google) */}
           <button
             onClick={() => setShowDnsModal(true)}
+            data-focusable="true"
             className="px-2.5 py-1.5 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/25 text-orange-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="Contourner le blocage FAI (activer le DNS Sécurisé Cloudflare en 15s)"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
             <span className="hidden md:inline">Débloquer DNS FAI</span>
+          </button>
+
+          {/* Bouclier Anti-Pub & Anti-Popups Mobile / TV / Console */}
+          <button
+            onClick={() => {
+              const nextVal = !adBlockActive;
+              setAdBlockActive(nextVal);
+              adBlocker.setEnabled(nextVal);
+              setIframeKey((k) => k + 1);
+            }}
+            data-focusable="true"
+            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+              adBlockActive
+                ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/80 shadow-emerald-500/20"
+                : "bg-zinc-800 text-zinc-400 border-white/5 hover:text-white"
+            }`}
+            title={
+              adBlockActive
+                ? "Bouclier Anti-Pub ACTIF : bloque 100% des pop-ups, publicités et redirections pour téléphones et consoles."
+                : "Bouclier Anti-Pub DÉSACTIVÉ : cliquez pour réactiver le blocage strict des pubs."
+            }
+          >
+            <ShieldCheck className={`w-3.5 h-3.5 ${adBlockActive ? "text-emerald-400" : "text-zinc-400"}`} />
+            <span className="hidden md:inline">Anti-Pub</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
+                adBlockActive ? "bg-emerald-500/30 text-emerald-200 border border-emerald-500/40" : "bg-zinc-700 text-zinc-400"
+              }`}
+            >
+              {adBlockActive ? "ACTIF" : "OFF"}
+            </span>
           </button>
 
           <button
@@ -995,6 +1030,7 @@ export default function PlayerModal({
               title={title}
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              sandbox={adBlocker.getSandboxString()}
               style={videoFilter ? { filter: videoFilter, transition: "filter 0.3s" } : undefined}
               className="w-full h-full border-0 absolute inset-0"
             />

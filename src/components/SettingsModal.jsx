@@ -4,6 +4,7 @@ import {
   Key,
   Trash2,
   Shield,
+  ShieldCheck,
   Check,
   ExternalLink,
   Tv,
@@ -13,6 +14,7 @@ import { setCustomApiKey } from "../api/tmdb";
 import { storage } from "../services/storage";
 import { deviceAdvisor } from "../services/deviceAdvisor";
 import { gamepadService } from "../services/gamepadService";
+import { adBlocker } from "../services/adBlocker";
 
 export default function SettingsModal({ onClose, onDataCleared }) {
   const [apiKey, setApiKey] = useState(
@@ -35,12 +37,19 @@ export default function SettingsModal({ onClose, onDataCleared }) {
   };
 
   const [isTvMode, setIsTvMode] = useState(() => deviceAdvisor.getTvMode());
+  const [isAdBlock, setIsAdBlock] = useState(() => adBlocker.isEnabled);
   const hasGamepad = gamepadService.gamepadConnected || (typeof navigator !== "undefined" && navigator.getGamepads && Array.from(navigator.getGamepads()).some(Boolean));
 
   const handleToggleTvMode = () => {
     const nextVal = !isTvMode;
     setIsTvMode(nextVal);
     deviceAdvisor.setTvMode(nextVal);
+  };
+
+  const handleToggleAdBlock = () => {
+    const nextVal = !isAdBlock;
+    setIsAdBlock(nextVal);
+    adBlocker.setEnabled(nextVal);
   };
 
   const handleClearHistory = () => {
@@ -198,6 +207,34 @@ export default function SettingsModal({ onClose, onDataCleared }) {
             <p>• <strong>(Y) / Triangle</strong> : Activer ou quitter le Plein Écran</p>
             <p>• <strong>Croix Directionnelle (D-Pad)</strong> : Déplacement fluide entre toutes les cartes</p>
           </div>
+        </div>
+
+        {/* Bouclier Anti-Pub & Anti-Popups (Mobiles, Consoles, PC) */}
+        <div className="space-y-3 pt-4 border-t border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs uppercase font-bold text-zinc-300">
+                Bouclier Anti-Pub & Anti-Popups
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleAdBlock}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                isAdBlock ? "bg-emerald-500" : "bg-zinc-700"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                  isAdBlock ? "translate-x-5" : "translate-x-0.5"
+                } top-0.5 absolute shadow-md`}
+              />
+            </button>
+          </div>
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            Neutralise activement les ouvertures d'onglets publicitaires (pop-ups), les faux clics et les tentatives de redirection forcée sans aucune extension (indispensable sur iPhone, Android et Xbox).
+          </p>
         </div>
 
         {/* Streaming Info & Advice */}
