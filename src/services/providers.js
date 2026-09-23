@@ -105,16 +105,16 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "frembed_art",
-      name: "Serveur 2 (FrEmbed • Vidmoly / Uqload)",
+      id: "frembed_surf_vf",
+      name: "Serveur 2 (FrEmbed • Vidmoly / Uqload / Sibnet)",
       flag: "🇫🇷",
-      badge: "🇫🇷 VF Spécialisée",
+      badge: "🇫🇷 VF Direct",
       description: "Lecteurs français (Vidmoly, Uqload, Sibnet). Cliquez sur SERVEURS à gauche dans la vidéo pour changer d'hébergeur si besoin.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://frembed.art/api/film.php?id=${id}`;
+          return `https://frembed.surf/embed/movie/${id}?id=${id}`;
         }
-        return `https://frembed.art/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
+        return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
       },
     },
     {
@@ -163,34 +163,21 @@ export const STREAMING_SERVERS = {
   // ==========================================
   vostfr: [
     {
-      id: "autoembed_co_vostfr",
-      name: "Serveur 1 (AutoEmbed FHD • Spécial Animés & Films)",
-      flag: "💬",
-      badge: "1080p FHD Direct",
-      description: "Lecteur direct ultra fluide avec sous-titres officiels intégrés.",
+      id: "frembed_surf_vostfr",
+      name: "Serveur 1 (FrEmbed STFR • Vidmoly / Sibnet)",
+      flag: "🇫🇷",
+      badge: "🇫🇷 STFR Garanti",
+      description: "Sous-titres français incrustés directement dans la vidéo (Hardsub). Zéro bug et aucun quota de sous-titres.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://autoembed.co/movie/tmdb/${id}`;
+          return `https://frembed.surf/embed/movie/${id}?id=${id}`;
         }
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
-      },
-    },
-    {
-      id: "twoembed_vostfr",
-      name: "Serveur 2 (2Embed • Sous-titres Officiels Intégrés)",
-      flag: "💬",
-      badge: "STFR Officiel",
-      description: "Lecteur avec sous-titres français officiels intégrés directement dans le flux.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://www.2embed.cc/embed/${id}`;
-        }
-        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+        return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
       },
     },
     {
       id: "smashy_direct_vostfr",
-      name: "Serveur 3 (SmashyStream • Multi-STFR 1080p)",
+      name: "Serveur 2 (SmashyStream • Multi-STFR 1080p)",
       flag: "💬",
       badge: "1080p CC",
       description: "Sélectionnez Français dans l'icône CC ou la roue crantée du lecteur pour activer les sous-titres.",
@@ -202,16 +189,42 @@ export const STREAMING_SERVERS = {
       },
     },
     {
-      id: "vidsrc_pm_vostfr",
-      name: "Serveur 4 (VidSrc PM Miroir)",
+      id: "multiembed_vostfr",
+      name: "Serveur 3 (MultiEmbed HD • VidCloud)",
       flag: "💬",
-      badge: "⚡ Miroir",
-      description: "Miroir direct alternatif haute vitesse.",
+      badge: "HD Multi",
+      description: "Multiples serveurs miroir (VidCloud / UpCloud) avec pistes de sous-titres FR.",
       getUrl: (type, id, season = 1, episode = 1) => {
         if (type === "movie") {
-          return `https://vidsrc.pm/embed/movie/${id}?sub_lang=fra`;
+          return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
         }
-        return `https://vidsrc.pm/embed/tv/${id}/${season}/${episode}?sub_lang=fra`;
+        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+      },
+    },
+    {
+      id: "autoembed_co_vostfr",
+      name: "Serveur 4 (AutoEmbed FHD • Spécial Animés & Films)",
+      flag: "💬",
+      badge: "1080p FHD Direct",
+      description: "Lecteur direct haute définition.",
+      getUrl: (type, id, season = 1, episode = 1) => {
+        if (type === "movie") {
+          return `https://autoembed.co/movie/tmdb/${id}`;
+        }
+        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
+      },
+    },
+    {
+      id: "twoembed_vostfr",
+      name: "Serveur 5 (2Embed • Sous-titres Officiels)",
+      flag: "💬",
+      badge: "STFR Officiel",
+      description: "Lecteur miroir avec sous-titres synchronisés.",
+      getUrl: (type, id, season = 1, episode = 1) => {
+        if (type === "movie") {
+          return `https://www.2embed.cc/embed/${id}`;
+        }
+        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
       },
     },
     {
