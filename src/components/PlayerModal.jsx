@@ -37,6 +37,7 @@ import { tmdbApi } from "../api/tmdb";
 import { hlsExtractor } from "../services/hlsExtractor";
 import { languageAdvisor } from "../services/languageAdvisor";
 import { animeProvider } from "../services/animeProvider";
+import { nativeMovieProvider } from "../services/nativeMovieProvider";
 import { useMediaLiveViewers, liveCounter } from "../services/liveCounter";
 import HlsPlayer from "./HlsPlayer";
 import EnhancerPanel from "./EnhancerPanel";
@@ -167,6 +168,11 @@ export default function PlayerModal({
   const [animeStreamUrl, setAnimeStreamUrl] = useState(null);
   const [isAnimeLoading, setIsAnimeLoading] = useState(false);
   const [animeError, setAnimeError] = useState(null);
+
+  // État spécifique pour le Lecteur Erodium Natif (Films & Séries Direct HLS 0 Pub)
+  const [nativeMovieStreamUrl, setNativeMovieStreamUrl] = useState(null);
+  const [isNativeMovieLoading, setIsNativeMovieLoading] = useState(false);
+  const [nativeMovieError, setNativeMovieError] = useState(null);
 
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
@@ -340,6 +346,57 @@ export default function PlayerModal({
     selectedLanguage,
   ]);
 
+  // Résolution automatique du flux pour le Lecteur Erodium Natif (Films & Séries 0 Pub)
+  useEffect(() => {
+    if (!selectedServer?.isNativeStream && selectedServer?.id !== "erodium_direct") return;
+    let isMounted = true;
+    setIsNativeMovieLoading(true);
+    setNativeMovieError(null);
+
+    const mediaTitle = currentMedia.title || currentMedia.name || "";
+    const mType = currentMedia.media_type || (currentMedia.title ? "movie" : "tv");
+
+    nativeMovieProvider
+      .getStream({
+        tmdbId: currentMedia.id,
+        imdbId: currentMedia.imdb_id || currentMedia.external_ids?.imdb_id,
+        type: mType,
+        season,
+        episode,
+        title: mediaTitle,
+      })
+      .then((res) => {
+        if (!isMounted) return;
+        if (res && res.success && res.streamUrl) {
+          setNativeMovieStreamUrl(res.streamUrl);
+        } else {
+          setNativeMovieStreamUrl(null);
+          setNativeMovieError(res?.error || "Flux direct 1080p non disponible pour ce titre.");
+        }
+        setIsNativeMovieLoading(false);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setNativeMovieStreamUrl(null);
+        setNativeMovieError(err.message || "Erreur de connexion au serveur Erodium");
+        setIsNativeMovieLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    selectedServer?.id,
+    selectedServer?.isNativeStream,
+    currentMedia.id,
+    currentMedia.title,
+    currentMedia.name,
+    currentMedia.imdb_id,
+    currentMedia.external_ids?.imdb_id,
+    season,
+    episode,
+  ]);
+
   // Register in History
   useEffect(() => {
     storage.addToHistory(currentMedia, season, episode);
@@ -403,6 +460,7 @@ export default function PlayerModal({
   const handleNextEpisode = () => {
     setEpisode((prev) => prev + 1);
     setDirectStreamUrl(null);
+    setNativeMovieStreamUrl(null);
     setIframeKey((prev) => prev + 1);
   };
 
@@ -410,6 +468,7 @@ export default function PlayerModal({
     if (episode > 1) {
       setEpisode((prev) => prev - 1);
       setDirectStreamUrl(null);
+      setNativeMovieStreamUrl(null);
       setIframeKey((prev) => prev + 1);
     }
   };
@@ -418,6 +477,7 @@ export default function PlayerModal({
     setSeason(targetSeason);
     setEpisode(targetEpisode);
     setDirectStreamUrl(null);
+    setNativeMovieStreamUrl(null);
     setIframeKey((prev) => prev + 1);
     setShowEpisodeDrawer(false);
   };
@@ -1033,6 +1093,56 @@ export default function PlayerModal({
             <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             <span className="text-sm font-semibold">Synchronisation des flux vidéo HD en cours...</span>
           </div>
+        ) : (activeServer?.isNativeStream || activeServer?.id === "erodium_direct") ? (
+          isNativeMovieLoading ? (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+              <h3 className="text-base font-bold text-white">Connexion au Lecteur Erodium Natif...</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Extraction du flux direct 1080p FHD <strong>0 Pub</strong> pour « <strong>{title}</strong> »...
+              </p>
+            </div>
+          ) : nativeMovieStreamUrl ? (
+            <div className="w-full h-full relative">
+              <HlsPlayer
+                key={nativeMovieStreamUrl}
+                streamUrl={nativeMovieStreamUrl}
+                title={title}
+                poster={
+                  currentMedia.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                    : undefined
+                }
+                onEnded={handleNextEpisode}
+                videoFilter={videoFilter}
+                preferredLanguage={selectedLanguage}
+                onVideoRef={(el) => { hlsVideoRef.current = el; }}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-base font-bold text-white mb-2">Flux direct Erodium non disponible</h3>
+              <p className="text-xs text-zinc-300 mb-5 max-w-md leading-relaxed">
+                {nativeMovieError || "Ce titre n'a pas encore de flux direct 1080p. Vous pouvez le visionner immédiatement sur nos serveurs miroirs."}
+              </p>
+              <button
+                onClick={() => {
+                  const altServer = availableServers.find((s) => s.id !== "erodium_direct" && !s.isAnimeSama) || availableServers[1];
+                  if (altServer) {
+                    setSelectedServer(altServer);
+                    setIframeKey((k) => k + 1);
+                  }
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>Basculer sur Serveur VidMoly (VF Secours)</span>
+              </button>
+            </div>
+          )
         ) : activeServer?.isAnimeSama && isAnimeLoading ? (
           <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
             <Loader2 className="w-10 h-10 animate-spin text-orange-500" />

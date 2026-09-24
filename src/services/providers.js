@@ -48,6 +48,18 @@ export const getMediaLanguageInfo = (media) => {
 export const getServerDetails = (server, media, selectedLanguage) => {
   const mediaInfo = getMediaLanguageInfo(media);
 
+  if (server?.isNativeStream || server?.id === "erodium_direct") {
+    return {
+      flag: "⚡ 🇫🇷",
+      flagDisplay: "⚡ 🇫🇷",
+      audio: "Multi-Audio VF 5.1 & VO 5.1 (Direct)",
+      subs: "Sous-titres & Audio sélectionnables",
+      badge: "⚡ Erodium Natif (0 Pub)",
+      subBadge: "1080p FHD",
+      description: "Lecteur Erodium officiel sans aucune publicité, sans redirection et en qualité 1080p native avec choix de la langue audio.",
+    };
+  }
+
   if (server?.isAnimeSama) {
     if (selectedLanguage === "vf") {
       return {
@@ -463,6 +475,16 @@ export const STREAMING_SERVERS = {
   ],
 };
 
+export const ERODIUM_DIRECT_MOVIE_SERVER = {
+  id: "erodium_direct",
+  name: "Serveur 1 (Lecteur Erodium Natif • 0 Pub FHD)",
+  flag: "⚡",
+  badge: "⚡ 0 Pub FHD",
+  isNativeStream: true,
+  description: "Lecteur Erodium 100% natif, zéro publicité, zéro popup et qualité Full HD 1080p directe (Multi-Audio VF 5.1 & VO).",
+  getUrl: () => "",
+};
+
 export const ERODIUM_VF_SERVER = {
   id: "erodium_vf",
   name: "Serveur 1 (Lecteur Erodium • VF 100% Officielle)",
@@ -489,42 +511,38 @@ export const ANIME_SAMA_VOSTFR_SERVER = ERODIUM_VOSTFR_SERVER;
 
 /**
  * Retourne la liste optimisée des serveurs pour le média spécifié :
- * - Pour les animés : place le Lecteur Erodium en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
- * - Pour les films et séries classiques : place VidMoly en #1 (base) et N'AFFICHE PAS Erodium !
+ * - Pour les animés : place le Lecteur Erodium Anime en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
+ * - Pour les films et séries : place le Lecteur Erodium Natif (0 Pub • 1080p) en #1, puis VidMoly en #2 !
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
   const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
 
-  // CAS 1 : C'EST UN ANIMÉ -> Erodium en Lecteur #1 !
+  // CAS 1 : C'EST UN ANIMÉ -> Erodium Anime en Lecteur #1 !
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
       return [
         ERODIUM_VF_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vf"),
+        ...baseServers.filter((s) => s.id !== "erodium_vf" && s.id !== "erodium_direct"),
       ];
     }
     if (lang === "vostfr") {
       return [
         ERODIUM_VOSTFR_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vostfr"),
+        ...baseServers.filter((s) => s.id !== "erodium_vostfr" && s.id !== "erodium_direct"),
       ];
     }
     return baseServers;
   }
 
-  // CAS 2 : FILMS ET SÉRIES CLASSIQUES (NON-ANIMÉ)
-  // - VidMoly est le lecteur de base #1 (VIDMOLY_VF_SERVER)
-  // - Erodium N'EST PAS affiché pour les films classiques
-  // - TOUS les serveurs miroirs et propres restent disponibles sans exception !
-  if (lang === "vf") {
-    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf");
-  }
-
-  if (lang === "vostfr") {
-    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vostfr");
-  }
-
-  return baseServers.filter((s) => !s.isAnimeSama);
+  // CAS 2 : FILMS ET SÉRIES CLASSIQUES
+  // - Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
+  // - VidMoly en #2
+  // - TOUS les serveurs miroirs et de secours restent disponibles !
+  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
+  return [
+    ERODIUM_DIRECT_MOVIE_SERVER,
+    ...filteredBase,
+  ];
 };
 
