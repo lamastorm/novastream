@@ -22,6 +22,8 @@ import { deviceAdvisor } from "./services/deviceAdvisor";
 import { gamepadService } from "./services/gamepadService";
 import MoodSelector from "./components/MoodSelector";
 import LiveCatalogStats from "./components/LiveCatalogStats";
+import DonateModal from "./components/DonateModal";
+import VpnBanner from "./components/VpnBanner";
 import {
   Film,
   Tv,
@@ -38,6 +40,7 @@ import {
   CheckCircle2,
   Clock,
   Filter,
+  Heart,
 } from "lucide-react";
 
 export default function App() {
@@ -97,6 +100,7 @@ export default function App() {
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [activePlayer, setActivePlayer] = useState(null); // { media, season, episode }
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
 
   // Watchlist & History
   const [favorites, setFavorites] = useState(storage.getWatchlist());
@@ -579,6 +583,7 @@ export default function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenDonate={() => setDonateOpen(true)}
         onRandomSurprise={handleRandomSurprise}
       />
 
@@ -1541,13 +1546,32 @@ export default function App() {
             )}
           </>
         )}
+        {/* Affiliation VPN Banner (Home Tab) */}
+        {activeTab === "home" && !searchQuery.trim() && (
+          <VpnBanner />
+        )}
       </main>
 
       {/* Footer */}
       <footer className="mt-16 border-t border-white/5 py-8 text-center text-xs text-zinc-500 glass">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© {new Date().getFullYear()} Erodium • Films, Séries & Animes en Streaming HD</p>
-          <div className="flex items-center gap-4 text-zinc-400">
+          <div className="flex flex-wrap items-center justify-center gap-5 text-zinc-400">
+            <button
+              onClick={() => setDonateOpen(true)}
+              className="text-rose-400 hover:text-rose-300 font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Heart className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+              <span>Soutenir les serveurs</span>
+            </button>
+            <a
+              href="https://www.cyberghostvpn.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-indigo-400 transition-colors"
+            >
+              VPN Recommandé
+            </a>
             <button
               onClick={() => setSettingsOpen(true)}
               className="hover:text-orange-400 transition-colors cursor-pointer"
@@ -1608,6 +1632,11 @@ export default function App() {
             setHistory(storage.getHistory());
           }}
         />
+      )}
+
+      {/* MODAL: DONS & SOUTIEN */}
+      {donateOpen && (
+        <DonateModal onClose={() => setDonateOpen(false)} />
       )}
     </div>
   );

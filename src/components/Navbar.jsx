@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users } from "lucide-react";
+import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users, Heart } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
 
 export default function Navbar({
@@ -8,6 +8,7 @@ export default function Navbar({
   searchQuery,
   setSearchQuery,
   onOpenSettings,
+  onOpenDonate,
   onRandomSurprise,
 }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -122,11 +123,21 @@ export default function Navbar({
             )}
           </div>
 
+          {/* Donate / Support Button */}
+          <button
+            onClick={onOpenDonate}
+            title="Soutenir les serveurs d'Erodium (0 pub)"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-500/15 to-orange-500/15 hover:from-rose-500/25 hover:to-orange-500/25 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer flex-shrink-0"
+          >
+            <Heart className="w-3.5 h-3.5 fill-rose-400 text-rose-400 animate-pulse" />
+            <span className="hidden sm:inline">Soutenir</span>
+          </button>
+
           {/* Settings Trigger */}
           <button
             onClick={onOpenSettings}
             title="Paramètres & Clé API"
-            className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/10 text-zinc-400 hover:text-orange-400 hover:bg-zinc-800 transition-colors"
+            className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/10 text-zinc-400 hover:text-orange-400 hover:bg-zinc-800 transition-colors cursor-pointer"
           >
             <Settings className="w-4 h-4" />
           </button>
