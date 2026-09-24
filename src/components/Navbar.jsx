@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users, Heart, Shield } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
 
@@ -12,7 +12,28 @@ export default function Navbar({
   onRandomSurprise,
 }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [inputValue, setInputValue] = useState(searchQuery);
+  const debounceRef = useRef(null);
   const liveViewers = useLiveViewers();
+
+  // Sync external clear (e.g. clicking a nav tab) back into local state
+  useEffect(() => {
+    if (searchQuery === "") setInputValue("");
+  }, [searchQuery]);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputValue(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(val);
+    }, 300);
+  };
+
+  const handleClear = () => {
+    setInputValue("");
+    setSearchQuery("");
+  };
 
   const tabs = [
     { id: "home", label: "Accueil", icon: Sparkles },
@@ -102,16 +123,17 @@ export default function Navbar({
             <input
               id="global-search-input"
               type="text"
+              inputMode="search"
               placeholder="Rechercher films, séries, animes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={inputValue}
+              onChange={handleInputChange}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none"
             />
-            {searchQuery ? (
+            {inputValue ? (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClear}
                 className="p-1 mr-2 text-zinc-400 hover:text-white rounded-md"
               >
                 <X className="w-3.5 h-3.5" />
