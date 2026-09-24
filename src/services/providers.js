@@ -9,15 +9,22 @@ export const getMediaLanguageInfo = (media) => {
   const title = (media?.title || media?.name || "").toLowerCase();
   
   // Détection stricte d'animé (Anime-Sama) : animation japonaise ou licences manga / anime
-  const isAnime =
-    media?.source === "anilist" ||
-    media?.source === "mal" ||
-    origLang === "ja" ||
-    ((origLang === "ko" || origLang === "zh") &&
-      (media?.genre_ids?.includes(16) || media?.genres?.some((g) => g.id === 16))) ||
+  // IMPORTANT: the title regex is gated on original_language==='ja' to avoid false positives
+  // on live-action remakes (e.g. Netflix One Piece, live-action Cowboy Bebop, etc.)
+  const isKnownAnimeTitleInJapanese =
+    origLang === "ja" &&
     /sword art online|gun gale|naruto|one piece|jujutsu|shingeki|titan|dragon ball|bleach|hunter|demon slayer|kimetsu|hero academia|solo leveling|death note|tokyo ghoul|chainsaw|frieren|kaiju|oshi no ko|danmachi|blue lock|boruto|black clover|haikyu|jojo|evangelion|dr\. stone|spy x family|vinland|slime|classroom of the elite|bungo stray dogs|wind breaker|mushoku tensei|overlord|fate\/|re:zero|kaiju no\. 8|dandadan|dungeon meshi|gintama|steins;gate|fullmetal|code geass|fairy tail|wakfu|radiant/i.test(
       title
     );
+
+  const isAnime =
+    media?.source === "anilist" ||
+    media?.source === "mal" ||
+    media?.source === "anime-sama" ||
+    origLang === "ja" ||
+    ((origLang === "ko" || origLang === "zh") &&
+      (media?.genre_ids?.includes(16) || media?.genres?.some((g) => g.id === 16))) ||
+    isKnownAnimeTitleInJapanese;
 
   const map = {
     ja: { flag: "🇯🇵", audio: "Japonais", name: "Japon (Animé)", isAnime: true },
