@@ -14,6 +14,7 @@ export default function Navbar({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [inputValue, setInputValue] = useState(searchQuery);
   const debounceRef = useRef(null);
+  const inputRef = useRef(null);
   const liveViewers = useLiveViewers();
 
   // Sync external clear (e.g. clicking a nav tab) back into local state
@@ -23,7 +24,16 @@ export default function Navbar({
 
   const handleInputChange = (e) => {
     const val = e.target.value;
+    const pos = e.target.selectionStart;
     setInputValue(val);
+
+    // Keep cursor at exact typed position on mobile (prevents cursor jumping to 0 -> 'the' becoming 'eht')
+    requestAnimationFrame(() => {
+      if (inputRef.current && typeof inputRef.current.setSelectionRange === "function") {
+        inputRef.current.setSelectionRange(pos, pos);
+      }
+    });
+
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setSearchQuery(val);
@@ -33,6 +43,7 @@ export default function Navbar({
   const handleClear = () => {
     setInputValue("");
     setSearchQuery("");
+    if (inputRef.current) inputRef.current.focus();
   };
 
   const tabs = [
@@ -118,14 +129,13 @@ export default function Navbar({
                 ? "ring-2 ring-orange-500 bg-zinc-950 border-orange-500/50 shadow-md shadow-orange-500/20"
                 : "bg-zinc-900/80 hover:bg-zinc-900 border border-white/10"
             }`}
-            dir="ltr"
           >
             <Search className="w-4 h-4 text-zinc-400 ml-3 flex-shrink-0" />
             <input
+              ref={inputRef}
               id="global-search-input"
-              type="search"
-              inputMode="text"
-              dir="ltr"
+              type="text"
+              inputMode="search"
               autoCapitalize="none"
               autoComplete="off"
               autoCorrect="off"
@@ -136,7 +146,6 @@ export default function Navbar({
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none text-left appearance-none"
-              style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate" }}
             />
             {inputValue ? (
               <button
