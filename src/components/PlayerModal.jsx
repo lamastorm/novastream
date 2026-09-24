@@ -105,12 +105,19 @@ export default function PlayerModal({
     }
   };
 
-  // Auto-resolve media if external source (AniList, MAL, TVmaze)
+  // Auto-resolve media if external source (AniList, MAL, TVmaze, Anime-Sama)
   const [currentMedia, setCurrentMedia] = useState(media);
   const [isResolving, setIsResolving] = useState(false);
 
   useEffect(() => {
-    if (media.source === "anilist" || media.source === "mal" || media.source === "tvmaze") {
+    const isExternalId = isNaN(Number(media.id)) || String(media.id).startsWith("as_");
+    if (
+      media.source === "anilist" ||
+      media.source === "mal" ||
+      media.source === "tvmaze" ||
+      media.source === "anime-sama" ||
+      isExternalId
+    ) {
       setIsResolving(true);
       const titleToSearch = media.title || media.name;
       tmdbApi

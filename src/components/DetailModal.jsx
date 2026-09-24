@@ -62,8 +62,15 @@ export default function DetailModal({
       let targetId = activeMedia.id;
       let targetType = mediaType;
 
-      // Auto-resolve title to TMDB ID if source is external (AniList, MAL, TVmaze)
-      if (activeMedia.source === "mal" || activeMedia.source === "anilist" || activeMedia.source === "tvmaze") {
+      // Auto-resolve title to TMDB ID if source is external (AniList, MAL, TVmaze, Anime-Sama, non-numeric ID)
+      const isExternalId = isNaN(Number(activeMedia.id)) || String(activeMedia.id).startsWith("as_");
+      if (
+        activeMedia.source === "mal" ||
+        activeMedia.source === "anilist" ||
+        activeMedia.source === "tvmaze" ||
+        activeMedia.source === "anime-sama" ||
+        isExternalId
+      ) {
         try {
           const titleToSearch = activeMedia.title || activeMedia.name;
           const searchRes = await tmdbApi.searchMulti(titleToSearch);
@@ -146,12 +153,20 @@ export default function DetailModal({
 
   if (!activeMedia) return null;
 
+  // Anime-Sama animes don't have TMDB episodes, so we must NOT use episodes.length === 0 for them
+  const isAnimeSamaSource =
+    activeMedia.source === "anime-sama" ||
+    activeMedia.source === "anilist" ||
+    activeMedia.source === "mal" ||
+    String(activeMedia.id).startsWith("as_");
+
   const isUnreleasedSeries =
     isTV &&
+    !isAnimeSamaSource &&
     (details?.status === "In Production" ||
       details?.status === "Planned" ||
       (details?.first_air_date && new Date(details.first_air_date) > new Date()) ||
-      (!loading && episodes.length === 0 && !loadingEpisodes));
+      (!loading && episodes.length === 0 && !loadingEpisodes && details?.number_of_episodes === 0));
 
   const currentMediaTarget = details || activeMedia;
   const isNoVF = languageAdvisor.hasNoOfficialVF(currentMediaTarget);
