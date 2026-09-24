@@ -369,16 +369,36 @@ export default function PlayerModal({
         if (!isMounted) return;
         if (res && res.success && res.streamUrl) {
           setNativeMovieStreamUrl(res.streamUrl);
+          setIsNativeMovieLoading(false);
         } else {
           setNativeMovieStreamUrl(null);
-          setNativeMovieError(res?.error || "Flux direct 1080p non disponible pour ce titre.");
+          // Bascule automatique et transparente vers VidMoly pour ne jamais bloquer la lecture
+          const fallbackServer =
+            availableServers.find((s) => s.id === "vidmoly_vf") ||
+            availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
+            availableServers[1];
+          if (fallbackServer) {
+            setSelectedServer(fallbackServer);
+            setIframeKey((k) => k + 1);
+          } else {
+            setNativeMovieError(res?.error || "Flux direct 1080p non disponible pour ce titre.");
+          }
+          setIsNativeMovieLoading(false);
         }
-        setIsNativeMovieLoading(false);
       })
       .catch((err) => {
         if (!isMounted) return;
         setNativeMovieStreamUrl(null);
-        setNativeMovieError(err.message || "Erreur de connexion au serveur Erodium");
+        const fallbackServer =
+          availableServers.find((s) => s.id === "vidmoly_vf") ||
+          availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
+          availableServers[1];
+        if (fallbackServer) {
+          setSelectedServer(fallbackServer);
+          setIframeKey((k) => k + 1);
+        } else {
+          setNativeMovieError(err.message || "Erreur de connexion au serveur Erodium");
+        }
         setIsNativeMovieLoading(false);
       });
 
@@ -1119,80 +1139,33 @@ export default function PlayerModal({
                 onVideoRef={(el) => { hlsVideoRef.current = el; }}
               />
             </div>
-          ) : (() => {
-            const releaseDateStr = currentMedia.release_date || currentMedia.first_air_date;
-            const isUnreleased = Boolean(
-              releaseDateStr && new Date(releaseDateStr).getTime() > Date.now()
-            );
-            const formattedReleaseDate = releaseDateStr
-              ? new Date(releaseDateStr).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })
-              : "Prochainement";
-
-            if (isUnreleased) {
-              return (
-                <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
-                    <AlertCircle className="w-7 h-7 text-amber-400" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Film non encore sorti !</h3>
-                  <p className="text-xs sm:text-sm text-zinc-300 mb-6 leading-relaxed">
-                    <strong>« {title} »</strong> n'est pas encore sorti en salle ni en streaming. Sa date de sortie officielle annoncée est le <strong>{formattedReleaseDate}</strong>.
-                    <br /><br />
-                    <span className="text-zinc-400">Aucun fichier vidéo ni flux direct n'existe encore nulle part dans le monde.</span>
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={() => {
-                        window.open(
-                          `https://www.youtube.com/results?search_query=${encodeURIComponent(title + " bande annonce vf")}`,
-                          "_blank"
-                        );
-                      }}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-red-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>▶️ Voir la bande-annonce sur YouTube</span>
-                    </button>
-                    <button
-                      onClick={onClose}
-                      className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs border border-white/10 transition-all cursor-pointer"
-                    >
-                      Retourner au catalogue
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
-                  <AlertCircle className="w-6 h-6 text-amber-400" />
-                </div>
-                <h3 className="text-base font-bold text-white mb-2">Flux direct Erodium non disponible</h3>
-                <p className="text-xs text-zinc-300 mb-5 max-w-md leading-relaxed">
-                  {nativeMovieError || "Ce titre n'a pas encore de flux direct 1080p. Vous pouvez le visionner immédiatement sur nos serveurs miroirs."}
-                </p>
-                <button
-                  onClick={() => {
-                    const altServer = availableServers.find((s) => s.id !== "erodium_direct" && !s.isAnimeSama) || availableServers[1];
-                    if (altServer) {
-                      setSelectedServer(altServer);
-                      setIframeKey((k) => k + 1);
-                    }
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Play className="w-4 h-4 fill-white" />
-                  <span>Basculer sur Serveur VidMoly (VF Secours)</span>
-                </button>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
               </div>
-            );
-          })()
+              <h3 className="text-base font-bold text-white mb-2">Flux direct Erodium non disponible</h3>
+              <p className="text-xs text-zinc-300 mb-5 max-w-md leading-relaxed">
+                {nativeMovieError || "Ce titre n'a pas encore de flux direct 1080p. Vous pouvez le visionner immédiatement sur nos serveurs miroirs."}
+              </p>
+              <button
+                onClick={() => {
+                  const altServer =
+                    availableServers.find((s) => s.id === "vidmoly_vf") ||
+                    availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
+                    availableServers[1];
+                  if (altServer) {
+                    setSelectedServer(altServer);
+                    setIframeKey((k) => k + 1);
+                  }
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>Basculer sur Serveur VidMoly (VF Secours)</span>
+              </button>
+            </div>
+          )
         ) : activeServer?.isAnimeSama && isAnimeLoading ? (
           <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
             <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
