@@ -74,9 +74,47 @@ export default function DetailModal({
         try {
           const titleToSearch = activeMedia.title || activeMedia.name;
           const searchRes = await tmdbApi.searchMulti(titleToSearch);
-          const match = searchRes.results?.find(
-            (r) => (r.media_type === "tv" || r.media_type === "movie") && (r.poster_path || r.backdrop_path)
-          ) || searchRes.results?.[0];
+          const results = searchRes.results || [];
+
+          let match = null;
+
+          const isAnimeSource =
+            activeMedia.source === "anime-sama" ||
+            activeMedia.source === "anilist" ||
+            activeMedia.source === "mal";
+
+          if (isAnimeSource) {
+            // For animes: prefer Japanese-language TV animation results
+            // genre_id 16 = Animation
+            match =
+              results.find(
+                (r) =>
+                  r.media_type === "tv" &&
+                  r.original_language === "ja" &&
+                  r.genre_ids?.includes(16) &&
+                  (r.poster_path || r.backdrop_path)
+              ) ||
+              results.find(
+                (r) =>
+                  r.media_type === "tv" &&
+                  r.original_language === "ja" &&
+                  (r.poster_path || r.backdrop_path)
+              ) ||
+              results.find(
+                (r) =>
+                  (r.media_type === "tv" || r.media_type === "movie") &&
+                  (r.poster_path || r.backdrop_path)
+              ) ||
+              results[0];
+          } else {
+            // For non-anime sources: first valid result is fine
+            match =
+              results.find(
+                (r) =>
+                  (r.media_type === "tv" || r.media_type === "movie") &&
+                  (r.poster_path || r.backdrop_path)
+              ) || results[0];
+          }
 
           if (match) {
             targetId = match.id;

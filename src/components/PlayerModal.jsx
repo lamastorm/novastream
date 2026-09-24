@@ -120,15 +120,47 @@ export default function PlayerModal({
     ) {
       setIsResolving(true);
       const titleToSearch = media.title || media.name;
+      const isAnimeSource =
+        media.source === "anilist" ||
+        media.source === "mal" ||
+        media.source === "anime-sama";
+
       tmdbApi
         .searchMulti(titleToSearch)
         .then((searchRes) => {
-          const match =
-            searchRes.results?.find(
-              (r) =>
-                (r.media_type === "tv" || r.media_type === "movie") &&
-                (r.poster_path || r.backdrop_path)
-            ) || searchRes.results?.[0];
+          const results = searchRes.results || [];
+
+          let match = null;
+          if (isAnimeSource) {
+            // Prefer Japanese-language TV animation to avoid live-action remakes (e.g. Netflix One Piece)
+            match =
+              results.find(
+                (r) =>
+                  r.media_type === "tv" &&
+                  r.original_language === "ja" &&
+                  r.genre_ids?.includes(16) &&
+                  (r.poster_path || r.backdrop_path)
+              ) ||
+              results.find(
+                (r) =>
+                  r.media_type === "tv" &&
+                  r.original_language === "ja" &&
+                  (r.poster_path || r.backdrop_path)
+              ) ||
+              results.find(
+                (r) =>
+                  (r.media_type === "tv" || r.media_type === "movie") &&
+                  (r.poster_path || r.backdrop_path)
+              ) ||
+              results[0];
+          } else {
+            match =
+              results.find(
+                (r) =>
+                  (r.media_type === "tv" || r.media_type === "movie") &&
+                  (r.poster_path || r.backdrop_path)
+              ) || results[0];
+          }
 
           if (match) {
             const updated = {
