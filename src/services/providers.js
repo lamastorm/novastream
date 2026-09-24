@@ -535,18 +535,14 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return baseServers;
   }
 
-  // CAS 2 : FILMS ET SÉRIES CLASSIQUES (NON-ANIMÉ)
-  // - VidMoly est le lecteur de base #1 (VIDMOLY_VF_SERVER)
-  // - Erodium N'EST PAS affiché pour les films classiques
+  // CAS 2 : FILMS ET SÉRIES CLASSIQUES
+  // - Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
+  // - VidMoly en #2
   // - TOUS les serveurs miroirs et propres restent disponibles sans exception !
-  if (lang === "vf") {
-    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
-  }
-
-  if (lang === "vostfr") {
-    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vostfr" && s.id !== "erodium_direct");
-  }
-
-  return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_direct");
+  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
+  return [
+    ERODIUM_DIRECT_MOVIE_SERVER,
+    ...filteredBase,
+  ];
 };
 

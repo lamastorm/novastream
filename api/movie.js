@@ -79,10 +79,12 @@ export async function resolveNativeMovieStream({ tmdbId, imdbId, type = 'movie',
           const episodes = JSON.parse(epMatch[1]);
           const found = episodes.find(e => e.season === sNum && e.episode === eNum);
           if (found && found.url) {
-            const streamUrl = found.url.startsWith('http') ? found.url : `https://www.papadustream.club${found.url}`;
+            const rawUrl = found.url.startsWith('http') ? found.url : `https://www.papadustream.club${found.url}`;
+            const streamUrl = `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
             return {
               success: true,
               streamUrl,
+              rawStreamUrl: rawUrl,
               title: found.title || title,
               imdbId: finalImdbId,
               type: 'tv',
@@ -100,10 +102,12 @@ export async function resolveNativeMovieStream({ tmdbId, imdbId, type = 'movie',
       if (sNum === 1 && eNum === 1) {
         const initMatch = res.body.match(/initialSrc\s*=\s*['"]([^'"]+)['"]/);
         if (initMatch) {
-          const streamUrl = initMatch[1].startsWith('http') ? initMatch[1] : `https://www.papadustream.club${initMatch[1]}`;
+          const rawUrl = initMatch[1].startsWith('http') ? initMatch[1] : `https://www.papadustream.club${initMatch[1]}`;
+          const streamUrl = `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
           return {
             success: true,
             streamUrl,
+            rawStreamUrl: rawUrl,
             title,
             imdbId: finalImdbId,
             type: 'tv',
@@ -128,10 +132,12 @@ export async function resolveNativeMovieStream({ tmdbId, imdbId, type = 'movie',
 
       const initMatch = res.body.match(/initialSrc\s*=\s*['"]([^'"]+)['"]/);
       if (initMatch) {
-        const streamUrl = initMatch[1].startsWith('http') ? initMatch[1] : `https://www.papadustream.club${initMatch[1]}`;
+        const rawUrl = initMatch[1].startsWith('http') ? initMatch[1] : `https://www.papadustream.club${initMatch[1]}`;
+        const streamUrl = `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
         return {
           success: true,
           streamUrl,
+          rawStreamUrl: rawUrl,
           title,
           imdbId: finalImdbId,
           type: 'movie'
