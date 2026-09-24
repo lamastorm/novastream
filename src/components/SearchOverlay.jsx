@@ -63,7 +63,7 @@ export default function SearchOverlay({ isOpen, onClose, onSearch, initialQuery 
     onClose();
   }, [onClose]);
 
-  // Close on Escape
+  // Close on Escape; confirm on Enter
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => {
@@ -72,6 +72,17 @@ export default function SearchOverlay({ isOpen, onClose, onSearch, initialQuery 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, handleClose]);
+
+  // Handle Enter key on the input itself — fire search immediately and close
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "Enter") {
+      const val = inputRef.current ? inputRef.current.value : "";
+      clearTimeout(debounceRef.current);
+      setIsLoading(false);
+      onSearch(val);
+      handleClose();
+    }
+  }, [onSearch, handleClose]);
 
   if (!isOpen) return null;
 
@@ -100,6 +111,7 @@ export default function SearchOverlay({ isOpen, onClose, onSearch, initialQuery 
             dir="ltr"
             placeholder="Films, séries, animes..."
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
             className="flex-1 bg-transparent text-white text-base placeholder-zinc-500 focus:outline-none appearance-none"
             style={{ direction: "ltr", unicodeBidi: "plaintext" }}
           />

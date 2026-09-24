@@ -596,7 +596,6 @@ export default function App() {
         onClose={() => setSearchOverlayOpen(false)}
         onSearch={(q) => {
           setSearchQuery(q);
-          if (q) setSearchOverlayOpen(false);
         }}
         initialQuery={searchQuery}
       />
