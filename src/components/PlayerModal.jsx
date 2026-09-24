@@ -615,37 +615,33 @@ export default function PlayerModal({
           </div>
         </div>
 
-        {/* Top Controls: Language Selector + Episode switchers */}
+        {/* Top Controls: Clean & uncluttered */}
         <div className="flex items-center gap-2">
-          {/* Language Selector Dropdown / Pills */}
-          <div className="flex items-center gap-1 bg-zinc-900/90 border border-white/10 rounded-xl p-1 shadow-inner">
-            {LANGUAGE_OPTIONS.map((lang) => {
-              const isSelected = selectedLanguage === lang.id;
-              const mediaOrigin = getMediaLanguageInfo(currentMedia);
-              let displayLabel = lang.label;
-              if (lang.id === "vostfr") {
-                displayLabel = `${mediaOrigin.flag || "🇯🇵"}/🇫🇷 VOSTFR${mediaOrigin.isAnime ? " (Animé)" : ""}`;
-              } else if (lang.id === "vf") {
-                displayLabel = "🇫🇷 VF (Français)";
-              } else if (lang.id === "multi") {
-                displayLabel = "🌐 Multi 1080p/4K";
-              }
-              return (
-                <button
-                  key={lang.id}
-                  onClick={() => handleLanguageChange(lang.id)}
-                  className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isSelected
-                      ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 border border-orange-400/50 scale-[1.02]"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                  }`}
-                  title={lang.desc}
-                >
-                  <span>{displayLabel}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Anime Language Selector: Simple VF / VOSTFR */}
+          {getMediaLanguageInfo(currentMedia).isAnime && (
+            <div className="flex items-center gap-1 bg-zinc-900/90 border border-white/10 rounded-xl p-1 shadow-inner">
+              <button
+                onClick={() => handleLanguageChange("vf")}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  selectedLanguage === "vf"
+                    ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                🇫🇷 VF
+              </button>
+              <button
+                onClick={() => handleLanguageChange("vostfr")}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  selectedLanguage === "vostfr"
+                    ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                🇯🇵 VOSTFR
+              </button>
+            </div>
+          )}
 
           {/* Episode switchers (if TV/Anime) with Season & Episode Drawer Button */}
           {isTV && (
@@ -682,156 +678,6 @@ export default function PlayerModal({
             </div>
           )}
 
-          {/* Sous-titres FR Auto Button */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                if (selectedLanguage !== "vostfr") {
-                  handleLanguageChange("vostfr");
-                }
-                setShowSubtitleTip((v) => !v);
-              }}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                selectedLanguage === "vostfr"
-                  ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-md shadow-orange-600/25"
-                  : "bg-zinc-900 text-zinc-300 hover:text-white border-white/5"
-              }`}
-              title="Activer les sous-titres français (VOSTFR)"
-            >
-              <Languages className="w-3.5 h-3.5 text-orange-300" />
-              <span className="hidden sm:inline">Sous-titres FR</span>
-            </button>
-
-            {/* Subtitle helper popup */}
-            {showSubtitleTip && (
-              <div className="absolute top-full right-0 mt-2 w-72 p-3 bg-zinc-900 border border-orange-500/40 rounded-xl shadow-2xl z-50 text-xs text-zinc-300 space-y-2 animate-fade-in">
-                <div className="flex items-center justify-between font-bold text-white">
-                  <span className="flex items-center gap-1.5 text-orange-400">
-                    <Sparkles className="w-4 h-4" />
-                    Sous-titres Français (STFR)
-                  </span>
-                  <button
-                    onClick={() => setShowSubtitleTip(false)}
-                    className="text-zinc-500 hover:text-white cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-[11px] leading-relaxed text-zinc-300">
-                  Les serveurs chargent automatiquement les pistes françaises.
-                </p>
-                <div className="p-2 rounded-lg bg-black/50 border border-white/5 text-[11px] space-y-1">
-                  <p className="font-semibold text-orange-300">💡 Pas de sous-titres affichés ?</p>
-                  <p className="text-zinc-400">
-                    Cliquez sur le bouton <strong>CC</strong> ou sur la <strong>roue crantée ⚙️</strong> en bas à droite de la vidéo et cochez <strong>« French / Français »</strong>.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    handleLanguageChange("vostfr");
-                    setShowSubtitleTip(false);
-                  }}
-                  className="w-full py-1.5 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-[11px] transition-colors cursor-pointer"
-                >
-                  Basculer sur VOSTFR
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Mini-Player PiP button */}
-          <EnhancerPanel
-            videoRef={hlsVideoRef}
-            isHlsMode={playerMode === "hls" && !!directStreamUrl}
-            onFilterChange={setVideoFilter}
-          />
-
-          {/* Débloquer DNS FAI (Guide DoH Cloudflare / Google) */}
-          <button
-            onClick={() => setShowDnsModal(true)}
-            data-focusable="true"
-            className="px-2.5 py-1.5 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/25 text-orange-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-            title="Contourner le blocage FAI (activer le DNS Sécurisé Cloudflare en 15s)"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
-            <span className="hidden md:inline">Débloquer DNS FAI</span>
-          </button>
-
-          {/* Bouclier Anti-Pub & Anti-Popups Mobile / TV / Console */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                const nextVal = !adBlockActive;
-                setAdBlockActive(nextVal);
-                adBlocker.setEnabled(nextVal);
-                setIframeKey((k) => k + 1);
-              }}
-              data-focusable="true"
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                adBlockActive
-                  ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/80 shadow-emerald-500/20"
-                  : "bg-zinc-800 text-zinc-400 border-white/5 hover:text-white"
-              }`}
-              title={
-                adBlockActive
-                  ? "Bouclier Anti-Pub ACTIF : bloque 100% des redirections vers d'autres pages sur mobile et console."
-                  : "Bouclier Anti-Pub DÉSACTIVÉ : cliquez pour réactiver le bouclier."
-              }
-            >
-              <ShieldCheck className={`w-3.5 h-3.5 ${adBlockActive ? "text-emerald-400" : "text-zinc-400"}`} />
-              <span className="hidden md:inline">Bouclier Anti-Pub</span>
-              <span
-                className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
-                  adBlockActive ? "bg-emerald-500/30 text-emerald-200 border border-emerald-500/40" : "bg-zinc-700 text-zinc-400"
-                }`}
-              >
-                {adBlockActive ? "ACTIF" : "OFF"}
-              </span>
-            </button>
-
-            {adBlockActive && (
-              <button
-                onClick={() => {
-                  const nextStrict = !strictPopupMode;
-                  setStrictPopupMode(nextStrict);
-                  adBlocker.setStrictMode(nextStrict);
-                  setIframeKey((k) => k + 1);
-                }}
-                className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                  strictPopupMode
-                    ? "bg-amber-950/80 border-amber-500/60 text-amber-200 shadow-md shadow-amber-500/20"
-                    : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800"
-                }`}
-                title={
-                  strictPopupMode
-                    ? "Mode Strict ACTIF : Aucun nouvel onglet ou pop-up ne peut s'ouvrir. Cliquez pour repasser en mode standard."
-                    : "Mode Standard : Redirections bloquées. Cliquez pour activer le mode Strict (0 nouvel onglet)."
-                }
-              >
-                <span>{strictPopupMode ? "🛡️ 0 Pop-up" : "🛡️ Anti-Redir"}</span>
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={() => setIsMiniPlayer(true)}
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors hidden sm:flex items-center gap-1 text-xs"
-            title="Réduire en mini-lecteur flottant (naviguer sur le site)"
-          >
-            <Minimize2 className="w-4 h-4" />
-            <span className="hidden lg:inline">Mini-Lecteur</span>
-          </button>
-
-          {/* Reload Iframe button */}
-          <button
-            onClick={handleReload}
-            data-focusable="true"
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-orange-500"
-            title="Recharger le lecteur"
-          >
-            <RotateCw className="w-4 h-4" />
-          </button>
-
           {/* Toggle Fullscreen button (Mobile, TV, Xbox, PC) */}
           <button
             onClick={toggleFullscreen}
@@ -847,19 +693,6 @@ export default function PlayerModal({
             <span className="hidden lg:inline text-xs font-semibold">{isFullscreen ? "Normal" : "Plein écran"}</span>
           </button>
 
-          {/* Open in external tab button */}
-          <a
-            href={currentEmbedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-focusable="true"
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors hidden sm:flex items-center gap-1.5 text-xs focus-visible:ring-2 focus-visible:ring-orange-500"
-            title="Ouvrir dans un nouvel onglet"
-          >
-            <ExternalLink className="w-4 h-4" />
-            <span>Plein écran externe</span>
-          </a>
-
           {/* Close button */}
           <button
             onClick={onClose}
@@ -871,100 +704,6 @@ export default function PlayerModal({
           </button>
         </div>
       </div>
-
-      {/* Auto-Switched Notice Banner */}
-      {autoSwitchedNotice && (
-        <div className="px-4 py-2.5 bg-gradient-to-r from-orange-950/90 via-zinc-950 to-orange-950/90 border-b border-orange-500/40 text-orange-100 text-xs flex flex-wrap items-center justify-between gap-2 z-20 animate-fade-in shadow-lg">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0 animate-pulse" />
-            <span>
-              ✨ <strong>Adaptation automatique :</strong> « {title} » ({currentMedia.original_language?.toUpperCase()}) n'a aucun doublage VF officiel. Erodium a directement lancé <strong>VOSTFR (1080p)</strong> pour vous éviter toute erreur 404.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleLanguageChange("vf")}
-              className="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/60 text-zinc-300 hover:text-white text-[11px] border border-white/10 transition-colors cursor-pointer"
-            >
-              Tester quand même en VF
-            </button>
-            <button
-              onClick={() => setAutoSwitchedNotice(false)}
-              className="p-1 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
-              title="Masquer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Foreign Language Guidance Banner (if user deliberately switches to VF) */}
-      {!autoSwitchedNotice &&
-        selectedLanguage === "vf" &&
-        currentMedia.original_language &&
-        !["fr", "en"].includes(currentMedia.original_language) && (
-          <div className="px-4 py-2 bg-orange-950/90 border-b border-orange-500/30 text-orange-200 text-xs flex flex-wrap items-center justify-between gap-2 z-20">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <span>
-                💡 <strong>« {title} »</strong> est une œuvre originale ({currentMedia.original_language.toUpperCase()}) : si le lecteur affiche <em>404 Content not found</em>, cliquez sur <strong>VOSTFR</strong> ou <strong>1080p / 4K</strong>.
-              </span>
-            </div>
-            <button
-              onClick={() => handleLanguageChange("vostfr")}
-              className="px-3 py-1 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs whitespace-nowrap shadow-md shadow-orange-600/30 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>💬 Passer en VOSTFR (1080p)</span>
-            </button>
-          </div>
-        )}
-
-      {/* Asian / Web Series Banner (e.g. The Loyal Pin, IdolFactory, GMMTV, Thai BL/GL) */}
-      {isWebDrama && (
-        <div className="px-4 py-2 bg-gradient-to-r from-red-950/90 via-zinc-900 to-orange-950/90 border-b border-red-500/40 text-xs flex flex-wrap items-center justify-between gap-2 z-20 animate-fade-in shadow-md">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px] tracking-wide uppercase shadow-sm">
-              Web Série
-            </span>
-            <span className="text-zinc-200">
-              « <strong>{title}</strong> » est une web série officielle (YouTube / IdolFactory / GMMTV). Si un serveur retourne <em>500 Server Error</em> ou <em>Unavailable</em> :
-            </span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => {
-                const pm = availableServers.find((s) => s.id.includes("pm")) || availableServers[0];
-                setSelectedServer(pm);
-                setIframeKey((k) => k + 1);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-orange-600/80 hover:bg-orange-600 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 cursor-pointer"
-              title="Tester le serveur miroir VidSrc PM"
-            >
-              <span>⚡ Tester VidSrc PM</span>
-            </button>
-            <button
-              onClick={() => {
-                const me = availableServers.find((s) => s.id.includes("multiembed")) || availableServers[0];
-                setSelectedServer(me);
-                setIframeKey((k) => k + 1);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 font-bold text-xs shadow-sm transition-all flex items-center gap-1 cursor-pointer"
-              title="Tester le miroir MultiEmbed"
-            >
-              <span>⚡ MultiEmbed</span>
-            </button>
-            <button
-              onClick={handleLaunchYouTubeOfficial}
-              className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md shadow-red-600/30 transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Ouvrir l'épisode intégral officiel sur YouTube en 1080p FHD"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>▶️ Épisode Officiel YouTube (1080p FHD)</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Main Video Viewport */}
       <div className="flex-1 min-h-0 relative w-full bg-black flex items-center justify-center overflow-hidden">
