@@ -72,6 +72,9 @@ function MediaCard({
               >
                 {mediaTypeLabel}
               </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ⚡ 0 Pub
+              </span>
               {isUpcoming && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-black">
                   ⏳ Bientôt
@@ -113,6 +116,11 @@ function MediaCard({
             <span>{rating}</span>
           </div>
         )}
+
+        {/* Floating 0 Pub Badge */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 bg-emerald-950/85 text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/30 group-hover:opacity-0 transition-opacity duration-200">
+          <span>⚡ 0 Pub</span>
+        </div>
       </div>
 
       {/* Info footer */}

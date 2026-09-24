@@ -11,6 +11,7 @@ import PlayerModal from "./components/PlayerModal";
 import SettingsModal from "./components/SettingsModal";
 import BottomNav from "./components/BottomNav";
 import { tmdbApi } from "./api/tmdb";
+import { catalogProvider } from "./services/catalogProvider";
 import { anilistApi } from "./api/anilist";
 import { jikanApi } from "./api/jikan";
 import { tvmazeApi } from "./api/tvmaze";
@@ -161,11 +162,9 @@ export default function App() {
     setLoadingHome(true);
 
     Promise.all([
-      tmdbApi.getTrendingMovies(1),
-      tmdbApi.getNowPlayingMovies(1),
+      catalogProvider.getHomeFeeds().catch(() => null),
       tmdbApi.getPopularAnime(1),
       tmdbApi.getRecentAnime(1),
-      tmdbApi.getTrendingTV(1),
       tmdbApi.getAnimeMovies(1),
       tmdbApi.getAnimeActionShonen(1),
       tmdbApi.getAnimeFantasyIsekai(1),
@@ -173,12 +172,10 @@ export default function App() {
       tmdbApi.getAiringTodayTV(1),
     ])
       .then(
-        ([
-          trending,
-          nowPlaying,
+        async ([
+          feeds,
           anime,
           recentAnimes,
-          trendingSeries,
           animMovies,
           shonen,
           isekai,
@@ -187,12 +184,30 @@ export default function App() {
         ]) => {
           if (!isMounted) return;
 
-          const trendingList = trending.results || [];
+          let trendingList = [];
+          let nowPlayingList = [];
+          let trendingSeriesList = [];
+
+          if (feeds && feeds.success && feeds.trendingMovies?.length > 0) {
+            trendingList = feeds.trendingMovies;
+            nowPlayingList = feeds.topMovies || [];
+            trendingSeriesList = feeds.trendingSeries || [];
+          } else {
+            const [trending, nowPlaying, trendingSeries] = await Promise.all([
+              tmdbApi.getTrendingMovies(1),
+              tmdbApi.getNowPlayingMovies(1),
+              tmdbApi.getTrendingTV(1),
+            ]);
+            trendingList = trending.results || [];
+            nowPlayingList = nowPlaying.results || [];
+            trendingSeriesList = trendingSeries.results || [];
+          }
+
           setTrendingMovies(trendingList);
-          setNowPlayingMovies(nowPlaying.results || []);
+          setNowPlayingMovies(nowPlayingList);
           setPopularAnime(anime.results || []);
           setRecentAnime(recentAnimes.results || []);
-          setTrendingTV(trendingSeries.results || []);
+          setTrendingTV(trendingSeriesList);
           setAnimeMovies(animMovies.results || []);
           setAnimeShonen(shonen.results || []);
           setAnimeIsekai(isekai.results || []);
@@ -330,32 +345,10 @@ export default function App() {
     }
 
     try {
-      let data;
-      if (category === "movie") {
-        data = await tmdbApi.searchMovies(query, page);
-        data.results = (data.results || []).map((m) => ({ ...m, media_type: "movie" }));
-      } else if (category === "tv") {
-        data = await tmdbApi.searchTV(query, page);
-        data.results = (data.results || []).map((m) => ({ ...m, media_type: "tv" }));
-      } else {
-        data = await tmdbApi.searchMulti(query, page);
-      }
-
+      const data = await catalogProvider.search({ query, category, page });
       setSearchTotalPages(data.total_pages || 1);
 
-      let valid = (data.results || []).filter(
-        (i) =>
-          (i.media_type === "movie" || i.media_type === "tv") &&
-          (i.poster_path || i.backdrop_path)
-      );
-
-      if (category === "anime") {
-        valid = valid.filter(
-          (i) =>
-            i.original_language === "ja" &&
-            (i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16))
-        );
-      }
+      let valid = data.results || [];
 
       // Smart ranking: Exact title matches and franchise prefixes first
       const cleanQ = query.trim().toLowerCase();
@@ -413,32 +406,9 @@ export default function App() {
     let promise;
 
     if (activeTab === "movies") {
-      if (selectedPlatform) {
-        const plat = PLATFORMS.find((p) => p.id === selectedPlatform);
-        if (plat?.providerId) {
-          promise = tmdbApi.getByPlatformMovies(plat.providerId, page);
-        } else {
-          promise = tmdbApi.discoverMovies(page, { sortBy: selectedSort });
-        }
-      } else {
-        promise = tmdbApi.discoverMovies(page, {
-          genre: selectedGenre,
-          year: selectedYear,
-          sortBy: selectedSort,
-          minVote: selectedMinRating,
-        });
-      }
+      promise = catalogProvider.getMovies({ page, genre: selectedGenre });
     } else if (activeTab === "series") {
-      if (selectedPlatform) {
-        promise = tmdbApi.getByNetwork(selectedPlatform, page);
-      } else {
-        promise = tmdbApi.discoverTV(page, {
-          genre: selectedGenre,
-          year: selectedYear,
-          sortBy: selectedSort,
-          minVote: selectedMinRating,
-        });
-      }
+      promise = catalogProvider.getSeries({ page, genre: selectedGenre });
     } else if (activeTab === "anime") {
       if (selectedLetter) {
         promise = tmdbApi.searchMulti(selectedLetter === "#" ? "0" : selectedLetter, page).then((data) => ({
