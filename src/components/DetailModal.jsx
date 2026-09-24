@@ -287,128 +287,49 @@ export default function DetailModal({
               </p>
             </div>
           ) : (
-            <div className="space-y-3 pb-4 border-b border-white/5">
-              {/* Notice d'adaptation linguistique si pas de VF */}
-              {isNoVF && (
-                <div className="p-3.5 rounded-xl bg-orange-950/50 border border-orange-500/40 text-orange-200 text-xs flex items-center justify-between gap-3 shadow-lg shadow-orange-950/50">
-                  <div className="flex items-center gap-2.5">
-                    <Sparkles className="w-5 h-5 text-orange-400 flex-shrink-0 animate-pulse" />
-                    <div>
-                      <span className="font-bold text-white">Adaptation automatique : </span>
-                      <span>
-                        {langAdvice?.message ||
-                          "Cette production n'a pas de doublage VF officiel. La lecture en VOSTFR Full HD est sélectionnée par défaut pour garantir la lecture sans erreur 404."}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="hidden sm:inline-block px-2.5 py-1 rounded-md bg-orange-500/30 text-orange-300 font-bold text-[11px] whitespace-nowrap border border-orange-500/30">
-                    VOSTFR 1080p
-                  </span>
-                </div>
-              )}
+            <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-white/5">
+              {/* Bouton Principal de Lecture */}
+              <button
+                data-focusable="true"
+                onClick={() => {
+                  const targetMedia = {
+                    ...activeMedia,
+                    ...details,
+                    id: details?.id || activeMedia.id,
+                    media_type: isTV ? "tv" : "movie",
+                    title: details?.name || details?.title || activeMedia.title,
+                    original_language: details?.original_language || activeMedia.original_language,
+                  };
+                  onPlay(
+                    targetMedia,
+                    isTV ? selectedSeason : 1,
+                    1,
+                    isNoVF ? "vostfr" : selectedLang
+                  );
+                }}
+                className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 focus-visible:ring-4 focus-visible:ring-orange-500 text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-orange-600/30 transition-all hover:scale-[1.02] cursor-pointer"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>{isTV ? "Lancer la série" : "Regarder le film"}</span>
+              </button>
 
-              <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                {/* Bouton VISIONNER EN VF 🇫🇷 */}
-                <button
-                  data-focusable="true"
-                  onClick={() => {
-                    setSelectedLang("vf");
-                    const targetMedia = {
-                      ...activeMedia,
-                      ...details,
-                      id: details?.id || activeMedia.id,
-                      media_type: isTV ? "tv" : "movie",
-                      title: details?.name || details?.title || activeMedia.title,
-                      original_language: details?.original_language || activeMedia.original_language,
-                    };
-                    onPlay(targetMedia, isTV ? selectedSeason : 1, 1, "vf");
-                  }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-orange-600/20 focus-visible:ring-4 focus-visible:ring-orange-500 focus-visible:scale-105 text-white font-extrabold text-xs uppercase tracking-wider border border-orange-500/50 hover:border-orange-500 shadow-lg shadow-orange-500/15 hover:shadow-orange-500/30 transition-all hover:scale-[1.02] cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-orange-400 text-orange-400" />
-                  <span>VISIONNER EN VF 🇫🇷</span>
-                </button>
-
-                {/* Bouton VISIONNER EN VOSTFR 🇯🇵 */}
-                <button
-                  data-focusable="true"
-                  onClick={() => {
-                    setSelectedLang("vostfr");
-                    const targetMedia = {
-                      ...activeMedia,
-                      ...details,
-                      id: details?.id || activeMedia.id,
-                      media_type: isTV ? "tv" : "movie",
-                      title: details?.name || details?.title || activeMedia.title,
-                      original_language: details?.original_language || activeMedia.original_language,
-                    };
-                    onPlay(targetMedia, isTV ? selectedSeason : 1, 1, "vostfr");
-                  }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-[#151c2e] focus-visible:ring-4 focus-visible:ring-blue-500 focus-visible:scale-105 text-white font-extrabold text-xs uppercase tracking-wider border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer shadow-md"
-                >
-                  <Play className="w-3.5 h-3.5 fill-blue-400 text-blue-400" />
-                  <span>VISIONNER EN VOSTFR 🇯🇵</span>
-                </button>
-
-                {/* Bouton VISIONNER EN VKR 🇰🇷 (si coréen) ou MULTI 🌐 */}
-                {activeMedia.original_language === "ko" ? (
-                  <button
-                    onClick={() => {
-                      setSelectedLang("vostfr");
-                      const targetMedia = {
-                        ...activeMedia,
-                        ...details,
-                        id: details?.id || activeMedia.id,
-                        media_type: isTV ? "tv" : "movie",
-                        title: details?.name || details?.title || activeMedia.title,
-                        original_language: details?.original_language || activeMedia.original_language,
-                      };
-                      onPlay(targetMedia, isTV ? selectedSeason : 1, 1, "vostfr");
-                    }}
-                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d111a] hover:bg-[#151c2e] text-white font-extrabold text-xs uppercase tracking-wider border border-purple-500/40 hover:border-purple-400 transition-all hover:scale-[1.02] cursor-pointer shadow-md"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-purple-400 text-purple-400" />
-                    <span>VISIONNER EN VKR 🇰🇷</span>
-                  </button>
+              {/* Bouton Favoris */}
+              <button
+                onClick={() => onToggleFavorite(activeMedia)}
+                className="flex items-center gap-2 px-5 py-3.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 text-xs font-bold border border-white/10 transition-all cursor-pointer ml-auto"
+              >
+                {isFavorite ? (
+                  <>
+                    <BookmarkCheck className="w-4 h-4 text-orange-400" />
+                    <span>Dans vos favoris</span>
+                  </>
                 ) : (
-                  <button
-                    onClick={() => {
-                      setSelectedLang("multi");
-                      const targetMedia = {
-                        ...activeMedia,
-                        ...details,
-                        id: details?.id || activeMedia.id,
-                        media_type: isTV ? "tv" : "movie",
-                        title: details?.name || details?.title || activeMedia.title,
-                        original_language: details?.original_language || activeMedia.original_language,
-                      };
-                      onPlay(targetMedia, isTV ? selectedSeason : 1, 1, "multi");
-                    }}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[#0d111a] hover:bg-[#151c2e] text-zinc-200 hover:text-white font-extrabold text-xs uppercase tracking-wider border border-zinc-700/60 hover:border-zinc-500 transition-all hover:scale-[1.02] cursor-pointer shadow-md"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-zinc-400 text-zinc-400" />
-                    <span>VISIONNER EN MULTI 🌐</span>
-                  </button>
+                  <>
+                    <Bookmark className="w-4 h-4" />
+                    <span>Ajouter aux favoris</span>
+                  </>
                 )}
-
-                {/* Bouton Favoris */}
-                <button
-                  onClick={() => onToggleFavorite(activeMedia)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-orange-400 text-xs font-bold border border-white/10 transition-all cursor-pointer ml-auto"
-                >
-                  {isFavorite ? (
-                    <>
-                      <BookmarkCheck className="w-4 h-4 text-orange-400" />
-                      <span>Dans vos favoris</span>
-                    </>
-                  ) : (
-                    <>
-                      <Bookmark className="w-4 h-4" />
-                      <span>Ajouter aux favoris</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              </button>
             </div>
           )}
 
