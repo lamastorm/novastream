@@ -214,6 +214,10 @@ export default function DetailModal({
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 text-white uppercase tracking-wider">
                   {isTV ? "Série / Anime" : "Film"}
                 </span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>0 Pub Garanti</span>
+                </span>
                 {isUnreleasedSeries && (
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500 text-black uppercase tracking-wider">
                     ⏳ Non encore diffusé

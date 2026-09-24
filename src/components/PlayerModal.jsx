@@ -372,35 +372,14 @@ export default function PlayerModal({
           setIsNativeMovieLoading(false);
         } else {
           setNativeMovieStreamUrl(null);
-          // Bascule automatique et transparente vers VidMoly pour ne jamais bloquer la lecture
-          const fallbackServer =
-            availableServers.find((s) => s.id === "autoembed_vf") ||
-            availableServers.find((s) => s.id === "vidmoly_vf") ||
-            availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
-            availableServers[1];
-          if (fallbackServer) {
-            setSelectedServer(fallbackServer);
-            setIframeKey((k) => k + 1);
-          } else {
-            setNativeMovieError(res?.error || "Flux direct 1080p non disponible pour ce titre.");
-          }
+          setNativeMovieError(res?.error || "Ce titre n'a pas encore de flux 0 Pub encodé.");
           setIsNativeMovieLoading(false);
         }
       })
       .catch((err) => {
         if (!isMounted) return;
         setNativeMovieStreamUrl(null);
-        const fallbackServer =
-          availableServers.find((s) => s.id === "autoembed_vf") ||
-          availableServers.find((s) => s.id === "vidmoly_vf") ||
-          availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
-          availableServers[1];
-        if (fallbackServer) {
-          setSelectedServer(fallbackServer);
-          setIframeKey((k) => k + 1);
-        } else {
-          setNativeMovieError(err.message || "Erreur de connexion au serveur Erodium");
-        }
+        setNativeMovieError(err.message || "Erreur de connexion au serveur Erodium");
         setIsNativeMovieLoading(false);
       });
 
@@ -1143,29 +1122,18 @@ export default function PlayerModal({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
-                <AlertCircle className="w-6 h-6 text-amber-400" />
+              <div className="w-14 h-14 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20">
+                <ShieldCheck className="w-7 h-7 text-orange-400" />
               </div>
-              <h3 className="text-base font-bold text-white mb-2">Flux direct Erodium non disponible</h3>
-              <p className="text-xs text-zinc-300 mb-5 max-w-md leading-relaxed">
-                {nativeMovieError || "Ce titre n'a pas encore de flux direct 1080p. Vous pouvez le visionner immédiatement sur nos serveurs miroirs."}
+              <h3 className="text-lg font-bold text-white mb-2">Titre bientôt disponible en 0 Pub</h3>
+              <p className="text-xs text-zinc-300 mb-6 max-w-md leading-relaxed">
+                Erodium applique une politique stricte : <strong>100% de nos films sont diffusés sans aucune publicité, sans pop-up et en Full HD 1080p natif</strong>. Ce titre n'a pas encore de flux direct sans pub et sera disponible très prochainement.
               </p>
               <button
-                onClick={() => {
-                  const altServer =
-                    availableServers.find((s) => s.id === "autoembed_vf") ||
-                    availableServers.find((s) => s.id === "vidmoly_vf") ||
-                    availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
-                    availableServers[1];
-                  if (altServer) {
-                    setSelectedServer(altServer);
-                    setIframeKey((k) => k + 1);
-                  }
-                }}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <Play className="w-4 h-4 fill-white" />
-                <span>Basculer sur Lecteur Miroir HD (0 Pub)</span>
+                <span>Explorer les films disponibles en direct</span>
               </button>
             </div>
           )
@@ -1527,36 +1495,14 @@ export default function PlayerModal({
         </div>
       ) : (
         <>
-          {/* VidMoly / FrEmbed Advisory Banner for DNS blocked hosts like Doodstream */}
-          {(selectedServer.id.startsWith("frembed") || selectedServer.id === "vidmoly_vf") && (
-            <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/20 text-amber-300 text-xs flex flex-wrap items-center justify-between gap-2 z-20">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                <span>
-                  <strong>Astuce VidMoly :</strong> Si le lecteur affiche <em>« Ce site est inaccessible »</em>, cliquez sur <strong>SERVEURS</strong> à gauche dans la vidéo et sélectionnez <strong>Vidmoly</strong> ou <strong>Uqload</strong> (Dood étant bloqué par les opérateurs français).
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  const altServer = availableServers.find((s) => !s.id.startsWith("frembed") && s.id !== "vidmoly_vf") || availableServers[1] || availableServers[0];
-                  setSelectedServer(altServer);
-                  setIframeKey((k) => k + 1);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 text-[11px] font-bold transition-colors cursor-pointer"
-              >
-                ⚡ Passer sur {availableServers[0]?.name?.split("(")[0] || "Serveur 1"}
-              </button>
-            </div>
-          )}
-
           {/* Servers & Language Guidance */}
           <div className="p-3 sm:p-4 border-t border-white/10 glass flex flex-col gap-2.5 z-20">
-            {/* Erodium Alternate Players Row */}
+            {/* Erodium Alternate Players Row for Anime */}
             {selectedServer?.isAnimeSama && animeData?.players?.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto w-full pb-2 scrollbar-none border-b border-white/5 animate-fade-in">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400 flex-shrink-0">
                   <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                  <span>Hébergeurs Erodium :</span>
+                  <span>Hébergeurs Erodium (0 Pub) :</span>
                 </div>
                 {animeData.players.map((p, idx) => (
                   <button
@@ -1582,18 +1528,19 @@ export default function PlayerModal({
               <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 mr-1 flex-shrink-0">
                   <Server className="w-3.5 h-3.5 text-orange-400" />
-                  <span>Lecteurs ({selectedLanguage.toUpperCase()}) :</span>
+                  <span>Lecteur Certifié 0 Pub :</span>
                 </div>
 
-                {/* Bouton Serveur Suivant Rapide */}
-                <button
-                  onClick={handleNextServer}
-                  className="text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer"
-                  title="Tester automatiquement le serveur suivant si celui-ci ne charge pas ou affiche 404"
-                >
-                  <RotateCw className="w-3.5 h-3.5" />
-                  <span>⚡ Suivant</span>
-                </button>
+                {availableServers.length > 1 && (
+                  <button
+                    onClick={handleNextServer}
+                    className="text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer"
+                    title="Changer de serveur"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>⚡ Suivant</span>
+                  </button>
+                )}
 
                 {availableServers.map((server) => {
                   const isSelected = selectedServer.id === server.id;

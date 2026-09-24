@@ -513,35 +513,24 @@ export const ANIME_SAMA_VOSTFR_SERVER = ERODIUM_VOSTFR_SERVER;
  * - Pour les animés : place le Lecteur Erodium en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
  * - Pour les films et séries classiques : place VidMoly en #1 (base) et N'AFFICHE PAS Erodium !
  */
+/**
+ * Solution 1 : Plateforme 100% Épurée Erodium
+ * - Pour les animés : Lecteur Erodium (Anime-Sama VF / VOSTFR sans pub)
+ * - Pour les films et séries : Lecteur Erodium Natif (1080p FHD Direct sans pub, sans popup)
+ * ZÉRO hébergeur tiers parasite (aucun VidMoly, Frembed, Dood).
+ */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
-  const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
 
-  // CAS 1 : C'EST UN ANIMÉ -> Erodium en Lecteur #1 !
+  // CAS 1 : ANIMÉS -> Lecteur Erodium Anime-Sama (0 Pub)
   if (mediaInfo.isAnime) {
-    if (lang === "vf") {
-      return [
-        ERODIUM_VF_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vf" && s.id !== "erodium_direct"),
-      ];
-    }
     if (lang === "vostfr") {
-      return [
-        ERODIUM_VOSTFR_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vostfr" && s.id !== "erodium_direct"),
-      ];
+      return [ERODIUM_VOSTFR_SERVER];
     }
-    return baseServers;
+    return [ERODIUM_VF_SERVER];
   }
 
-  // CAS 2 : FILMS ET SÉRIES CLASSIQUES
-  // - Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
-  // - VidMoly en #2
-  // - TOUS les serveurs miroirs et propres restent disponibles sans exception !
-  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
-  return [
-    ERODIUM_DIRECT_MOVIE_SERVER,
-    ...filteredBase,
-  ];
+  // CAS 2 : FILMS ET SÉRIES -> Lecteur Erodium Natif (0 Pub FHD Direct)
+  return [ERODIUM_DIRECT_MOVIE_SERVER];
 };
 
