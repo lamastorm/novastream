@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users, Heart, Shield } from "lucide-react";
+import React, { useState } from "react";
+import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, Shield, Heart } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
+import DesktopSearchBar from "./DesktopSearchBar";
 
-export default function Navbar ({
+export default function Navbar({
   activeTab,
   setActiveTab,
   searchQuery,
@@ -10,42 +11,9 @@ export default function Navbar ({
   onOpenSettings,
   onOpenDonate,
   onRandomSurprise,
+  onOpenSearch,
 }) {
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [hasText, setHasText] = useState(Boolean(searchQuery));
-  const debounceRef = useRef(null);
-  const inputRef = useRef(null);
   const liveViewers = useLiveViewers();
-
-  // Sync external clear (e.g. clicking a nav tab) back into input DOM
-  useEffect(() => {
-    if (searchQuery === "") {
-      if (inputRef.current && inputRef.current.value !== "") {
-        inputRef.current.value = "";
-      }
-      setHasText(false);
-    }
-  }, [searchQuery]);
-
-  const handleInputChange = (e) => {
-    const val = e.target.value;
-    setHasText(Boolean(val));
-
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchQuery(val);
-    }, 300);
-  };
-
-  const handleClear = () => {
-    if (inputRef.current) {
-      inputRef.current.value = "";
-      inputRef.current.focus();
-    }
-    setHasText(false);
-    clearTimeout(debounceRef.current);
-    setSearchQuery("");
-  };
 
   const tabs = [
     { id: "home", label: "Accueil", icon: Sparkles },
@@ -96,11 +64,6 @@ export default function Navbar ({
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
-                {tab.badge && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                    {tab.badge}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -121,47 +84,32 @@ export default function Navbar ({
           <span className="text-emerald-400/80 font-medium text-[11px]">en ligne</span>
         </div>
 
-        {/* Search & Actions */}
+        {/* Right actions */}
         <div className="flex items-center gap-2 flex-1 max-w-xs md:max-w-md justify-end">
 
-          <div
-            className={`relative flex items-center w-full rounded-xl transition-all ${
-              isSearchFocused
-                ? "ring-2 ring-orange-500 bg-zinc-950 border-orange-500/50 shadow-md shadow-orange-500/20"
-                : "bg-zinc-900/80 hover:bg-zinc-900 border border-white/10"
-            }`}
-          >
-            <Search className="w-4 h-4 text-zinc-400 ml-3 flex-shrink-0" />
-            <input
-              ref={inputRef}
-              id="global-search-input"
-              type="text"
-              inputMode="search"
-              autoCapitalize="none"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck="false"
-              placeholder="Rechercher films, séries, animes..."
-              defaultValue={searchQuery || ""}
-              onChange={handleInputChange}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none text-left appearance-none"
-            />
-            {hasText ? (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="p-1 mr-2 text-zinc-400 hover:text-white rounded-md"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            ) : (
-              <span className="hidden lg:flex items-center text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded border border-white/10 mr-2 flex-shrink-0">
-                Ctrl+K
-              </span>
-            )}
+          {/* Desktop: inline search bar (no cursor issues on desktop) */}
+          <div className="hidden md:flex flex-1">
+            <DesktopSearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           </div>
+
+          {/* Mobile: search icon button → opens SearchOverlay */}
+          <button
+            onClick={onOpenSearch}
+            className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+              searchQuery
+                ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                : "bg-zinc-900/80 border-white/10 text-zinc-400 hover:text-white"
+            }`}
+            title="Rechercher"
+            aria-label="Ouvrir la recherche"
+          >
+            <Search className="w-4 h-4" />
+            {searchQuery ? (
+              <span className="text-xs max-w-[80px] truncate">{searchQuery}</span>
+            ) : (
+              <span className="text-xs text-zinc-500">Rechercher...</span>
+            )}
+          </button>
 
           {/* VPN Partner Link */}
           <a

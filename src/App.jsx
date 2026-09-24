@@ -24,6 +24,7 @@ import MoodSelector from "./components/MoodSelector";
 import LiveCatalogStats from "./components/LiveCatalogStats";
 import DonateModal from "./components/DonateModal";
 import VpnBanner from "./components/VpnBanner";
+import SearchOverlay from "./components/SearchOverlay";
 import {
   Film,
   Tv,
@@ -101,6 +102,7 @@ export default function App() {
   const [activePlayer, setActivePlayer] = useState(null); // { media, season, episode }
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
 
   // Watchlist & History
   const [favorites, setFavorites] = useState(storage.getWatchlist());
@@ -585,6 +587,18 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenDonate={() => setDonateOpen(true)}
         onRandomSurprise={handleRandomSurprise}
+        onOpenSearch={() => setSearchOverlayOpen(true)}
+      />
+
+      {/* Mobile Search Overlay — completely isolated from Navbar re-renders */}
+      <SearchOverlay
+        isOpen={searchOverlayOpen}
+        onClose={() => setSearchOverlayOpen(false)}
+        onSearch={(q) => {
+          setSearchQuery(q);
+          if (q) setSearchOverlayOpen(false);
+        }}
+        initialQuery={searchQuery}
       />
 
       {/* Floating Animated Catalog Stats on the Left (for wide screens) */}
