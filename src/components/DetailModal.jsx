@@ -16,6 +16,7 @@ import {
   Layers,
   Globe,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import { tmdbApi, IMAGE_BASE_URL } from "../api/tmdb";
 import { languageAdvisor } from "../services/languageAdvisor";
