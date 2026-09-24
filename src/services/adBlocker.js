@@ -5,7 +5,7 @@
 class AdBlockerService {
   constructor() {
     this.isEnabled = localStorage.getItem("erodium_antibouclier") !== "false";
-    this.strictMode = localStorage.getItem("erodium_strict_popups") !== "false";
+    this.strictMode = localStorage.getItem("erodium_strict_popups") === "true";
     this.blockedCount = 0;
     this.listeners = new Set();
     this.lastInteractionTime = 0;
@@ -137,20 +137,23 @@ class AdBlockerService {
   }
 
   /**
-   * Retourne la politique Sandbox hermétique (Espace Virtuel) pour l'iframe :
-   * - allow-scripts : permet au lecteur vidéo et aux contrôles de fonctionner
-   * - allow-same-origin : permet au lecteur d'accéder à ses fichiers vidéo et sous-titres
-   * - allow-forms & allow-presentation : AirPlay, Chromecast, plein écran
-   * SANS allow-popups ni allow-top-navigation :
-   * -> Le navigateur BLOQUE PHYSIQUEMENT 100% des popups en plein film et empêche toute redirection vers une autre page !
+   * Retourne la politique Sandbox pour l'iframe vidéo :
+   * NOTE : De nombreux hébergeurs (AutoEmbed, VidSrc) bloquent la lecture avec "Playback blocked"
+   * s'ils détectent l'attribut sandbox.
+   * Par défaut, on ne met PAS de sandbox sur l'iframe pour éviter cette détection,
+   * et on neutralise les pubs via l'interception de window.open, le focus lock et la Navigation API.
    */
-  getSandboxString(isStrict = true) {
+  getSandboxString(isStrict = false) {
     if (!this.isEnabled) {
       return undefined;
     }
 
-    // Le verrou hermétique actif par défaut
-    return "allow-scripts allow-same-origin allow-forms allow-presentation";
+    // Uniquement si l'utilisateur coche expressément le mode strict
+    if (isStrict === true && this.strictMode === true) {
+      return "allow-scripts allow-same-origin allow-forms allow-presentation";
+    }
+
+    return undefined;
   }
 
   showToast(message) {
