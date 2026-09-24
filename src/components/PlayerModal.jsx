@@ -55,10 +55,15 @@ export default function PlayerModal({
   const [strictPopupMode, setStrictPopupMode] = useState(() => adBlocker.strictMode);
 
   useEffect(() => {
-    return adBlocker.addListener((type, val) => {
+    adBlocker.setPlayerActive(true);
+    const unbind = adBlocker.addListener((type, val) => {
       if (type === "toggle") setAdBlockActive(val);
       if (type === "strictToggle") setStrictPopupMode(val);
     });
+    return () => {
+      adBlocker.setPlayerActive(false);
+      unbind();
+    };
   }, []);
 
   const needsVOSTFR = languageAdvisor.hasNoOfficialVF(media);

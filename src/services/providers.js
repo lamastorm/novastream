@@ -169,10 +169,10 @@ export const VIDMOLY_MIRROR_VF_SERVER = {
 
 export const AUTOEMBED_VF_SERVER = {
   id: "autoembed_vf",
-  name: "Serveur 3 (AutoEmbed • FHD Multi-FR)",
+  name: "Serveur 2 (AutoEmbed • FHD 0 Pub Multi-FR)",
   flag: "⚡",
-  badge: "⚡ FHD Multi-FR",
-  description: "Lecteur moderne haute vitesse, zéro pub intrusive, avec piste audio française.",
+  badge: "⚡ 0 Pub Multi-FR",
+  description: "Lecteur moderne haute vitesse sans pub (style Domgrav), avec piste audio française.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
       return `https://autoembed.co/movie/tmdb/${id}`;
@@ -181,23 +181,9 @@ export const AUTOEMBED_VF_SERVER = {
   },
 };
 
-export const VIDSRC_ME_VF_SERVER = {
-  id: "vidsrc_me_vf",
-  name: "Serveur 4 (VidSrc FR • 1080p VF)",
-  flag: "🇫🇷",
-  badge: "🇫🇷 VidSrc VF",
-  description: "Lecteur VidSrc éprouvé configuré avec doublage français.",
-  getUrl: (type, id, season = 1, episode = 1) => {
-    if (type === "movie") {
-      return `https://vidsrc.me/embed/movie?tmdb=${id}&ds_lang=fr`;
-    }
-    return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&ds_lang=fr`;
-  },
-};
-
 export const ANYEMBED_VF_SERVER = {
   id: "anyembed_vf",
-  name: "Serveur 5 (AnyEmbed • Multi 1080p / 4K)",
+  name: "Serveur 3 (AnyEmbed • Multi 1080p / 4K)",
   flag: "🌐",
   badge: "🌐 1080p/4K",
   description: "Lecteur HD rapide avec pistes audio multiples au choix sans coupure.",
@@ -206,6 +192,20 @@ export const ANYEMBED_VF_SERVER = {
       return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
     }
     return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
+  },
+};
+
+export const VIDSRC_ME_VF_SERVER = {
+  id: "vidsrc_me_vf",
+  name: "Serveur 5 (VidSrc FR • 1080p VF)",
+  flag: "🇫🇷",
+  badge: "🇫🇷 VidSrc VF",
+  description: "Lecteur VidSrc éprouvé configuré avec doublage français.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://vidsrc.me/embed/movie?tmdb=${id}&ds_lang=fr`;
+    }
+    return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&ds_lang=fr`;
   },
 };
 
@@ -271,10 +271,10 @@ export const STREAMING_SERVERS = {
   // ==========================================
   vf: [
     VIDMOLY_VF_SERVER,
-    VIDMOLY_MIRROR_VF_SERVER,
     AUTOEMBED_VF_SERVER,
-    VIDSRC_ME_VF_SERVER,
     ANYEMBED_VF_SERVER,
+    VIDMOLY_MIRROR_VF_SERVER,
+    VIDSRC_ME_VF_SERVER,
     VIDSRC_IN_VF_SERVER,
     TWOEMBED_VF_SERVER,
     PLAY123_VF_SERVER,
@@ -286,8 +286,21 @@ export const STREAMING_SERVERS = {
   // ==========================================
   vostfr: [
     {
+      id: "autoembed_co_vostfr",
+      name: "Serveur 1 (AutoEmbed FHD • ⚡ Sans Pub)",
+      flag: "⚡",
+      badge: "⚡ 0 Pub FHD",
+      description: "Lecteur moderne sans pub (style Domgrav), ultra fluide et rapide.",
+      getUrl: (type, id, season = 1, episode = 1) => {
+        if (type === "movie") {
+          return `https://autoembed.co/movie/tmdb/${id}`;
+        }
+        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
+      },
+    },
+    {
       id: "anyembed_direct_vostfr",
-      name: "Serveur 1 (AnyEmbed FHD • Multi-STFR)",
+      name: "Serveur 2 (AnyEmbed FHD • Multi-STFR)",
       flag: "💬",
       badge: "1080p CC",
       description: "Lecteur moderne sans coupure. Cliquez sur CC pour sélectionner les sous-titres.",
@@ -300,7 +313,7 @@ export const STREAMING_SERVERS = {
     },
     {
       id: "vidsrc_to_vostfr",
-      name: "Serveur 2 (VidSrc TO • STFR HD)",
+      name: "Serveur 3 (VidSrc TO • STFR HD)",
       flag: "💬",
       badge: "FHD Direct",
       description: "Lecteur éprouvé avec sous-titres intégrés.",
@@ -309,19 +322,6 @@ export const STREAMING_SERVERS = {
           return `https://vidsrc.to/embed/movie/${id}`;
         }
         return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
-      },
-    },
-    {
-      id: "autoembed_co_vostfr",
-      name: "Serveur 3 (AutoEmbed FHD • 1080p)",
-      flag: "💬",
-      badge: "1080p FHD Direct",
-      description: "Lecteur direct haute définition.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://autoembed.co/movie/tmdb/${id}`;
-        }
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
       },
     },
     {

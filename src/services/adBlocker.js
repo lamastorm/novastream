@@ -1,5 +1,6 @@
-// Service Anti-Pub & Anti-Popup Erodium
-// Spécialement optimisé pour téléphones (iOS / Android) et consoles (Xbox, PlayStation, TV)
+// Service Anti-Pub & Anti-Redirection Erodium
+// Inspiré des meilleures passerelles de streaming propres (Domgrav, Anime-Sama)
+// Optimisé pour téléphones (iOS / Android), consoles (Xbox, PlayStation) et TV
 
 class AdBlockerService {
   constructor() {
@@ -8,13 +9,15 @@ class AdBlockerService {
     this.blockedCount = 0;
     this.listeners = new Set();
     this.lastInteractionTime = 0;
+    this.isPlayerActive = false;
+    this.isLegitNav = false;
   }
 
   init() {
     if (typeof window === "undefined") return;
 
-    // Dummy mock window object returned to fooling ad scripts so they don't crash
-    // and don't attempt aggressive alternative redirection loops
+    // Objet fenêtre factice (Dummy Window Proxy) pour tromper les scripts de pub
+    // afin qu'ils n'essayent pas de boucles de redirection alternatives violentes
     const dummyWindow = {
       closed: false,
       close: () => {},
@@ -47,22 +50,50 @@ class AdBlockerService {
 
         this.blockedCount++;
         this.notifyListeners("popup", url);
-        console.warn("[Erodium Anti-Pub] Pop-up publicitaire neutralisé :", url);
-        this.showToast("🛡️ Pop-up publicitaire bloqué");
+        console.warn("[Erodium Anti-Pub] Pop-up publicitaire bloqué :", url);
+        this.showToast("🛡️ Pop-up publicitaire bloqué (Style Domgrav)");
         return dummyWindow;
       };
     } catch (e) {
       console.error("Erreur init window.open trap", e);
     }
 
-    // 2. Empêcher les tentatives de redirection forcée vers des pages publicitaires
+    // 2. Interception native des redirections de page via la Navigation API (Chrome, Edge, Xbox, Android)
+    // Permet de bloquer à 100% les redirections vers Wyylde ou autres sites sans avoir besoin de sandbox !
+    if (typeof window !== "undefined" && window.navigation) {
+      try {
+        window.navigation.addEventListener("navigate", (event) => {
+          if (!this.isEnabled || !this.isPlayerActive || this.isLegitNav) return;
+          try {
+            const destUrl = event.destination?.url;
+            if (!destUrl) return;
+            const dest = new URL(destUrl);
+            const isInternal =
+              dest.origin === window.location.origin ||
+              dest.hostname.includes("themoviedb.org") ||
+              dest.hostname.includes("youtube.com") ||
+              dest.hostname.includes("vercel.app");
+
+            if (!isInternal) {
+              console.warn("[Erodium Anti-Pub] Tentative de redirection de page annulée :", destUrl);
+              event.preventDefault(); // Annule la redirection top-level !
+              this.showToast("🛡️ Redirection publicitaire bloquée");
+            }
+          } catch (err) {}
+        });
+      } catch (e) {
+        console.error("Erreur Navigation API trap", e);
+      }
+    }
+
+    // 3. Empêcher les tentatives de redirection forcée vers des pages publicitaires
     window.addEventListener("beforeunload", (e) => {
-      if (this.isEnabled) {
+      if (this.isEnabled && this.isPlayerActive && !this.isLegitNav) {
         delete e["returnValue"];
       }
     });
 
-    // 3. Suivi des interactions tactiles / manettes pour verrouiller le focus Erodium
+    // 4. Suivi des interactions tactiles / manettes pour verrouiller le focus Erodium
     window.addEventListener(
       "pointerdown",
       () => {
@@ -71,9 +102,9 @@ class AdBlockerService {
       { passive: true, capture: true }
     );
 
-    // Si une popup ou redirection dérobe le focus de l'écran lors d'un tap sur le lecteur
+    // Si une popup ou redirection tente de dérober le focus de l'écran lors d'un tap sur le lecteur
     window.addEventListener("blur", () => {
-      if (this.isEnabled && Date.now() - this.lastInteractionTime < 1800) {
+      if (this.isEnabled && this.isPlayerActive && Date.now() - this.lastInteractionTime < 2200) {
         setTimeout(() => {
           try {
             window.focus();
@@ -82,7 +113,15 @@ class AdBlockerService {
       }
     });
 
-    console.log("[Erodium Anti-Pub] Bouclier anti-pub et anti-redirection actif.");
+    console.log("[Erodium Anti-Pub] Bouclier anti-pub actif (mode propre style Domgrav).");
+  }
+
+  setPlayerActive(active) {
+    this.isPlayerActive = !!active;
+  }
+
+  setLegitNav(val) {
+    this.isLegitNav = !!val;
   }
 
   setEnabled(val) {
@@ -98,24 +137,24 @@ class AdBlockerService {
   }
 
   /**
-   * Retourne la politique Sandbox stricte pour l'iframe vidéo :
-   * - EXCLUT STRICTEMENT "allow-top-navigation" et "allow-top-navigation-by-user-activation" !
-   * - L'iframe ne peut JAMAIS rediriger Erodium vers un autre site (ex: Wyylde ou faux Opera).
+   * Retourne la politique Sandbox pour l'iframe vidéo :
+   * NOTE CRITIQUE : De nombreux hébergeurs (VidSrc, etc.) bloquent explicitement les iframes sandboxées
+   * avec l'erreur "This content can't be embedded in a sandboxed frame".
+   * Par défaut, on retourne undefined (aucun sandbox) afin de garantir la compatibilité à 100% de tous les lecteurs,
+   * tout en protégeant le site via l'interception de la Navigation API et le window.open trap.
    */
   getSandboxString(isStrict = false) {
     if (!this.isEnabled) {
-      return "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups";
+      return undefined;
     }
 
+    // Uniquement si l'utilisateur active explicitement le mode sandbox strict
     if (isStrict || this.strictMode) {
-      // Mode Ultra-Strict : Zéro Pop-up, Zéro nouvel onglet
       return "allow-scripts allow-same-origin allow-forms allow-presentation";
     }
 
-    // Mode Standard (Recommandé) :
-    // Autorise scripts, plein écran, DRM et sessions internes du lecteur
-    // MAIS INTERDIT STRICTEMENT la redirection de la page mère Erodium !
-    return "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox";
+    // Par défaut, pas d'attribut sandbox pour éviter le blocage "This content can't be embedded in a sandboxed frame"
+    return undefined;
   }
 
   showToast(message) {
