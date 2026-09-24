@@ -5,7 +5,7 @@
 class AdBlockerService {
   constructor() {
     this.isEnabled = localStorage.getItem("erodium_antibouclier") !== "false";
-    this.strictMode = localStorage.getItem("erodium_strict_popups") === "true";
+    this.strictMode = localStorage.getItem("erodium_strict_popups") !== "false";
     this.blockedCount = 0;
     this.listeners = new Set();
     this.lastInteractionTime = 0;
@@ -137,24 +137,20 @@ class AdBlockerService {
   }
 
   /**
-   * Retourne la politique Sandbox pour l'iframe vidéo :
-   * NOTE CRITIQUE : De nombreux hébergeurs (VidSrc, etc.) bloquent explicitement les iframes sandboxées
-   * avec l'erreur "This content can't be embedded in a sandboxed frame".
-   * Par défaut, on retourne undefined (aucun sandbox) afin de garantir la compatibilité à 100% de tous les lecteurs,
-   * tout en protégeant le site via l'interception de la Navigation API et le window.open trap.
+   * Retourne la politique Sandbox hermétique (Espace Virtuel) pour l'iframe :
+   * - allow-scripts : permet au lecteur vidéo et aux contrôles de fonctionner
+   * - allow-same-origin : permet au lecteur d'accéder à ses fichiers vidéo et sous-titres
+   * - allow-forms & allow-presentation : AirPlay, Chromecast, plein écran
+   * SANS allow-popups ni allow-top-navigation :
+   * -> Le navigateur BLOQUE PHYSIQUEMENT 100% des popups en plein film et empêche toute redirection vers une autre page !
    */
-  getSandboxString(isStrict = false) {
+  getSandboxString(isStrict = true) {
     if (!this.isEnabled) {
       return undefined;
     }
 
-    // Uniquement si l'utilisateur active explicitement le mode sandbox strict
-    if (isStrict || this.strictMode) {
-      return "allow-scripts allow-same-origin allow-forms allow-presentation";
-    }
-
-    // Par défaut, pas d'attribut sandbox pour éviter le blocage "This content can't be embedded in a sandboxed frame"
-    return undefined;
+    // Le verrou hermétique actif par défaut
+    return "allow-scripts allow-same-origin allow-forms allow-presentation";
   }
 
   showToast(message) {
