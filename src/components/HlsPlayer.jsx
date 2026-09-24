@@ -117,9 +117,16 @@ export default function HlsPlayer({
         if (hls.audioTracks && hls.audioTracks.length > 0) {
           setAudioTracks([...hls.audioTracks]);
           const langTarget = preferredLanguage === "vostfr" ? "en" : "fr";
-          const matchIdx = hls.audioTracks.findIndex(
-            (t) => t.lang?.toLowerCase().startsWith(langTarget)
+          let matchIdx = hls.audioTracks.findIndex(
+            (t) =>
+              t.lang?.toLowerCase().startsWith(langTarget) ||
+              t.name?.toLowerCase().includes(langTarget === "fr" ? "french" : "english") ||
+              t.name?.toLowerCase().includes(langTarget === "fr" ? "français" : "anglais")
           );
+          // Si on cherche du français et qu'il n'y a pas de code 'fr', tester 'fre'/'fra'
+          if (matchIdx < 0 && langTarget === "fr") {
+            matchIdx = hls.audioTracks.findIndex((t) => t.lang === "fra" || t.lang === "fre");
+          }
           if (matchIdx >= 0 && matchIdx !== hls.audioTrack) {
             hls.audioTrack = matchIdx;
             setSelectedAudio(matchIdx);
@@ -511,9 +518,20 @@ export default function HlsPlayer({
                       </div>
                       <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                         {audioTracks.map((track, idx) => {
-                          const isFr = track.lang?.toLowerCase().startsWith("fr") || track.name?.toLowerCase().includes("french") || track.name?.toLowerCase().includes("français");
-                          const isEn = track.lang?.toLowerCase().startsWith("en") || track.name?.toLowerCase().includes("english") || track.name?.toLowerCase().includes("anglais");
-                          const label = isFr ? "🇫🇷 Français 5.1" : isEn ? "🇬🇧 Anglais 5.1" : (track.name || `Piste ${idx + 1}`);
+                          const langCode = (track.lang || "").toLowerCase();
+                          const trackName = (track.name || "").toLowerCase();
+                          const isFr = langCode.startsWith("fr") || trackName.includes("french") || trackName.includes("français");
+                          const isEn = langCode.startsWith("en") || trackName.includes("english") || trackName.includes("anglais");
+                          const isJa = langCode.startsWith("ja") || trackName.includes("japan") || trackName.includes("japonais");
+                          const label = isFr
+                            ? "🇫🇷 Français 5.1"
+                            : isEn
+                            ? "🇬🇧 Anglais 5.1"
+                            : isJa
+                            ? "🇯🇵 Japonais (VO)"
+                            : track.lang === "und"
+                            ? `Piste ${idx + 1}`
+                            : (track.name || `Piste ${idx + 1}`);
                           return (
                             <button
                               key={idx}

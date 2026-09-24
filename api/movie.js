@@ -15,6 +15,10 @@ function fetchUrl(url, maxRedirects = 5, timeoutMs = 8000) {
         if (!loc.startsWith('http')) {
           loc = new URL(loc, url).toString();
         }
+        // Si papadustream redirige vers la racine (404 pour ce média)
+        if (loc.replace(/\/$/, '') === 'https://www.papadustream.club' || loc.replace(/\/$/, '') === 'https://papadustream.club') {
+          return resolve({ status: 404, body: '', headers: res.headers, url });
+        }
         if (maxRedirects > 0) {
           return fetchUrl(loc, maxRedirects - 1, timeoutMs).then(resolve).catch(reject);
         }
