@@ -17,7 +17,7 @@ export default function DonateModal({ onClose }) {
   const { donations } = MONETIZATION_CONFIG;
   const [selectedWallet, setSelectedWallet] = useState(donations.cryptoWallets[0]);
   const [copiedId, setCopiedId] = useState(null);
-  const [showQr, setShowQr] = useState(false);
+  const [showQr, setShowQr] = useState(true);
 
   const handleCopy = (wallet) => {
     navigator.clipboard.writeText(wallet.address);
@@ -99,26 +99,28 @@ export default function DonateModal({ onClose }) {
             </button>
           </div>
 
-          {/* Crypto Selector Chips */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {donations.cryptoWallets.map((wallet) => {
-              const isSelected = selectedWallet.id === wallet.id;
-              return (
-                <button
-                  key={wallet.id}
-                  onClick={() => setSelectedWallet(wallet)}
-                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-white/10 border-orange-500/80 shadow-md shadow-orange-500/10"
-                      : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <p className="text-xs font-black text-white truncate">{wallet.coin}</p>
-                  <p className="text-[10px] text-zinc-400 truncate">{wallet.network}</p>
-                </button>
-              );
-            })}
-          </div>
+          {/* Crypto Selector Chips (si plusieurs cryptos) */}
+          {donations.cryptoWallets.length > 1 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {donations.cryptoWallets.map((wallet) => {
+                const isSelected = selectedWallet.id === wallet.id;
+                return (
+                  <button
+                    key={wallet.id}
+                    onClick={() => setSelectedWallet(wallet)}
+                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-white/10 border-orange-500/80 shadow-md shadow-orange-500/10"
+                        : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    <p className="text-xs font-black text-white truncate">{wallet.coin}</p>
+                    <p className="text-[10px] text-zinc-400 truncate">{wallet.network}</p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Selected Wallet Detail Box */}
           {selectedWallet && (

@@ -47,44 +47,12 @@ export const MONETIZATION_CONFIG = {
     // Adresses de portefeuilles Crypto (anonymes, sans risque de blocage de compte)
     cryptoWallets: [
       {
-        id: "usdt_trc20",
-        coin: "USDT (TRC-20)",
-        network: "TRON",
-        address: "TYourTronAddressHereXXXXXXXXXXXXXXX", // Remplacez par votre adresse USDT TRC20
-        tag: "Recommandé (Frais minimes < 1$)",
-        color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10",
-      },
-      {
         id: "btc",
         coin: "Bitcoin (BTC)",
-        network: "Bitcoin Native",
-        address: "bc1qYourBitcoinAddressHereXXXXXXXXXXXX", // Remplacez par votre adresse BTC
-        tag: "Standard",
+        network: "Bitcoin Native (SegWit)",
+        address: "bc1qj2jn0hjcsn964w72tp3690ygxg5hc9pj0u5trr",
+        tag: "Principal",
         color: "text-amber-400 border-amber-500/40 bg-amber-500/10",
-      },
-      {
-        id: "sol",
-        coin: "Solana (SOL)",
-        network: "Solana",
-        address: "YourSolanaAddressHereXXXXXXXXXXXXXXXXXX", // Remplacez par votre adresse SOL
-        tag: "Ultra-rapide & quasi 0 frais",
-        color: "text-purple-400 border-purple-500/40 bg-purple-500/10",
-      },
-      {
-        id: "eth",
-        coin: "Ethereum (ETH / ERC-20)",
-        network: "Ethereum",
-        address: "0xYourEthereumAddressHereXXXXXXXXXXXXXXX", // Remplacez par votre adresse ETH
-        tag: "ETH & tokens ERC-20",
-        color: "text-blue-400 border-blue-500/40 bg-blue-500/10",
-      },
-      {
-        id: "xmr",
-        coin: "Monero (XMR)",
-        network: "Monero",
-        address: "4YourMoneroAddressHereXXXXXXXXXXXXXXXXX", // Remplacez par votre adresse XMR
-        tag: "100% Anonyme",
-        color: "text-orange-400 border-orange-500/40 bg-orange-500/10",
       },
     ],
   },
