@@ -18,7 +18,6 @@ export default function Navbar({
     { id: "movies", label: "Films", icon: Film },
     { id: "series", label: "Séries", icon: Tv },
     { id: "anime", label: "Animes", icon: Play },
-    { id: "trakt", label: "Listes Trakt", icon: Layers, badge: "Sélections" },
     { id: "favorites", label: "Favoris", icon: Bookmark },
   ];
 
@@ -90,15 +89,6 @@ export default function Navbar({
 
         {/* Search & Actions */}
         <div className="flex items-center gap-2 flex-1 max-w-xs md:max-w-md justify-end">
-          {/* Random Surprise Button */}
-          <button
-            onClick={onRandomSurprise}
-            title="Surprenez-moi ! (Tirage aléatoire d'un film ou anime)"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-orange-600/30 to-amber-600/30 hover:from-orange-600/50 hover:to-amber-600/50 border border-orange-500/40 text-orange-300 hover:text-white text-xs font-bold transition-all whitespace-nowrap shadow-sm hover:scale-105"
-          >
-            <span>🎲</span>
-            <span className="hidden lg:inline">Surprenez-moi</span>
-          </button>
 
           <div
             className={`relative flex items-center w-full rounded-xl transition-all ${

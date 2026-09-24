@@ -21,6 +21,7 @@ import { languageAdvisor } from "./services/languageAdvisor";
 import { deviceAdvisor } from "./services/deviceAdvisor";
 import { gamepadService } from "./services/gamepadService";
 import MoodSelector from "./components/MoodSelector";
+import LiveCatalogStats from "./components/LiveCatalogStats";
 import {
   Film,
   Tv,
@@ -581,6 +582,11 @@ export default function App() {
         onRandomSurprise={handleRandomSurprise}
       />
 
+      {/* Floating Animated Catalog Stats on the Left (for wide screens) */}
+      {activeTab === "home" && !searchQuery.trim() && (
+        <LiveCatalogStats isFloating={true} />
+      )}
+
       {/* Main Page Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-8">
         {/* VIEW 1: SEARCH ACTIVE */}
@@ -677,6 +683,9 @@ export default function App() {
                     onToggleFavorite={toggleFavorite}
                   />
                 )}
+
+                {/* Animated Library Status Banner (Visible on all screens) */}
+                <LiveCatalogStats isFloating={false} />
 
                 {/* History / Continuer la lecture (if any) */}
                 {history.length > 0 && (
@@ -821,19 +830,6 @@ export default function App() {
                       onToggleFavorite={toggleFavorite}
                       badge="Nouveau"
                     />
-
-                    {/* SELECTION TRAKT.TV : MINDFUCK & TWISTS */}
-                    {traktHomeFeatured.length > 0 && (
-                      <MediaRow
-                        title="🧠 Sélections Trakt.tv : Mindfuck & Twists Cultes"
-                        subtitle="Les films aux retournements de situation légendaires plébiscités par la communauté"
-                        items={traktHomeFeatured}
-                        onSelect={(item) => setSelectedMedia(item)}
-                        favorites={favorites}
-                        onToggleFavorite={toggleFavorite}
-                        badge="Trakt.tv"
-                      />
-                    )}
 
                     {/* Shonen & Action */}
                     <MediaRow
@@ -1368,79 +1364,7 @@ export default function App() {
             </div>
           )}
 
-            {/* VIEW: TRAKT.TV COMMUNITY LISTS */}
-            {activeTab === "trakt" && (
-              <div>
-                <div className="flex flex-col gap-4 mb-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <Layers className="w-6 h-6 text-purple-400" />
-                        <span>Sélections Communautaires Trakt.tv</span>
-                      </h2>
-                      <p className="text-xs text-zinc-400 mt-1">
-                        Listes cultes créées et notées par la communauté cinématographique
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                      Collections Trakt
-                    </span>
-                  </div>
-
-                  {/* Trakt Lists Pills */}
-                  <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                    {traktLists.map((list) => {
-                      const isSelected = selectedTraktList === list.id;
-                      return (
-                        <button
-                          key={list.id}
-                          onClick={() => setSelectedTraktList(list.id)}
-                          className={`text-xs font-semibold px-4 py-2.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
-                            isSelected
-                              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 scale-105"
-                              : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700"
-                          }`}
-                        >
-                          <span>{list.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Active List Description */}
-                  {(() => {
-                    const currentList = traktLists.find((l) => l.id === selectedTraktList);
-                    return currentList ? (
-                      <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/20 text-xs text-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <span>💡 {currentList.description}</span>
-                        <span className="text-zinc-400 font-semibold">{traktItems.length} titres recommandés</span>
-                      </div>
-                    ) : null;
-                  })()}
-                </div>
-
-                {traktLoading ? (
-                  <div className="py-24 flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
-                    <span className="text-xs text-zinc-400">Chargement de la sélection Trakt.tv...</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {traktItems.map((item, idx) => (
-                      <MediaCard
-                        key={`${item.id}-${item.media_type}-${idx}`}
-                        item={item}
-                        onSelect={() => setSelectedMedia(item)}
-                        isFavorite={isItemFavorite(item)}
-                        onToggleFavorite={toggleFavorite}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* VIEW 6: FAVORIS / WATCHLIST */}
+            {/* VIEW: FAVORIS / WATCHLIST */}
             {activeTab === "favorites" && (
               <div>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
