@@ -28,7 +28,7 @@ export const MONETIZATION_CONFIG = {
     // Suivi d'objectif mensuel
     monthlyGoal: {
       targetEuros: 120,
-      currentEuros: 48,
+      currentEuros: 0,
       currency: "€",
     },
 
