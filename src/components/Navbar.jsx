@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users, Heart, Shield } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
 
-export default function Navbar({
+export default function Navbar ({
   activeTab,
   setActiveTab,
   searchQuery,
