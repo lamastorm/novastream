@@ -118,21 +118,29 @@ export default function Navbar({
                 ? "ring-2 ring-orange-500 bg-zinc-950 border-orange-500/50 shadow-md shadow-orange-500/20"
                 : "bg-zinc-900/80 hover:bg-zinc-900 border border-white/10"
             }`}
+            dir="ltr"
           >
             <Search className="w-4 h-4 text-zinc-400 ml-3 flex-shrink-0" />
             <input
               id="global-search-input"
-              type="text"
-              inputMode="search"
+              type="search"
+              inputMode="text"
+              dir="ltr"
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               placeholder="Rechercher films, séries, animes..."
               value={inputValue}
               onChange={handleInputChange}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none"
+              className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none text-left appearance-none"
+              style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate" }}
             />
             {inputValue ? (
               <button
+                type="button"
                 onClick={handleClear}
                 className="p-1 mr-2 text-zinc-400 hover:text-white rounded-md"
               >
