@@ -12,27 +12,29 @@ export default function Navbar({
   onRandomSurprise,
 }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [inputValue, setInputValue] = useState(searchQuery);
+  const [hasText, setHasText] = useState(Boolean(searchQuery));
   const debounceRef = useRef(null);
   const inputRef = useRef(null);
   const liveViewers = useLiveViewers();
 
-  // Sync external clear (e.g. clicking a nav tab) back into local state
+  // Sync external clear (e.g. clicking a nav tab) back into input DOM
   useEffect(() => {
-    if (searchQuery === "") setInputValue("");
+    if (searchQuery === "") {
+      if (inputRef.current && inputRef.current.value !== "") {
+        inputRef.current.value = "";
+      }
+      setHasText(false);
+    } else {
+      if (inputRef.current && inputRef.current.value !== searchQuery) {
+        inputRef.current.value = searchQuery;
+      }
+      setHasText(true);
+    }
   }, [searchQuery]);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
-    const pos = e.target.selectionStart;
-    setInputValue(val);
-
-    // Keep cursor at exact typed position on mobile (prevents cursor jumping to 0 -> 'the' becoming 'eht')
-    requestAnimationFrame(() => {
-      if (inputRef.current && typeof inputRef.current.setSelectionRange === "function") {
-        inputRef.current.setSelectionRange(pos, pos);
-      }
-    });
+    setHasText(Boolean(val));
 
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -41,9 +43,13 @@ export default function Navbar({
   };
 
   const handleClear = () => {
-    setInputValue("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.focus();
+    }
+    setHasText(false);
+    clearTimeout(debounceRef.current);
     setSearchQuery("");
-    if (inputRef.current) inputRef.current.focus();
   };
 
   const tabs = [
@@ -141,13 +147,13 @@ export default function Navbar({
               autoCorrect="off"
               spellCheck="false"
               placeholder="Rechercher films, séries, animes..."
-              value={inputValue}
+              defaultValue={searchQuery || ""}
               onChange={handleInputChange}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none text-left appearance-none"
             />
-            {inputValue ? (
+            {hasText ? (
               <button
                 type="button"
                 onClick={handleClear}
