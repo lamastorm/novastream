@@ -1,11 +1,11 @@
 import https from 'https';
 
-function fetchPlaylist(url) {
+function fetchPlaylistText(url) {
   return new Promise((resolve, reject) => {
     https.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://www.papadustream.club/'
+        'Referer': 'https://papadustream.club/'
       }
     }, res => {
       let d = '';
@@ -21,7 +21,7 @@ export function rewritePlaylist(content, baseUrl) {
     const trimmed = line.trim();
     if (!trimmed) return line;
 
-    // Handle URI attributes (audio / subtitles)
+    // Handle URI attributes for audio and subtitles
     if (trimmed.includes('URI="')) {
       return trimmed.replace(/URI=["']([^"']+)["']/g, (m, uri) => {
         const abs = new URL(uri, baseUrl).toString();
@@ -29,23 +29,14 @@ export function rewritePlaylist(content, baseUrl) {
       });
     }
 
-    // Comment or tag
+    // Pass comments and tags as is
     if (trimmed.startsWith('#')) {
       return line;
     }
 
-    // URL to sub-playlist (.m3u8)
-    if (trimmed.includes('.m3u8')) {
-      const abs = new URL(trimmed, baseUrl).toString();
-      return `/api/hls-proxy?url=${encodeURIComponent(abs)}`;
-    }
-
-    // Video segment (.ts) -> point directly to CDN with absolute URL
-    if (trimmed.includes('.ts')) {
-      return new URL(trimmed, baseUrl).toString();
-    }
-
-    return line;
+    // Both .m3u8 and .ts pass through the proxy so there are ZERO duplicate CORS headers
+    const abs = new URL(trimmed, baseUrl).toString();
+    return `/api/hls-proxy?url=${encodeURIComponent(abs)}`;
   });
 
   return rewritten.join('\n');
@@ -67,8 +58,36 @@ export default async function handler(req, res) {
 
   try {
     const decodedUrl = decodeURIComponent(url);
-    const result = await fetchPlaylist(decodedUrl);
 
+    // 1. If it's a TS segment (binary video/audio chunk)
+    if (decodedUrl.includes('.ts')) {
+      const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://papadustream.club/'
+      };
+      if (req.headers['range']) {
+        headers['Range'] = req.headers['range'];
+      }
+
+      const clientReq = https.get(decodedUrl, { headers }, (clientRes) => {
+        res.writeHead(clientRes.statusCode, {
+          'Content-Type': 'video/mp2t',
+          'Content-Length': clientRes.headers['content-length'] || '',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+          'Accept-Ranges': 'bytes'
+        });
+        clientRes.pipe(res);
+      });
+
+      clientReq.on('error', (e) => {
+        if (!res.headersSent) res.status(500).send(e.message);
+      });
+      return;
+    }
+
+    // 2. If it's a playlist (.m3u8)
+    const result = await fetchPlaylistText(decodedUrl);
     if (result.status !== 200) {
       return res.status(result.status).send('Erreur récupération playlist');
     }
@@ -78,6 +97,6 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=1800');
     return res.status(200).send(modified);
   } catch (err) {
-    return res.status(500).send(err.message);
+    if (!res.headersSent) return res.status(500).send(err.message);
   }
 }

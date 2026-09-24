@@ -51,6 +51,20 @@ function apiPlugin() {
           return;
         }
 
+        if (req.url.startsWith('/api/hls-proxy')) {
+          try {
+            const hlsHandler = (await import('./api/hls-proxy.js')).default;
+            const parsedUrl = new URL(req.url, 'http://localhost');
+            const query = Object.fromEntries(parsedUrl.searchParams.entries());
+            req.query = query;
+            await hlsHandler(req, res);
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(err.message);
+          }
+          return;
+        }
+
         next();
       });
     }
