@@ -24,11 +24,6 @@ export default function Navbar({
         inputRef.current.value = "";
       }
       setHasText(false);
-    } else {
-      if (inputRef.current && inputRef.current.value !== searchQuery) {
-        inputRef.current.value = searchQuery;
-      }
-      setHasText(true);
     }
   }, [searchQuery]);
 
