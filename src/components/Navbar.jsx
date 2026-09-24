@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users, Heart } from "lucide-react";
+import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, X, Layers, Users, Heart, Shield } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
 
 export default function Navbar({
@@ -122,6 +122,18 @@ export default function Navbar({
               </span>
             )}
           </div>
+
+          {/* VPN Partner Link */}
+          <a
+            href="https://www.cyberghostvpn.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Partenaire VPN Sécurité & Débridage (-83%)"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer flex-shrink-0"
+          >
+            <Shield className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">VPN (-83%)</span>
+          </a>
 
           {/* Donate / Support Button */}
           <button

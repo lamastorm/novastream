@@ -692,6 +692,9 @@ export default function App() {
                 {/* Animated Library Status Banner (Visible on all screens) */}
                 <LiveCatalogStats isFloating={false} />
 
+                {/* Partenaire VPN Sécurité & Débridage (Haute Visibilité) */}
+                <VpnBanner />
+
                 {/* History / Continuer la lecture (if any) */}
                 {history.length > 0 && (
                   <MediaRow
@@ -1545,10 +1548,6 @@ export default function App() {
               </div>
             )}
           </>
-        )}
-        {/* Affiliation VPN Banner (Home Tab) */}
-        {activeTab === "home" && !searchQuery.trim() && (
-          <VpnBanner />
         )}
       </main>
 

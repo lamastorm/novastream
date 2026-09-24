@@ -5,14 +5,14 @@ import { MONETIZATION_CONFIG } from "../config/monetization";
 export default function VpnBanner({ isCompact = false }) {
   const { vpn } = MONETIZATION_CONFIG;
   const [isDismissed, setIsDismissed] = useState(() => {
-    return localStorage.getItem("erodium_vpn_banner_dismissed") === "true";
+    return sessionStorage.getItem("erodium_vpn_banner_dismissed") === "true";
   });
 
   if (!vpn.enabled || isDismissed) return null;
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    localStorage.setItem("erodium_vpn_banner_dismissed", "true");
+    sessionStorage.setItem("erodium_vpn_banner_dismissed", "true");
   };
 
   if (isCompact) {
