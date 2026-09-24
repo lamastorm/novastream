@@ -48,6 +48,8 @@ export default function HlsPlayer({
   const [subtitleTracks, setSubtitleTracks] = useState([]);
   const [selectedSubtitle, setSelectedSubtitle] = useState(-1); // -1 = Off
 
+  const [isBuffering, setIsBuffering] = useState(true);
+
   // Settings Menu
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState("menu"); // "menu" | "quality" | "audio" | "subs" | "speed"
@@ -73,11 +75,14 @@ export default function HlsPlayer({
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
+    setIsBuffering(true);
+
     if (Hls.isSupported() && streamUrl.includes(".m3u8")) {
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90,
+        enableWebVTT: true,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
       });
       hlsRef.current = hls;
 
@@ -85,6 +90,7 @@ export default function HlsPlayer({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        setIsBuffering(false);
         // Video Qualities
         const levels = data.levels.map((l, index) => ({
           index,
@@ -93,46 +99,28 @@ export default function HlsPlayer({
         }));
         setQualityLevels(levels);
 
-        // Audio Tracks
-        if (hls.audioTracks && hls.audioTracks.length > 0) {
-          setAudioTracks(hls.audioTracks);
-          const langTarget = preferredLanguage === "vostfr" ? "en" : "fr";
-          const matchIdx = hls.audioTracks.findIndex(
-            (t) => t.lang?.toLowerCase().startsWith(langTarget)
-          );
-          if (matchIdx >= 0) {
-            hls.audioTrack = matchIdx;
-            setSelectedAudio(matchIdx);
-          } else {
-            setSelectedAudio(hls.audioTrack || 0);
-          }
-        }
-
         // Subtitles
         if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
-          setSubtitleTracks(hls.subtitleTracks);
-          if (preferredLanguage === "vostfr") {
-            const frSubIdx = hls.subtitleTracks.findIndex(
-              (t) => t.lang?.toLowerCase().startsWith("fr")
-            );
-            if (frSubIdx >= 0) {
-              hls.subtitleTrack = frSubIdx;
-              setSelectedSubtitle(frSubIdx);
-            }
-          }
+          setSubtitleTracks([...hls.subtitleTracks]);
         }
 
-        video.play().catch(() => {});
+        // Attempt playback (muted fallback if browser blocks sound autoplay)
+        video.play().then(() => {
+          setIsPlaying(true);
+        }).catch(() => {
+          // Autoplay was prevented by browser policy, keep paused and show big play button
+          setIsPlaying(false);
+        });
       });
 
       hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
-        if (hls.audioTracks) {
+        if (hls.audioTracks && hls.audioTracks.length > 0) {
           setAudioTracks([...hls.audioTracks]);
           const langTarget = preferredLanguage === "vostfr" ? "en" : "fr";
           const matchIdx = hls.audioTracks.findIndex(
             (t) => t.lang?.toLowerCase().startsWith(langTarget)
           );
-          if (matchIdx >= 0) {
+          if (matchIdx >= 0 && matchIdx !== hls.audioTrack) {
             hls.audioTrack = matchIdx;
             setSelectedAudio(matchIdx);
           }
@@ -157,6 +145,23 @@ export default function HlsPlayer({
         setSelectedQuality(data.level);
       });
 
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        console.warn("HLS event error:", data);
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              break;
+          }
+        }
+      });
+
       return () => {
         hls.destroy();
       };
@@ -167,7 +172,7 @@ export default function HlsPlayer({
       }
       video.src = streamUrl;
       video.load();
-      video.play().catch(() => {});
+      video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   }, [streamUrl, preferredLanguage]);
 
@@ -282,12 +287,25 @@ export default function HlsPlayer({
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
+        onCanPlay={() => setIsBuffering(false)}
         onEnded={onEnded}
         onClick={togglePlay}
         playsInline
         style={videoFilter ? { filter: videoFilter } : undefined}
         className="w-full h-full object-contain cursor-pointer transition-[filter] duration-300"
       />
+
+      {/* Buffering Spinner */}
+      {isBuffering && isPlaying && (
+        <div className="absolute z-20 pointer-events-none flex flex-col items-center gap-3 animate-fade-in">
+          <div className="w-12 h-12 rounded-full border-4 border-orange-500/30 border-t-orange-500 animate-spin" />
+          <span className="text-xs text-white/90 font-bold drop-shadow px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
+            Chargement HD...
+          </span>
+        </div>
+      )}
 
       {/* Floating Center Play Button when paused */}
       {!isPlaying && (
