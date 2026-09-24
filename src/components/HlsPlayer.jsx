@@ -81,6 +81,7 @@ export default function HlsPlayer({
       const hls = new Hls({
         enableWorker: true,
         enableWebVTT: true,
+        subtitleDisplay: true,
         maxBufferLength: 60,
         maxMaxBufferLength: 120,
       });
@@ -258,9 +259,15 @@ export default function HlsPlayer({
   const handleSubtitleChange = (subIndex) => {
     if (hlsRef.current) {
       hlsRef.current.subtitleTrack = subIndex;
+      hlsRef.current.subtitleDisplay = subIndex >= 0;
       setSelectedSubtitle(subIndex);
       setShowSettings(false);
       setActiveTab("menu");
+    }
+    if (videoRef.current?.textTracks) {
+      for (let i = 0; i < videoRef.current.textTracks.length; i++) {
+        videoRef.current.textTracks[i].mode = i === subIndex ? "showing" : "disabled";
+      }
     }
   };
 

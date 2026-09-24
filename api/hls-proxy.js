@@ -86,6 +86,18 @@ export default async function handler(req, res) {
       return;
     }
 
+    // 1b. If it's a VTT subtitle file
+    if (decodedUrl.includes('.vtt')) {
+      const result = await fetchPlaylistText(decodedUrl);
+      if (result.status !== 200) {
+        return res.status(result.status).send('Erreur récupération sous-titres');
+      }
+      res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.status(200).send(result.body);
+    }
+
     // 2. If it's a playlist (.m3u8)
     const result = await fetchPlaylistText(decodedUrl);
     if (result.status !== 200) {

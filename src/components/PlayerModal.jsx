@@ -374,6 +374,7 @@ export default function PlayerModal({
           setNativeMovieStreamUrl(null);
           // Bascule automatique et transparente vers VidMoly pour ne jamais bloquer la lecture
           const fallbackServer =
+            availableServers.find((s) => s.id === "autoembed_vf") ||
             availableServers.find((s) => s.id === "vidmoly_vf") ||
             availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
             availableServers[1];
@@ -390,6 +391,7 @@ export default function PlayerModal({
         if (!isMounted) return;
         setNativeMovieStreamUrl(null);
         const fallbackServer =
+          availableServers.find((s) => s.id === "autoembed_vf") ||
           availableServers.find((s) => s.id === "vidmoly_vf") ||
           availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
           availableServers[1];
@@ -1151,6 +1153,7 @@ export default function PlayerModal({
               <button
                 onClick={() => {
                   const altServer =
+                    availableServers.find((s) => s.id === "autoembed_vf") ||
                     availableServers.find((s) => s.id === "vidmoly_vf") ||
                     availableServers.find((s) => !s.isNativeStream && !s.isAnimeSama) ||
                     availableServers[1];
@@ -1162,7 +1165,7 @@ export default function PlayerModal({
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Play className="w-4 h-4 fill-white" />
-                <span>Basculer sur Serveur VidMoly (VF Secours)</span>
+                <span>Basculer sur Lecteur Miroir HD (0 Pub)</span>
               </button>
             </div>
           )

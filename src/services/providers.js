@@ -282,9 +282,8 @@ export const STREAMING_SERVERS = {
   // --- SERVEURS VF (100% DOUBLAGE FRANÇAIS) ---
   // ==========================================
   vf: [
-    VIDMOLY_VF_SERVER,
     AUTOEMBED_VF_SERVER,
-    ANYEMBED_VF_SERVER,
+    VIDMOLY_VF_SERVER,
     VIDMOLY_MIRROR_VF_SERVER,
     VIDSRC_ME_VF_SERVER,
     VIDSRC_IN_VF_SERVER,
