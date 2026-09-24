@@ -287,7 +287,7 @@ export default function PlayerModal({
     }
 
     // If it's a classic film / series, ensure Erodium is NEVER active (switch to VidMoly #1)
-    if (!mediaInfo.isAnime && selectedServer?.isAnimeSama) {
+    if (!mediaInfo.isAnime && (selectedServer?.isAnimeSama || selectedServer?.isNativeStream || selectedServer?.id === "erodium_direct")) {
       setSelectedServer(servers[0]);
       return;
     }

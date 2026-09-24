@@ -511,14 +511,14 @@ export const ANIME_SAMA_VOSTFR_SERVER = ERODIUM_VOSTFR_SERVER;
 
 /**
  * Retourne la liste optimisée des serveurs pour le média spécifié :
- * - Pour les animés : place le Lecteur Erodium Anime en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
- * - Pour les films et séries : place le Lecteur Erodium Natif (0 Pub • 1080p) en #1, puis VidMoly en #2 !
+ * - Pour les animés : place le Lecteur Erodium en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
+ * - Pour les films et séries classiques : place VidMoly en #1 (base) et N'AFFICHE PAS Erodium !
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
   const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
 
-  // CAS 1 : C'EST UN ANIMÉ -> Erodium Anime en Lecteur #1 !
+  // CAS 1 : C'EST UN ANIMÉ -> Erodium en Lecteur #1 !
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
       return [
@@ -535,14 +535,18 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return baseServers;
   }
 
-  // CAS 2 : FILMS ET SÉRIES CLASSIQUES
-  // - Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
-  // - VidMoly en #2
-  // - TOUS les serveurs miroirs et de secours restent disponibles !
-  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
-  return [
-    ERODIUM_DIRECT_MOVIE_SERVER,
-    ...filteredBase,
-  ];
+  // CAS 2 : FILMS ET SÉRIES CLASSIQUES (NON-ANIMÉ)
+  // - VidMoly est le lecteur de base #1 (VIDMOLY_VF_SERVER)
+  // - Erodium N'EST PAS affiché pour les films classiques
+  // - TOUS les serveurs miroirs et propres restent disponibles sans exception !
+  if (lang === "vf") {
+    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
+  }
+
+  if (lang === "vostfr") {
+    return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vostfr" && s.id !== "erodium_direct");
+  }
+
+  return baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_direct");
 };
 
