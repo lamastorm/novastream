@@ -430,10 +430,50 @@ export default function App() {
 
     let promise;
 
+    const platformObj = PLATFORMS.find((p) => p.id === selectedPlatform);
+    const hasCustomFilter = Boolean(
+      selectedPlatform ||
+      selectedYear ||
+      selectedMinRating ||
+      (selectedSort && selectedSort !== "popularity.desc")
+    );
+
     if (activeTab === "movies") {
-      promise = catalogProvider.getMovies({ page, genre: selectedGenre });
+      if (hasCustomFilter) {
+        promise = tmdbApi.discoverMovies(page, {
+          genre: selectedGenre,
+          platform: platformObj?.providerId,
+          year: selectedYear,
+          sortBy: selectedSort,
+          minRating: selectedMinRating,
+        });
+      } else {
+        promise = catalogProvider
+          .getMovies({ page, genre: selectedGenre })
+          .then((res) => {
+            if (res && res.results && res.results.length > 0) return res;
+            return tmdbApi.discoverMovies(page, { genre: selectedGenre });
+          })
+          .catch(() => tmdbApi.discoverMovies(page, { genre: selectedGenre }));
+      }
     } else if (activeTab === "series") {
-      promise = catalogProvider.getSeries({ page, genre: selectedGenre });
+      if (hasCustomFilter) {
+        promise = tmdbApi.discoverTV(page, {
+          genre: selectedGenre,
+          platform: platformObj?.providerId,
+          year: selectedYear,
+          sortBy: selectedSort,
+          minRating: selectedMinRating,
+        });
+      } else {
+        promise = catalogProvider
+          .getSeries({ page, genre: selectedGenre })
+          .then((res) => {
+            if (res && res.results && res.results.length > 0) return res;
+            return tmdbApi.discoverTV(page, { genre: selectedGenre });
+          })
+          .catch(() => tmdbApi.discoverTV(page, { genre: selectedGenre }));
+      }
     } else if (activeTab === "anime") {
       if (selectedLetter) {
         promise = tmdbApi.searchMulti(selectedLetter === "#" ? "0" : selectedLetter, page).then((data) => ({
@@ -494,7 +534,15 @@ export default function App() {
     if (promise) {
       promise
         .then((data) => {
-          let results = data.results || [];
+          let results = (data.results || []).map((item) => ({
+            ...item,
+            media_type:
+              activeTab === "movies"
+                ? "movie"
+                : activeTab === "series"
+                ? "tv"
+                : item.media_type || "tv",
+          }));
           if (activeTab === "anime" && !animeSource.startsWith("anilist") && animeSource !== "mal_top") {
             results = results.map((item) => ({
               ...item,
@@ -533,6 +581,23 @@ export default function App() {
     animeSource,
     selectedStudio,
   ]);
+
+  // Reset filters helper
+  const handleResetFilters = () => {
+    setSelectedGenre(null);
+    setSelectedPlatform(null);
+    setSelectedYear(null);
+    setSelectedMinRating(null);
+    setSelectedSort("popularity.desc");
+  };
+
+  const isFilterActive = Boolean(
+    selectedGenre !== null ||
+    selectedPlatform !== null ||
+    selectedYear !== null ||
+    selectedMinRating !== null ||
+    (selectedSort && selectedSort !== "popularity.desc")
+  );
 
   // Load next page
   const handleLoadMore = () => {
@@ -599,6 +664,9 @@ export default function App() {
           setSelectedGenre(null);
           setSelectedPlatform(null);
           setSelectedLetter(null);
+          setSelectedYear(null);
+          setSelectedMinRating(null);
+          setSelectedSort("popularity.desc");
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -709,13 +777,13 @@ export default function App() {
             {/* VIEW 2: ACCUEIL */}
             {activeTab === "home" && (
               <>
-                {/* Hero Featured Banner */}
-                {heroItem && (
+                {/* Hero Featured Banner (Rotating Carousel) */}
+                {(trendingMovies.length > 0 || heroItem) && (
                   <HeroBanner
-                    item={heroItem}
+                    items={trendingMovies.length > 0 ? trendingMovies.slice(0, 8) : [heroItem]}
                     onPlay={(item) => handleStartPlay(item, 1, 1)}
                     onMoreInfo={(item) => setSelectedMedia(item)}
-                    isFavorite={isItemFavorite(heroItem)}
+                    isItemFavorite={isItemFavorite}
                     onToggleFavorite={toggleFavorite}
                   />
                 )}
@@ -939,21 +1007,15 @@ export default function App() {
                   {/* Platforms filter */}
                   <PlatformFilter
                     selectedPlatform={selectedPlatform}
-                    onSelectPlatform={(p) => {
-                      setSelectedPlatform(p);
-                      setSelectedGenre(null);
-                    }}
+                    onSelectPlatform={(p) => setSelectedPlatform(p)}
                   />
 
                   {/* Genre Pills */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                     <button
-                      onClick={() => {
-                        setSelectedGenre(null);
-                        setSelectedPlatform(null);
-                      }}
+                      onClick={() => setSelectedGenre(null)}
                       className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
-                        selectedGenre === null && selectedPlatform === null
+                        selectedGenre === null
                           ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
                           : "bg-zinc-850 text-zinc-400 hover:text-white"
                       }`}
@@ -963,10 +1025,7 @@ export default function App() {
                     {movieGenres.map((g) => (
                       <button
                         key={g.id}
-                        onClick={() => {
-                          setSelectedGenre(g.id);
-                          setSelectedPlatform(null);
-                        }}
+                        onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
                         className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                           selectedGenre === g.id
                             ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
@@ -1031,6 +1090,17 @@ export default function App() {
                         <option value="6.0">⭐ +6.0 (Correct)</option>
                       </select>
                     </div>
+
+                    {/* Reset button if any filter active */}
+                    {isFilterActive && (
+                      <button
+                        onClick={handleResetFilters}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 transition-all cursor-pointer"
+                        title="Effacer tous les filtres et critères de tri"
+                      >
+                        <span>✕ Réinitialiser</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1093,21 +1163,15 @@ export default function App() {
                   {/* Platforms filter */}
                   <PlatformFilter
                     selectedPlatform={selectedPlatform}
-                    onSelectPlatform={(p) => {
-                      setSelectedPlatform(p);
-                      setSelectedGenre(null);
-                    }}
+                    onSelectPlatform={(p) => setSelectedPlatform(p)}
                   />
 
                   {/* Genre Pills */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                     <button
-                      onClick={() => {
-                        setSelectedGenre(null);
-                        setSelectedPlatform(null);
-                      }}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
-                        selectedGenre === null && selectedPlatform === null
+                      onClick={() => setSelectedGenre(null)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
+                        selectedGenre === null
                           ? "bg-emerald-600 text-white shadow"
                           : "bg-zinc-800 text-zinc-400 hover:text-white"
                       }`}
@@ -1117,11 +1181,8 @@ export default function App() {
                     {tvGenres.map((g) => (
                       <button
                         key={g.id}
-                        onClick={() => {
-                          setSelectedGenre(g.id);
-                          setSelectedPlatform(null);
-                        }}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+                        onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                           selectedGenre === g.id
                             ? "bg-emerald-600 text-white shadow"
                             : "bg-zinc-800 text-zinc-400 hover:text-white"
@@ -1183,6 +1244,17 @@ export default function App() {
                         <option value="6.0">⭐ +6.0 (Correct)</option>
                       </select>
                     </div>
+
+                    {/* Reset button if any filter active */}
+                    {isFilterActive && (
+                      <button
+                        onClick={handleResetFilters}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 transition-all cursor-pointer"
+                        title="Effacer tous les filtres et critères de tri"
+                      >
+                        <span>✕ Réinitialiser</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 

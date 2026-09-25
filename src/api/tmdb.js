@@ -235,6 +235,140 @@ export const tmdbApi = {
     });
   },
 
+  // --- RECHERCHE MULTI-CRITÈRES FILMS (Filtres, Année, Tri, Note, Plateformes) ---
+  discoverMovies: async (page = 1, filters = {}) => {
+    const {
+      genre,
+      platform,
+      year,
+      sortBy = "popularity.desc",
+      minRating,
+    } = filters;
+
+    const params = {
+      page,
+      sort_by: sortBy,
+      include_adult: false,
+    };
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Ajustements selon le tri
+    if (sortBy === "vote_average.desc") {
+      params["vote_count.gte"] = 100;
+    } else if (sortBy === "primary_release_date.desc") {
+      params["primary_release_date.lte"] = today;
+      params["vote_count.gte"] = 5;
+    }
+
+    // Plateforme de streaming (France)
+    if (platform) {
+      params.with_watch_providers = platform;
+      params.watch_region = "FR";
+    }
+
+    // Genre
+    if (genre) {
+      params.with_genres = genre;
+    }
+
+    // Année de sortie ou décennie
+    if (year) {
+      const yNum = Number(year);
+      if (yNum === 2000) {
+        params["primary_release_date.gte"] = "2000-01-01";
+        params["primary_release_date.lte"] = "2009-12-31";
+      } else if (yNum === 1990) {
+        params["primary_release_date.gte"] = "1990-01-01";
+        params["primary_release_date.lte"] = "1999-12-31";
+      } else if (!isNaN(yNum) && yNum > 1900) {
+        params.primary_release_year = yNum;
+      }
+    }
+
+    // Note minimale
+    if (minRating) {
+      const rNum = Number(minRating);
+      if (!isNaN(rNum) && rNum > 0) {
+        params["vote_average.gte"] = rNum;
+        if (!params["vote_count.gte"] || params["vote_count.gte"] < 30) {
+          params["vote_count.gte"] = 30;
+        }
+      }
+    }
+
+    return fetchFromTMDB("/discover/movie", params);
+  },
+
+  // --- RECHERCHE MULTI-CRITÈRES SÉRIES (Filtres, Année, Tri, Note, Plateformes) ---
+  discoverTV: async (page = 1, filters = {}) => {
+    const {
+      genre,
+      platform,
+      year,
+      sortBy = "popularity.desc",
+      minRating,
+    } = filters;
+
+    let sortParam = sortBy;
+    if (sortParam === "primary_release_date.desc") {
+      sortParam = "first_air_date.desc";
+    }
+
+    const params = {
+      page,
+      sort_by: sortParam,
+      include_adult: false,
+    };
+
+    const today = new Date().toISOString().split("T")[0];
+
+    if (sortParam === "vote_average.desc") {
+      params["vote_count.gte"] = 50;
+    } else if (sortParam === "first_air_date.desc") {
+      params["first_air_date.lte"] = today;
+      params["vote_count.gte"] = 5;
+    }
+
+    // Plateforme de streaming (France)
+    if (platform) {
+      params.with_watch_providers = platform;
+      params.watch_region = "FR";
+    }
+
+    // Genre
+    if (genre) {
+      params.with_genres = genre;
+    }
+
+    // Année de diffusion ou décennie
+    if (year) {
+      const yNum = Number(year);
+      if (yNum === 2000) {
+        params["first_air_date.gte"] = "2000-01-01";
+        params["first_air_date.lte"] = "2009-12-31";
+      } else if (yNum === 1990) {
+        params["first_air_date.gte"] = "1990-01-01";
+        params["first_air_date.lte"] = "1999-12-31";
+      } else if (!isNaN(yNum) && yNum > 1900) {
+        params.first_air_date_year = yNum;
+      }
+    }
+
+    // Note minimale
+    if (minRating) {
+      const rNum = Number(minRating);
+      if (!isNaN(rNum) && rNum > 0) {
+        params["vote_average.gte"] = rNum;
+        if (!params["vote_count.gte"] || params["vote_count.gte"] < 20) {
+          params["vote_count.gte"] = 20;
+        }
+      }
+    }
+
+    return fetchFromTMDB("/discover/tv", params);
+  },
+
   // --- MODE RANDOM (Surprenez-moi) ---
   getRandomSurprise: async () => {
     // Pick random page from top rated movies or anime
