@@ -1,5 +1,5 @@
 import https from 'https';
-import { applySecurity } from './_security.js';
+import { applySecurity } from '../lib/security.js';
 
 function fetchUrl(url, maxRedirects = 5, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {

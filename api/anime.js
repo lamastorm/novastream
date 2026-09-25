@@ -1,5 +1,5 @@
 import https from 'https';
-import { applySecurity } from './_security.js';
+import { applySecurity } from '../lib/security.js';
 
 function fetchText(url, timeoutMs = 7000) {
   return new Promise((resolve, reject) => {

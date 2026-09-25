@@ -1,5 +1,5 @@
 import https from 'https';
-import { applyHlsSecurity } from './_security.js';
+import { applyHlsSecurity } from '../lib/security.js';
 
 function fetchPlaylistText(url) {
   return new Promise((resolve, reject) => {

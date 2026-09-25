@@ -1,5 +1,5 @@
 import https from 'https';
-import { applySecurity } from './_security.js';
+import { applySecurity } from '../lib/security.js';
 
 const TMDB_API_KEY = "4e44d9029b1270a757cddc766a1bcb63";
 
