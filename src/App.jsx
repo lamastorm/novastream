@@ -9,6 +9,7 @@ import AlphabetBar from "./components/AlphabetBar";
 import DetailModal from "./components/DetailModal";
 import PlayerModal from "./components/PlayerModal";
 import SettingsModal from "./components/SettingsModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import BottomNav from "./components/BottomNav";
 import { tmdbApi } from "./api/tmdb";
 import { catalogProvider } from "./services/catalogProvider";
@@ -1631,24 +1632,36 @@ export default function App() {
 
       {/* MODAL: DETAIL FICHE */}
       {selectedMedia && (
-        <DetailModal
-          media={selectedMedia}
-          onClose={() => setSelectedMedia(null)}
-          onPlay={handleStartPlay}
-          isFavorite={isItemFavorite(selectedMedia)}
-          onToggleFavorite={toggleFavorite}
-        />
+        <ErrorBoundary
+          modal
+          onReset={() => setSelectedMedia(null)}
+          resetLabel="Fermer la fiche"
+        >
+          <DetailModal
+            media={selectedMedia}
+            onClose={() => setSelectedMedia(null)}
+            onPlay={handleStartPlay}
+            isFavorite={isItemFavorite(selectedMedia)}
+            onToggleFavorite={toggleFavorite}
+          />
+        </ErrorBoundary>
       )}
 
       {/* MODAL / MINI-PLAYER: LECTEUR VIDEO */}
       {activePlayer && (
-        <PlayerModal
-          media={activePlayer.media}
-          initialSeason={activePlayer.season}
-          initialEpisode={activePlayer.episode}
-          initialLanguage={activePlayer.language || "vf"}
-          onClose={() => setActivePlayer(null)}
-        />
+        <ErrorBoundary
+          modal
+          onReset={() => setActivePlayer(null)}
+          resetLabel="Fermer le lecteur"
+        >
+          <PlayerModal
+            media={activePlayer.media}
+            initialSeason={activePlayer.season}
+            initialEpisode={activePlayer.episode}
+            initialLanguage={activePlayer.language || "vf"}
+            onClose={() => setActivePlayer(null)}
+          />
+        </ErrorBoundary>
       )}
 
       {/* MODAL: PARAMÈTRES */}

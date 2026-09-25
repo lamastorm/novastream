@@ -9,9 +9,10 @@ function MediaCard({
   onToggleFavorite,
 }) {
   const title = item.title || item.name || "Titre inconnu";
-  const date = item.release_date || item.first_air_date || "";
-  const year = date ? new Date(date).getFullYear() : "";
-  const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
+  const date = String(item.release_date || item.first_air_date || "");
+  const year = date ? (isNaN(new Date(date).getFullYear()) ? "" : String(new Date(date).getFullYear())) : "";
+  const voteNum = Number(item.vote_average);
+  const rating = !isNaN(voteNum) && voteNum > 0 ? voteNum.toFixed(1) : null;
   const posterUrl =
     item.customPoster ||
     (item.poster_path

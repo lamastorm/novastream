@@ -22,6 +22,18 @@ import { tmdbApi, IMAGE_BASE_URL } from "../api/tmdb";
 import { languageAdvisor } from "../services/languageAdvisor";
 import { useMediaLiveViewers } from "../services/liveCounter";
 
+const safeGetYear = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  return isNaN(y) ? "" : String(y);
+};
+
+const safeFormatRating = (val) => {
+  const num = Number(val);
+  return !isNaN(num) && num > 0 ? num.toFixed(1) : null;
+};
+
 export default function DetailModal({
   media: initialMedia,
   onClose,
@@ -307,18 +319,18 @@ export default function DetailModal({
                     </span>
                   </div>
                 )}
-                {details?.vote_average && (
+                {safeFormatRating(details?.vote_average) && (
                   <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md text-amber-400 text-xs font-semibold px-2 py-0.5 rounded-md">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span>{details.vote_average.toFixed(1)}</span>
+                    <span>{safeFormatRating(details.vote_average)}</span>
                   </div>
                 )}
-                {(details?.release_date || details?.first_air_date) && (
+                {safeGetYear(details?.release_date || details?.first_air_date || activeMedia?.release_date || activeMedia?.first_air_date) && (
                   <span className="text-xs text-zinc-300">
-                    {new Date(details.release_date || details.first_air_date).getFullYear()}
+                    {safeGetYear(details?.release_date || details?.first_air_date || activeMedia?.release_date || activeMedia?.first_air_date)}
                   </span>
                 )}
-                {details?.runtime && (
+                {typeof details?.runtime === "number" && details.runtime > 0 && (
                   <span className="text-xs text-zinc-300">
                     {Math.floor(details.runtime / 60)}h {details.runtime % 60}m
                   </span>
@@ -434,14 +446,14 @@ export default function DetailModal({
             </p>
 
             {/* Genres badges */}
-            {details?.genres && details.genres.length > 0 && (
+            {Array.isArray(details?.genres) && details.genres.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4">
-                {details.genres.map((g) => (
+                {details.genres.filter(Boolean).map((g, idx) => (
                   <span
-                    key={g.id}
+                    key={g.id || idx}
                     className="text-xs font-medium px-2.5 py-1 rounded-lg bg-zinc-800/80 text-zinc-300 border border-white/5"
                   >
-                    {g.name}
+                    {typeof g === "object" && g ? g.name : String(g)}
                   </span>
                 ))}
               </div>
@@ -449,7 +461,7 @@ export default function DetailModal({
           </div>
 
           {/* Casting (Acteurs / Voix) */}
-          {details?.credits?.cast && details.credits.cast.length > 0 && (
+          {Array.isArray(details?.credits?.cast) && details.credits.cast.length > 0 && (
             <div>
               <h4 className="flex items-center gap-2 text-xs uppercase font-bold text-zinc-400 tracking-wider mb-3">
                 <Users className="w-3.5 h-3.5 text-indigo-400" />
@@ -457,7 +469,7 @@ export default function DetailModal({
                 <span className="text-[10px] text-zinc-600 normal-case font-normal ml-1">— cliquer pour voir la filmographie</span>
               </h4>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                {details.credits.cast.slice(0, 10).map((actor) => (
+                {details.credits.cast.filter((a) => a && a.id).slice(0, 10).map((actor) => (
                   <div
                     key={actor.id}
                     onClick={() => {
@@ -465,7 +477,7 @@ export default function DetailModal({
                       setActorCredits([]);
                       setActorLoading(true);
                       tmdbApi.getPersonCredits(actor.id)
-                        .then((credits) => { setActorCredits(credits); setActorLoading(false); })
+                        .then((credits) => { setActorCredits(Array.isArray(credits) ? credits : []); setActorLoading(false); })
                         .catch(() => setActorLoading(false));
                     }}
                     className="w-20 flex-shrink-0 text-center flex flex-col items-center cursor-pointer group"
@@ -677,13 +689,13 @@ export default function DetailModal({
           )}
 
           {/* SAGA / COLLECTION (Annabelle, Harry Potter, etc.) */}
-          {collectionData?.parts && collectionData.parts.length > 0 && (
+          {Array.isArray(collectionData?.parts) && collectionData.parts.length > 0 && (
             <div className="pt-4 border-t border-white/5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Film className="w-4 h-4 text-indigo-400" />
                   <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                    🎬 Toute la Saga « {collectionData.name} » ({collectionData.parts.length} films)
+                    🎬 Toute la Saga « {collectionData.name || "Saga"} » ({collectionData.parts.filter(Boolean).length} films)
                   </h4>
                 </div>
                 <span className="text-[11px] text-zinc-400">Cliquez pour voir un film</span>
@@ -691,18 +703,19 @@ export default function DetailModal({
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {collectionData.parts
+                  .filter((p) => p && typeof p === "object")
                   .slice()
-                  .sort((a, b) => new Date(a.release_date || 0) - new Date(b.release_date || 0))
+                  .sort((a, b) => new Date(a?.release_date || 0) - new Date(b?.release_date || 0))
                   .map((part) => {
                     const isCurrent = part.id === details?.id;
-                    const partYear = part.release_date ? new Date(part.release_date).getFullYear() : "";
+                    const partYear = safeGetYear(part.release_date);
                     const partPoster = part.poster_path
                       ? `${IMAGE_BASE_URL}/w342${part.poster_path}`
                       : null;
 
                     return (
                       <div
-                        key={part.id}
+                        key={part.id || part.title}
                         onClick={() => {
                           if (!isCurrent) {
                             setActiveMedia({
@@ -746,7 +759,7 @@ export default function DetailModal({
           )}
 
           {/* RECOMMANDATIONS / TITRES SIMILAIRES */}
-          {details?.recommendations?.results && details.recommendations.results.length > 0 && (
+          {Array.isArray(details?.recommendations?.results) && details.recommendations.results.length > 0 && (
             <div className="pt-4 border-t border-white/5">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-purple-400" />
@@ -757,13 +770,11 @@ export default function DetailModal({
 
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
                 {details.recommendations.results
-                  .filter((r) => r.poster_path)
+                  .filter((r) => r && r.poster_path)
                   .slice(0, 10)
                   .map((rec) => {
-                    const recTitle = rec.title || rec.name;
-                    const recYear = (rec.release_date || rec.first_air_date)
-                      ? new Date(rec.release_date || rec.first_air_date).getFullYear()
-                      : "";
+                    const recTitle = rec.title || rec.name || "Titre";
+                    const recYear = safeGetYear(rec.release_date || rec.first_air_date);
 
                     return (
                       <div
@@ -787,7 +798,7 @@ export default function DetailModal({
                         <h5 className="text-[11px] font-semibold text-white truncate mt-1.5 group-hover:text-indigo-400">
                           {recTitle}
                         </h5>
-                        <span className="text-[10px] text-zinc-500">{recYear}</span>
+                        <span className="text-[10px] text-zinc-500">{recYear || "—"}</span>
                       </div>
                     );
                   })}
