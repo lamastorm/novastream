@@ -26,6 +26,7 @@ import DonateModal from "./components/DonateModal";
 import VpnBanner from "./components/VpnBanner";
 import SearchOverlay from "./components/SearchOverlay";
 import { MONETIZATION_CONFIG } from "./config/monetization";
+import { seoService } from "./services/seoService";
 import {
   Film,
   Tv,
@@ -127,7 +128,20 @@ export default function App() {
   // Initialize TV Mode & Gamepad Navigation (Xbox, PlayStation, TV)
   useEffect(() => {
     deviceAdvisor.applyMode();
+    // IndexNow instant search engine ping (Bing / Yandex)
+    seoService.pingIndexNow();
   }, []);
+
+  // Automatic Dynamic SEO: Title, Meta Description & Schema.org Rich Snippets
+  useEffect(() => {
+    if (selectedMedia) {
+      seoService.updateMediaSchema(selectedMedia);
+    } else if (activePlayer?.media) {
+      seoService.updateMediaSchema(activePlayer.media);
+    } else {
+      seoService.updatePageMeta({ activeTab, searchQuery });
+    }
+  }, [activeTab, searchQuery, selectedMedia, activePlayer]);
 
   useEffect(() => {
     gamepadService.init({

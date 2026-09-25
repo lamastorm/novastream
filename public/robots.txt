@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Sitemap officiel Erodium
+Sitemap: https://erodium.vercel.app/sitemap.xml
+
+# IndexNow Protocol
+Host: https://erodium.vercel.app
