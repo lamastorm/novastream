@@ -61,17 +61,20 @@ export default function DetailModal({
     setActiveMedia(initialMedia);
   }, [initialMedia]);
 
-  const isTV =
-    activeMedia.media_type === "tv" ||
-    details?.media_type === "tv" ||
-    Boolean(details?.seasons?.length) ||
-    Boolean(details?.first_air_date) ||
-    Boolean(activeMedia.first_air_date) ||
-    activeMedia.source === "anime-sama" ||
-    activeMedia.source === "anilist" ||
-    activeMedia.source === "mal" ||
-    String(activeMedia.id).startsWith("as_");
-  const mediaType = isTV ? "tv" : (activeMedia.media_type || (activeMedia.title ? "movie" : "tv"));
+  const isExplicitMovie = activeMedia.media_type === "movie" || details?.media_type === "movie";
+  const isExplicitTV = activeMedia.media_type === "tv" || details?.media_type === "tv";
+
+  const isTV = isExplicitMovie
+    ? false
+    : isExplicitTV ||
+      Boolean(details?.seasons?.length) ||
+      Boolean(details?.first_air_date) ||
+      (Boolean(activeMedia.first_air_date) && !activeMedia.release_date) ||
+      activeMedia.source === "anime-sama" ||
+      activeMedia.source === "anilist" ||
+      activeMedia.source === "mal" ||
+      String(activeMedia.id).startsWith("as_");
+  const mediaType = isTV ? "tv" : "movie";
 
   // Fetch full details & JustWatch availability (with auto-resolve for AniList/MAL/TVmaze)
   useEffect(() => {

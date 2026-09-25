@@ -223,15 +223,19 @@ export default function PlayerModal({
   const [drawerEpisodes, setDrawerEpisodes] = useState([]);
   const [isLoadingDrawerEpisodes, setIsLoadingDrawerEpisodes] = useState(false);
 
-  const isTV =
-    currentMedia.media_type === "tv" ||
-    Boolean(seriesDetails?.seasons?.length) ||
-    Boolean(currentMedia.first_air_date) ||
-    currentMedia.source === "anime-sama" ||
-    currentMedia.source === "anilist" ||
-    currentMedia.source === "mal" ||
-    String(currentMedia.id).startsWith("as_");
-  const mediaType = isTV ? "tv" : (currentMedia.media_type || (currentMedia.title ? "movie" : "tv"));
+  const isExplicitMovie = currentMedia.media_type === "movie";
+  const isExplicitTV = currentMedia.media_type === "tv";
+
+  const isTV = isExplicitMovie
+    ? false
+    : isExplicitTV ||
+      Boolean(seriesDetails?.seasons?.length) ||
+      (Boolean(currentMedia.first_air_date) && !currentMedia.release_date) ||
+      currentMedia.source === "anime-sama" ||
+      currentMedia.source === "anilist" ||
+      currentMedia.source === "mal" ||
+      String(currentMedia.id).startsWith("as_");
+  const mediaType = isTV ? "tv" : "movie";
   const title = currentMedia.title || currentMedia.name || "Lecture en cours";
   const liveViewersCount = useMediaLiveViewers(currentMedia.id, currentMedia.popularity);
 

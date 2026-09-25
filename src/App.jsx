@@ -613,11 +613,14 @@ export default function App() {
   };
 
   const handleStartPlay = (media, season = 1, episode = 1, language) => {
-    const type = media.media_type || (media.title ? "movie" : "tv");
+    const isExplicitMovie = media.media_type === "movie";
+    const type = isExplicitMovie
+      ? "movie"
+      : media.media_type || (media.first_air_date && !media.release_date ? "tv" : (media.title ? "movie" : "tv"));
     setActivePlayer({
       media: { ...media, media_type: type },
-      season,
-      episode,
+      season: type === "movie" ? 1 : season,
+      episode: type === "movie" ? 1 : episode,
       language: language || languageAdvisor.getRecommendedLanguage(media),
     });
     setHistory(storage.getHistory());
@@ -780,9 +783,11 @@ export default function App() {
                 {/* Hero Featured Banner (Rotating Carousel) */}
                 {(trendingMovies.length > 0 || heroItem) && (
                   <HeroBanner
-                    items={trendingMovies.length > 0 ? trendingMovies.slice(0, 8) : [heroItem]}
-                    onPlay={(item) => handleStartPlay(item, 1, 1)}
-                    onMoreInfo={(item) => setSelectedMedia(item)}
+                    items={(trendingMovies.length > 0 ? trendingMovies.slice(0, 8) : [heroItem])
+                      .filter(Boolean)
+                      .map((item) => ({ ...item, media_type: "movie" }))}
+                    onPlay={(item) => handleStartPlay({ ...item, media_type: "movie" }, 1, 1)}
+                    onMoreInfo={(item) => setSelectedMedia({ ...item, media_type: "movie" })}
                     isItemFavorite={isItemFavorite}
                     onToggleFavorite={toggleFavorite}
                   />
