@@ -24,6 +24,7 @@ import { gamepadService } from "./services/gamepadService";
 import MoodSelector from "./components/MoodSelector";
 import LiveCatalogStats from "./components/LiveCatalogStats";
 import DonateModal from "./components/DonateModal";
+import DmcaModal from "./components/DmcaModal";
 import VpnBanner from "./components/VpnBanner";
 import SearchOverlay from "./components/SearchOverlay";
 import { MONETIZATION_CONFIG } from "./config/monetization";
@@ -105,6 +106,7 @@ export default function App() {
   const [activePlayer, setActivePlayer] = useState(null); // { media, season, episode }
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [dmcaOpen, setDmcaOpen] = useState(false);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
 
   // Watchlist & History
@@ -1602,6 +1604,12 @@ export default function App() {
               {MONETIZATION_CONFIG.vpn.name} ({MONETIZATION_CONFIG.vpn.badge.replace("Offre Spéciale : ", "")})
             </a>
             <button
+              onClick={() => setDmcaOpen(true)}
+              className="hover:text-orange-400 transition-colors cursor-pointer text-xs"
+            >
+              Mentions Légales & DMCA
+            </button>
+            <button
               onClick={() => setSettingsOpen(true)}
               className="hover:text-orange-400 transition-colors cursor-pointer"
             >
@@ -1668,6 +1676,10 @@ export default function App() {
       {settingsOpen && (
         <SettingsModal
           onClose={() => setSettingsOpen(false)}
+          onOpenDmca={() => {
+            setSettingsOpen(false);
+            setDmcaOpen(true);
+          }}
           onDataCleared={() => {
             setFavorites(storage.getWatchlist());
             setHistory(storage.getHistory());
@@ -1678,6 +1690,11 @@ export default function App() {
       {/* MODAL: DONS & SOUTIEN */}
       {donateOpen && (
         <DonateModal onClose={() => setDonateOpen(false)} />
+      )}
+
+      {/* MODAL: MENTIONS LÉGALES & DMCA */}
+      {dmcaOpen && (
+        <DmcaModal onClose={() => setDmcaOpen(false)} />
       )}
     </div>
   );

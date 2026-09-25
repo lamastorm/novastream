@@ -16,7 +16,7 @@ import { deviceAdvisor } from "../services/deviceAdvisor";
 import { gamepadService } from "../services/gamepadService";
 import { adBlocker } from "../services/adBlocker";
 
-export default function SettingsModal({ onClose, onDataCleared }) {
+export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
   const [apiKey, setApiKey] = useState(
     localStorage.getItem("erodium_tmdb_key") ||
     localStorage.getItem("novastream_tmdb_key") ||
@@ -250,6 +250,19 @@ export default function SettingsModal({ onClose, onDataCleared }) {
             d'utiliser le navigateur <strong>Brave</strong>.
           </p>
         </div>
+
+        {/* DMCA & Mentions Légales */}
+        {onOpenDmca && (
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={onOpenDmca}
+              className="text-[11px] text-zinc-400 hover:text-orange-400 transition-colors underline cursor-pointer"
+            >
+              Mentions Légales & Politique de Retrait DMCA
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

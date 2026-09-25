@@ -1,4 +1,5 @@
 import https from 'https';
+import { applyHlsSecurity } from './_security.js';
 
 function fetchPlaylistText(url) {
   return new Promise((resolve, reject) => {
@@ -58,6 +59,10 @@ export default async function handler(req, res) {
 
   try {
     const decodedUrl = decodeURIComponent(url);
+
+    if (!applyHlsSecurity(req, res, decodedUrl)) {
+      return;
+    }
 
     // 1. If it's a TS segment (binary video/audio chunk)
     if (decodedUrl.includes('.ts')) {

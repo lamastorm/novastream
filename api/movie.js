@@ -1,4 +1,5 @@
 import https from 'https';
+import { applySecurity } from './_security.js';
 
 function fetchUrl(url, maxRedirects = 5, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
@@ -167,6 +168,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (!applySecurity(req, res)) {
+    return;
   }
 
   const { tmdbId, imdbId, type = 'movie', season = 1, episode = 1, title = '' } = req.query || {};

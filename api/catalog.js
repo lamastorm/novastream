@@ -1,4 +1,5 @@
 import https from 'https';
+import { applySecurity } from './_security.js';
 
 const TMDB_API_KEY = "4e44d9029b1270a757cddc766a1bcb63";
 
@@ -202,6 +203,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (!applySecurity(req, res)) {
+    return;
   }
 
   const { action = 'home', page = 1, genre, q, category = 'all' } = req.query || {};

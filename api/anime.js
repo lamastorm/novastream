@@ -1,4 +1,5 @@
 import https from 'https';
+import { applySecurity } from './_security.js';
 
 function fetchText(url, timeoutMs = 7000) {
   return new Promise((resolve, reject) => {
@@ -342,6 +343,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (!applySecurity(req, res)) {
+    return;
   }
 
   const { title, season = 1, episode = 1, lang = 'vf' } = req.query || {};
