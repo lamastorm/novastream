@@ -216,6 +216,13 @@ export default function PlayerModal({
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
+  // Season & Episode Drawer State
+  const [showEpisodeDrawer, setShowEpisodeDrawer] = useState(false);
+  const [seriesDetails, setSeriesDetails] = useState(null);
+  const [drawerSeason, setDrawerSeason] = useState(initialSeason);
+  const [drawerEpisodes, setDrawerEpisodes] = useState([]);
+  const [isLoadingDrawerEpisodes, setIsLoadingDrawerEpisodes] = useState(false);
+
   const isTV =
     currentMedia.media_type === "tv" ||
     Boolean(seriesDetails?.seasons?.length) ||
@@ -227,13 +234,6 @@ export default function PlayerModal({
   const mediaType = isTV ? "tv" : (currentMedia.media_type || (currentMedia.title ? "movie" : "tv"));
   const title = currentMedia.title || currentMedia.name || "Lecture en cours";
   const liveViewersCount = useMediaLiveViewers(currentMedia.id, currentMedia.popularity);
-
-  // Season & Episode Drawer State
-  const [showEpisodeDrawer, setShowEpisodeDrawer] = useState(false);
-  const [seriesDetails, setSeriesDetails] = useState(null);
-  const [drawerSeason, setDrawerSeason] = useState(initialSeason);
-  const [drawerEpisodes, setDrawerEpisodes] = useState([]);
-  const [isLoadingDrawerEpisodes, setIsLoadingDrawerEpisodes] = useState(false);
 
   // Fetch TV Details for seasons
   useEffect(() => {
