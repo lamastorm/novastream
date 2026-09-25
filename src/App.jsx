@@ -25,6 +25,7 @@ import LiveCatalogStats from "./components/LiveCatalogStats";
 import DonateModal from "./components/DonateModal";
 import VpnBanner from "./components/VpnBanner";
 import SearchOverlay from "./components/SearchOverlay";
+import { MONETIZATION_CONFIG } from "./config/monetization";
 import {
   Film,
   Tv,
@@ -1577,12 +1578,13 @@ export default function App() {
               <span>Soutenir les serveurs</span>
             </button>
             <a
-              href="https://www.cyberghostvpn.com/"
+              href={MONETIZATION_CONFIG.vpn.affiliateUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-indigo-400 transition-colors"
+              className="hover:text-indigo-400 transition-colors font-medium"
+              title={`${MONETIZATION_CONFIG.vpn.name} : ${MONETIZATION_CONFIG.vpn.badge}`}
             >
-              VPN Recommandé
+              {MONETIZATION_CONFIG.vpn.name} ({MONETIZATION_CONFIG.vpn.badge.replace("Offre Spéciale : ", "")})
             </a>
             <button
               onClick={() => setSettingsOpen(true)}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Film, Tv, Play, Bookmark, Search, Settings, Sparkles, Shield, Heart } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
+import { MONETIZATION_CONFIG } from "../config/monetization";
 import DesktopSearchBar from "./DesktopSearchBar";
 
 export default function Navbar({
@@ -112,16 +113,18 @@ export default function Navbar({
           </button>
 
           {/* VPN Partner Link */}
-          <a
-            href="https://www.cyberghostvpn.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Partenaire VPN Sécurité & Débridage (-83%)"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer flex-shrink-0"
-          >
-            <Shield className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">VPN (-83%)</span>
-          </a>
+          {MONETIZATION_CONFIG.vpn?.enabled && (
+            <a
+              href={MONETIZATION_CONFIG.vpn.affiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`${MONETIZATION_CONFIG.vpn.name} : ${MONETIZATION_CONFIG.vpn.badge}`}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer flex-shrink-0"
+            >
+              <Shield className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">{MONETIZATION_CONFIG.vpn.shortBadge || "NordVPN (-74%)"}</span>
+            </a>
+          )}
 
           {/* Donate / Support Button */}
           <button

@@ -1,21 +1,23 @@
 // Configuration de monétisation pour Erodium (Affiliation VPN & Dons Bitcoin)
 
 export const MONETIZATION_CONFIG = {
-  // 1. Partenariat d'affiliation VPN
+  // 1. Partenariat d'affiliation VPN officiel
   vpn: {
     enabled: true,
-    name: "CyberGhost VPN",
-    badge: "Offre Partenaire : -83% + 3 mois offerts",
-    title: "Protégez votre streaming et débloquez 100% du catalogue",
-    description: "Masquez votre adresse IP, contournez les blocages de vos fournisseurs d'accès (Orange, Free, SFR, Bouygues) et profitez d'une bande passante ultra-rapide sans limite de débit.",
+    name: "NordVPN",
+    badge: "Offre Spéciale : Jusqu'à -74% + 3 mois offerts",
+    title: "Offre Partenaire NordVPN : Jusqu'à -74% + 3 mois offerts",
+    description: "Sécurisez votre streaming en très haut débit avec le protocole ultra-rapide NordLynx. Contournez les blocages des FAI (Orange, Free, SFR, Bouygues), évitez le bridage de débit et profitez d'une protection complète sur tous vos appareils.",
     features: [
-      "Zéro journal d'activité (No-Log vérifié)",
-      "Débit optimal sans mise en mémoire tampon",
-      "Compatible PC, Mac, TV, Xbox, PlayStation et Mobile"
+      "Jusqu'à -74% de remise immédiate + 3 mois offerts",
+      "Technologie NordLynx ultra-rapide (Streaming 4K sans coupure)",
+      "Protection Anti-menaces & bloqueur de pubs / malwares",
+      "Garantie satisfait ou remboursé 30 jours",
+      "10 appareils protégés en même temps (PC, Mobile, TV, Console)"
     ],
-    // Remplacez ce lien par votre propre lien d'affiliation VPN
-    affiliateUrl: "https://www.cyberghostvpn.com/",
-    ctaText: "Sécuriser ma connexion (-83%)",
+    affiliateUrl: "https://go.nordvpn.net/aff_c?offer_id=15&aff_id=157382",
+    ctaText: "Obtenir NordVPN (-74% + 3 mois)",
+    shortBadge: "NordVPN (-74%)",
   },
 
   // 2. Dons et Soutien des serveurs (100% Bitcoin)
