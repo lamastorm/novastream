@@ -49,8 +49,17 @@ export default function DetailModal({
     setActiveMedia(initialMedia);
   }, [initialMedia]);
 
-  const mediaType = activeMedia.media_type || (activeMedia.title ? "movie" : "tv");
-  const isTV = mediaType === "tv";
+  const isTV =
+    activeMedia.media_type === "tv" ||
+    details?.media_type === "tv" ||
+    Boolean(details?.seasons?.length) ||
+    Boolean(details?.first_air_date) ||
+    Boolean(activeMedia.first_air_date) ||
+    activeMedia.source === "anime-sama" ||
+    activeMedia.source === "anilist" ||
+    activeMedia.source === "mal" ||
+    String(activeMedia.id).startsWith("as_");
+  const mediaType = isTV ? "tv" : (activeMedia.media_type || (activeMedia.title ? "movie" : "tv"));
 
   // Fetch full details & JustWatch availability (with auto-resolve for AniList/MAL/TVmaze)
   useEffect(() => {
@@ -163,11 +172,11 @@ export default function DetailModal({
     return () => {
       isMounted = false;
     };
-  }, [activeMedia.id, mediaType, activeMedia.source]);
+  }, [activeMedia.id, activeMedia.source]);
 
   // Fetch episodes when selected season changes
   useEffect(() => {
-    if (!isTV || !details) return;
+    if (!details?.id || !isTV) return;
 
     let isMounted = true;
     setLoadingEpisodes(true);
@@ -187,7 +196,7 @@ export default function DetailModal({
     return () => {
       isMounted = false;
     };
-  }, [activeMedia.id, selectedSeason, isTV, details]);
+  }, [details?.id, selectedSeason, isTV]);
 
   if (!activeMedia) return null;
 

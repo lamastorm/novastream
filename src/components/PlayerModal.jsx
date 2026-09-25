@@ -216,8 +216,15 @@ export default function PlayerModal({
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
-  const mediaType = currentMedia.media_type || (currentMedia.title ? "movie" : "tv");
-  const isTV = mediaType === "tv";
+  const isTV =
+    currentMedia.media_type === "tv" ||
+    Boolean(seriesDetails?.seasons?.length) ||
+    Boolean(currentMedia.first_air_date) ||
+    currentMedia.source === "anime-sama" ||
+    currentMedia.source === "anilist" ||
+    currentMedia.source === "mal" ||
+    String(currentMedia.id).startsWith("as_");
+  const mediaType = isTV ? "tv" : (currentMedia.media_type || (currentMedia.title ? "movie" : "tv"));
   const title = currentMedia.title || currentMedia.name || "Lecture en cours";
   const liveViewersCount = useMediaLiveViewers(currentMedia.id, currentMedia.popularity);
 

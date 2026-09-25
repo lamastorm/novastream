@@ -162,48 +162,78 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
     const panneaux = [...animePageRes.body.matchAll(panneauRegex)].map(m => ({
       name: m[1],
       path: m[2]
-    }));
+    })).filter(p => {
+      const path = (p.path || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+      return path && path !== 'url' && name !== 'nom';
+    });
 
     // Find corresponding season folder
     const sNum = parseInt(season, 10) || 1;
+    const epNum = parseInt(episode, 10) || 1;
     let targetFolder = `saison${sNum}`;
+    let episodeIndex = Math.max(0, epNum - 1);
 
     if (panneaux.length > 0) {
-      const titleLower = title.toLowerCase();
       let matched = null;
 
-      // Check if title has a specific subtitle or spin-off that matches a panneau
-      // e.g. "Gun Gale Online" or "Alternative" -> "Alternative Gun Gale Online Saison 1"
-      for (const p of panneaux) {
-        const pLower = p.name.toLowerCase();
-        const pWords = pLower
-          .replace(/saison\s*\d+/g, '')
-          .replace(/[^a-z0-9\s]/g, ' ')
-          .trim()
-          .split(/\s+/)
-          .filter(w => w.length > 3);
+      // Exclude Kai, HS (re-editions/specials), OAV, Films unless sNum or title asks for it
+      const mainPanneaux = panneaux.filter(p => {
+        const path = p.path.toLowerCase();
+        return !path.startsWith('kai') && !path.startsWith('film') && !path.startsWith('oav') && !path.includes('hs');
+      });
+      const pool = mainPanneaux.length > 0 ? mainPanneaux : panneaux;
 
-        const hasKeywordMatch = pWords.length > 0 && pWords.some(w => titleLower.includes(w));
-        if (hasKeywordMatch) {
-          if (pLower.includes(`saison ${sNum}`) || (sNum === 1 && !pLower.includes('saison 2') && !pLower.includes('saison 3'))) {
-            matched = p;
-            break;
+      // STRATEGY 1: Absolute episode number if in range [Episode X à Y] (e.g. One Piece Ep 62, Ep 100, Ep 1089)
+      const rangePanneaux = pool.filter(p => /\[Episode\s+\d+\s+à/i.test(p.name));
+      if (rangePanneaux.length > 0 && epNum >= 62) {
+        for (const p of rangePanneaux) {
+          const rm = p.name.match(/\[Episode\s+(\d+)\s+à\s*(\d+|\.\.\.)\]/i);
+          if (rm) {
+            const startEp = parseInt(rm[1], 10);
+            const endEp = rm[2] === '...' ? Infinity : parseInt(rm[2], 10);
+            if (epNum >= startEp && epNum <= endEp) {
+              matched = p;
+              episodeIndex = epNum - startEp;
+              break;
+            }
           }
         }
       }
 
-      // Standard match by season number
+      // STRATEGY 2: Match by Saga or Season number (e.g. "Saga 1 ...", "Saison 1 ...", "Season 1 ...")
       if (!matched) {
-        matched = panneaux.find(p => {
+        matched = pool.find(p => {
           const lower = p.name.toLowerCase();
           return (
-            lower === `saison ${sNum}` ||
+            lower.startsWith(`saga ${sNum} `) ||
             lower.startsWith(`saison ${sNum} `) ||
+            lower.startsWith(`season ${sNum} `) ||
+            lower.includes(`saga ${sNum} `) ||
             lower.includes(`saison ${sNum}`) ||
             lower.includes(`season ${sNum}`) ||
-            (sNum === 1 && (lower.includes('saison 1') || lower.includes('season 1') || lower === 'saison1'))
+            (sNum === 1 && (lower.includes('saison 1') || lower.includes('season 1') || lower.includes('saga 1') || lower === 'saison1'))
           );
         });
+
+        if (matched) {
+          const rm = matched.name.match(/\[Episode\s+(\d+)\s+à/i);
+          if (rm) {
+            const startEp = parseInt(rm[1], 10);
+            if (epNum >= startEp) {
+              episodeIndex = epNum - startEp;
+            } else {
+              episodeIndex = Math.max(0, epNum - 1);
+            }
+          } else {
+            episodeIndex = Math.max(0, epNum - 1);
+          }
+        }
+      }
+
+      // STRATEGY 3: Match by folder path
+      if (!matched) {
+        matched = pool.find(p => p.path.toLowerCase().startsWith(`saison${sNum}/`));
       }
 
       if (matched && matched.path) {
@@ -245,7 +275,7 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
     const eps3 = parseArray('eps3');
     const eps4 = parseArray('eps4');
 
-    const epIndex = (parseInt(episode, 10) || 1) - 1;
+    const epIndex = episodeIndex;
 
     const players = [];
     if (eps1[epIndex]) {
