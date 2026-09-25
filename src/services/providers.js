@@ -8,23 +8,30 @@ export const getMediaLanguageInfo = (media) => {
   const origLang = (media?.original_language || "").toLowerCase();
   const title = (media?.title || media?.name || "").toLowerCase();
   
-  // Détection stricte d'animé (Anime-Sama) : animation japonaise ou licences manga / anime
-  // IMPORTANT: the title regex is gated on original_language==='ja' to avoid false positives
-  // on live-action remakes (e.g. Netflix One Piece, live-action Cowboy Bebop, etc.)
-  const isKnownAnimeTitleInJapanese =
-    origLang === "ja" &&
+  const hasAnimationGenre =
+    media?.genre_ids?.includes(16) ||
+    media?.genres?.some((g) => g.id === 16 || (g.name || "").toLowerCase().includes("anim"));
+
+  const isAnimeSource =
+    media?.source === "anilist" ||
+    media?.source === "mal" ||
+    media?.source === "anime-sama" ||
+    String(media?.id).startsWith("as_");
+
+  const isKnownAnimeTitle =
     /sword art online|gun gale|naruto|one piece|jujutsu|shingeki|titan|dragon ball|bleach|hunter|demon slayer|kimetsu|hero academia|solo leveling|death note|tokyo ghoul|chainsaw|frieren|kaiju|oshi no ko|danmachi|blue lock|boruto|black clover|haikyu|jojo|evangelion|dr\. stone|spy x family|vinland|slime|classroom of the elite|bungo stray dogs|wind breaker|mushoku tensei|overlord|fate\/|re:zero|kaiju no\. 8|dandadan|dungeon meshi|gintama|steins;gate|fullmetal|code geass|fairy tail|wakfu|radiant/i.test(
       title
     );
 
+  // Exclude western live-action remakes (e.g. Netflix One Piece 2023)
+  const isLiveActionRemake = origLang === "en" && !hasAnimationGenre && !isAnimeSource;
+
   const isAnime =
-    media?.source === "anilist" ||
-    media?.source === "mal" ||
-    media?.source === "anime-sama" ||
-    origLang === "ja" ||
-    ((origLang === "ko" || origLang === "zh") &&
-      (media?.genre_ids?.includes(16) || media?.genres?.some((g) => g.id === 16))) ||
-    isKnownAnimeTitleInJapanese;
+    !isLiveActionRemake &&
+    (isAnimeSource ||
+      origLang === "ja" ||
+      (hasAnimationGenre && (origLang === "ja" || origLang === "ko" || origLang === "zh" || isKnownAnimeTitle)) ||
+      (isKnownAnimeTitle && (origLang === "ja" || hasAnimationGenre || !media?.release_date)));
 
   const map = {
     ja: { flag: "🇯🇵", audio: "Japonais", name: "Japon (Animé)", isAnime: true },
@@ -541,10 +548,26 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return baseServers;
   }
 
-  // CAS 2 : FILMS ET SÉRIES CLASSIQUES
+  const isTV =
+    media?.media_type === "tv" ||
+    Boolean(media?.first_air_date) ||
+    Boolean(media?.number_of_seasons) ||
+    Boolean(media?.seasons) ||
+    media?.source === "anime-sama" ||
+    media?.source === "anilist" ||
+    media?.source === "mal" ||
+    String(media?.id).startsWith("as_");
+
+  // CAS 2 : SÉRIES TV CLASSIQUES (NON-ANIMÉ)
+  // Erodium Direct est 100% réservé aux films. Pour les séries, serveurs directs TV.
+  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
+  if (isTV) {
+    return filteredBase;
+  }
+
+  // CAS 3 : FILMS CLASSIQUES
   // - Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
   // - Serveurs miroirs et alternatifs en secours
-  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
   return [
     ERODIUM_DIRECT_MOVIE_SERVER,
     ...filteredBase,
