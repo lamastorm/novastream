@@ -180,7 +180,9 @@ export default function PlayerModal({
         })
         .catch(() => setIsResolving(false));
     } else {
-      setCurrentMedia(media);
+      if (currentMedia?.id !== media?.id) {
+        setCurrentMedia(media);
+      }
       if (languageAdvisor.hasNoOfficialVF(media) && selectedLanguage === "vf") {
         setSelectedLanguage("vostfr");
         setAutoSwitchedNotice(true);
@@ -229,7 +231,12 @@ export default function PlayerModal({
   const isTV = isExplicitMovie
     ? false
     : isExplicitTV ||
+      initialSeason > 1 ||
+      initialEpisode > 1 ||
       Boolean(seriesDetails?.seasons?.length) ||
+      Boolean(currentMedia.number_of_seasons) ||
+      Boolean(currentMedia.seasons?.length) ||
+      (Boolean(currentMedia.name) && !currentMedia.title) ||
       (Boolean(currentMedia.first_air_date) && !currentMedia.release_date) ||
       currentMedia.source === "anime-sama" ||
       currentMedia.source === "anilist" ||

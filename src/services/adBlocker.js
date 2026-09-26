@@ -59,11 +59,12 @@ class AdBlockerService {
     }
 
     // 2. Interception native des redirections de page via la Navigation API (Chrome, Edge, Xbox, Android)
-    // Permet de bloquer à 100% les redirections vers Wyylde ou autres sites sans avoir besoin de sandbox !
+    // Permet de bloquer à 100% les redirections intempestives sans casser le lecteur ni voler le focus
     if (typeof window !== "undefined" && window.navigation) {
       try {
         window.navigation.addEventListener("navigate", (event) => {
           if (!this.isEnabled || !this.isPlayerActive || this.isLegitNav) return;
+          if (event.canIntercept === false) return;
           try {
             const destUrl = event.destination?.url;
             if (!destUrl) return;
@@ -72,6 +73,8 @@ class AdBlockerService {
               dest.origin === window.location.origin ||
               dest.hostname.includes("themoviedb.org") ||
               dest.hostname.includes("youtube.com") ||
+              dest.hostname.includes("frembed.") ||
+              dest.hostname.includes("vidmoly.") ||
               dest.hostname.includes("vercel.app");
 
             if (!isInternal) {
@@ -90,26 +93,6 @@ class AdBlockerService {
     window.addEventListener("beforeunload", (e) => {
       if (this.isEnabled && this.isPlayerActive && !this.isLegitNav) {
         delete e["returnValue"];
-      }
-    });
-
-    // 4. Suivi des interactions tactiles / manettes pour verrouiller le focus Erodium
-    window.addEventListener(
-      "pointerdown",
-      () => {
-        this.lastInteractionTime = Date.now();
-      },
-      { passive: true, capture: true }
-    );
-
-    // Si une popup ou redirection tente de dérober le focus de l'écran lors d'un tap sur le lecteur
-    window.addEventListener("blur", () => {
-      if (this.isEnabled && this.isPlayerActive && Date.now() - this.lastInteractionTime < 2200) {
-        setTimeout(() => {
-          try {
-            window.focus();
-          } catch {}
-        }, 60);
       }
     });
 
