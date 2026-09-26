@@ -170,8 +170,7 @@ export const VIDMOLY_VF_SERVER = {
   name: "Serveur 2 (VidMoly • VF Directe)",
   flag: "🇫🇷",
   badge: "🇫🇷 VidMoly VF",
-  sandbox: "allow-scripts allow-same-origin allow-forms allow-presentation",
-  description: "Lecteur VidMoly direct avec doublage français officiel sans coupure ni popup.",
+  description: "Lecteur VidMoly direct avec doublage français officiel.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
       return `https://frembed.surf/embed/movie/${id}?id=${id}`;

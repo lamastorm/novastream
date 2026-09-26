@@ -121,9 +121,9 @@ class AdBlockerService {
 
   /**
    * Retourne la politique Sandbox pour l'iframe vidéo :
-   * - Pour VidMoly / Frembed : applique allow-scripts allow-same-origin allow-forms allow-presentation
-   *   (SANS allow-popups) ce qui BLOQUE à 100% les popups et redirections vers hai8g.com !
-   * - Pour AutoEmbed : pas de sandbox (car AutoEmbed bloque la lecture si sandbox est détecté).
+   * NOTE : De nombreux hébergeurs (VidMoly, AutoEmbed, VidSrc) bloquent la lecture avec "Sandbox not allowed"
+   * s'ils détectent l'attribut sandbox.
+   * Par défaut, on ne met PAS de sandbox sur l'iframe pour éviter cette détection.
    */
   getSandboxString(server = null, isStrict = false) {
     if (!this.isEnabled) {
@@ -137,12 +137,6 @@ class AdBlockerService {
 
     // Uniquement si l'utilisateur coche expressément le mode strict
     if (isStrict === true || this.strictMode === true) {
-      return "allow-scripts allow-same-origin allow-forms allow-presentation";
-    }
-
-    // Application automatique pour VidMoly et Frembed pour tuer les redirections hai8g.com
-    const serverId = String(server?.id || "").toLowerCase();
-    if (serverId.includes("vidmoly") || serverId.includes("frembed")) {
       return "allow-scripts allow-same-origin allow-forms allow-presentation";
     }
 
