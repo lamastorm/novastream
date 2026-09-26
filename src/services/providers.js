@@ -167,10 +167,11 @@ export const LANGUAGE_OPTIONS = [
 
 export const VIDMOLY_VF_SERVER = {
   id: "vidmoly_vf",
-  name: "Serveur 1 (VidMoly • VF Directe)",
+  name: "Serveur 2 (VidMoly • VF Directe)",
   flag: "🇫🇷",
   badge: "🇫🇷 VidMoly VF",
-  description: "Lecteur VidMoly direct avec doublage français officiel sans coupure.",
+  sandbox: "allow-scripts allow-same-origin allow-forms allow-presentation",
+  description: "Lecteur VidMoly direct avec doublage français officiel sans coupure ni popup.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
       return `https://frembed.surf/embed/movie/${id}?id=${id}`;
@@ -179,23 +180,25 @@ export const VIDMOLY_VF_SERVER = {
   },
 };
 
-export const VIDMOLY_MIRROR_VF_SERVER = {
-  id: "frembed_click",
-  name: "Serveur 2 (VidMoly Miroir • VF)",
-  flag: "🇫🇷",
-  badge: "🇫🇷 VF Miroir",
-  description: "Deuxième passerelle française VidMoly / Sibnet / Uqload de secours.",
+export const ANYEMBED_VF_SERVER = {
+  id: "anyembed_vf",
+  name: "Serveur 3 (AnyEmbed • Multi 1080p / 4K VF)",
+  flag: "🌐",
+  badge: "🌐 1080p/4K VF",
+  description: "Lecteur HD rapide avec pistes audio multiples au choix sans redirection.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
-      return `https://frembed.live/embed/movie/${id}?id=${id}`;
+      return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
     }
-    return `https://frembed.live/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
+    return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
   },
 };
 
+export const VIDMOLY_MIRROR_VF_SERVER = ANYEMBED_VF_SERVER;
+
 export const AUTOEMBED_VF_SERVER = {
   id: "autoembed_vf",
-  name: "Serveur 2 (AutoEmbed • FHD 0 Pub Multi-FR)",
+  name: "Serveur 1 (AutoEmbed • FHD 0 Pub Multi-FR)",
   flag: "⚡",
   badge: "⚡ 0 Pub Multi-FR",
   description: "Lecteur moderne haute vitesse sans pub (style Domgrav), avec piste audio française.",
@@ -204,20 +207,6 @@ export const AUTOEMBED_VF_SERVER = {
       return `https://autoembed.co/movie/tmdb/${id}`;
     }
     return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
-  },
-};
-
-export const ANYEMBED_VF_SERVER = {
-  id: "anyembed_vf",
-  name: "Serveur 3 (AnyEmbed • Multi 1080p / 4K)",
-  flag: "🌐",
-  badge: "🌐 1080p/4K",
-  description: "Lecteur HD rapide avec pistes audio multiples au choix sans coupure.",
-  getUrl: (type, id, season = 1, episode = 1) => {
-    if (type === "movie") {
-      return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
-    }
-    return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
   },
 };
 

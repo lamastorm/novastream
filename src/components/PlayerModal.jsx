@@ -630,7 +630,7 @@ export default function PlayerModal({
           title={title}
           allowFullScreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          sandbox={adBlocker.getSandboxString(strictPopupMode)}
+          sandbox={adBlocker.getSandboxString(selectedServer, strictPopupMode)}
           className="w-full h-full border-0"
         />
       </div>
@@ -969,7 +969,7 @@ export default function PlayerModal({
               title={title}
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              sandbox={adBlocker.getSandboxString(strictPopupMode)}
+              sandbox={adBlocker.getSandboxString(activeServer, strictPopupMode)}
               style={videoFilter ? { filter: videoFilter, transition: "filter 0.3s" } : undefined}
               className="w-full h-full border-0 absolute inset-0"
             />
