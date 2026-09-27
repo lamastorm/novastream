@@ -20,7 +20,6 @@ import { traktApi, traktLists } from "./api/trakt";
 import { storage } from "./services/storage";
 import { languageAdvisor } from "./services/languageAdvisor";
 import { deviceAdvisor } from "./services/deviceAdvisor";
-import { gamepadService } from "./services/gamepadService";
 import MoodSelector from "./components/MoodSelector";
 import LiveCatalogStats from "./components/LiveCatalogStats";
 import DonateModal from "./components/DonateModal";
@@ -146,40 +145,6 @@ export default function App() {
     }
   }, [activeTab, searchQuery, selectedMedia, activePlayer]);
 
-  useEffect(() => {
-    gamepadService.init({
-      onBack: () => {
-        if (activePlayer) {
-          setActivePlayer(null);
-        } else if (selectedMedia) {
-          setSelectedMedia(null);
-        } else if (settingsOpen) {
-          setSettingsOpen(false);
-        }
-      },
-      onTabNext: () => {
-        const tabs = ["home", "movies", "series", "anime", "favorites"];
-        setActiveTab((curr) => {
-          const idx = tabs.indexOf(curr);
-          const next = tabs[(idx + 1) % tabs.length];
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          return next;
-        });
-      },
-      onTabPrev: () => {
-        const tabs = ["home", "movies", "series", "anime", "favorites"];
-        setActiveTab((curr) => {
-          const idx = tabs.indexOf(curr);
-          const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          return prev;
-        });
-      },
-      onSurprise: () => {
-        handleRandomSurprise();
-      },
-    });
-  }, [activePlayer, selectedMedia, settingsOpen]);
 
   // Load Initial Data
   useEffect(() => {

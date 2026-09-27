@@ -8,12 +8,10 @@ import {
   Check,
   ExternalLink,
   Tv,
-  Gamepad2,
 } from "lucide-react";
 import { setCustomApiKey } from "../api/tmdb";
 import { storage } from "../services/storage";
 import { deviceAdvisor } from "../services/deviceAdvisor";
-import { gamepadService } from "../services/gamepadService";
 import { adBlocker } from "../services/adBlocker";
 
 export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
@@ -38,7 +36,6 @@ export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
 
   const [isTvMode, setIsTvMode] = useState(() => deviceAdvisor.getTvMode());
   const [isAdBlock, setIsAdBlock] = useState(() => adBlocker.isEnabled);
-  const hasGamepad = gamepadService.gamepadConnected || (typeof navigator !== "undefined" && navigator.getGamepads && Array.from(navigator.getGamepads()).some(Boolean));
 
   const handleToggleTvMode = () => {
     const nextVal = !isTvMode;
@@ -155,13 +152,13 @@ export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
           </div>
         </div>
 
-        {/* Mode TV & Manette (Xbox, Téléviseur, Salon) */}
+        {/* Mode Grand Écran TV */}
         <div className="space-y-3 pt-4 border-t border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Tv className="w-4 h-4 text-orange-400" />
               <span className="text-xs uppercase font-bold text-zinc-300">
-                Mode TV & Salon (10-Foot UI)
+                Mode Grand Écran TV
               </span>
             </div>
             <button
@@ -179,34 +176,8 @@ export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
             </button>
           </div>
           <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Agrandit les polices, les boutons et les affiches pour une visibilité optimale à 3 mètres sur grand écran TV ou console Xbox/PlayStation.
+            Agrandit les polices, les boutons et les affiches pour une visibilité optimale à 3 mètres sur téléviseur.
           </p>
-
-          <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs">
-              <Gamepad2 className="w-4 h-4 text-orange-400" />
-              <span className="text-zinc-300 font-medium">Contrôleur de jeu :</span>
-            </div>
-            <span
-              className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
-                hasGamepad
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-zinc-800 text-zinc-400 border border-white/5"
-              }`}
-            >
-              {hasGamepad ? "🎮 Manette Détectée" : "Aucune Manette"}
-            </span>
-          </div>
-
-          <div className="text-[10px] text-zinc-500 space-y-0.5 bg-black/40 p-2.5 rounded-lg border border-white/5">
-            <p className="font-semibold text-zinc-400">Raccourcis Manette Xbox / PlayStation :</p>
-            <p>• <strong>(A) / Croix</strong> : Ouvrir / Valider la carte ou le bouton</p>
-            <p>• <strong>(B) / Rond</strong> : Fermer la fiche ou le lecteur (Retour)</p>
-            <p>• <strong>(LB) / (RB)</strong> : Naviguer entre les onglets Films / Séries / Animes</p>
-            <p>• <strong>(X) / Carré</strong> : Lancer un film ou animé aléatoire (Surprise)</p>
-            <p>• <strong>(Y) / Triangle</strong> : Activer ou quitter le Plein Écran</p>
-            <p>• <strong>Croix Directionnelle (D-Pad)</strong> : Déplacement fluide entre toutes les cartes</p>
-          </div>
         </div>
 
         {/* Bouclier Anti-Pub & Anti-Popups (Mobiles, Consoles, PC) */}

@@ -42,7 +42,6 @@ import { useMediaLiveViewers, liveCounter } from "../services/liveCounter";
 import HlsPlayer from "./HlsPlayer";
 import EnhancerPanel from "./EnhancerPanel";
 import DnsHelpModal from "./DnsHelpModal";
-import { gamepadService } from "../services/gamepadService";
 import { adBlocker } from "../services/adBlocker";
 
 export default function PlayerModal({
@@ -573,10 +572,6 @@ export default function PlayerModal({
   };
 
   useEffect(() => {
-    // When PlayerModal opens, wire Gamepad B button to close modal
-    const prevBack = gamepadService.callbacks.onBack;
-    gamepadService.setCallbacks({ onBack: onClose });
-
     const handleKey = (e) => {
       if (e.key === "Escape") {
         onClose();
@@ -587,7 +582,6 @@ export default function PlayerModal({
     window.addEventListener("keydown", handleKey);
 
     return () => {
-      gamepadService.setCallbacks({ onBack: prevBack });
       window.removeEventListener("keydown", handleKey);
     };
   }, [onClose]);
@@ -740,7 +734,7 @@ export default function PlayerModal({
             onClick={toggleFullscreen}
             data-focusable="true"
             className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-orange-500 flex items-center gap-1.5"
-            title={isFullscreen ? "Quitter le plein écran (F)" : "Plein écran (F / Touche Y manette)"}
+            title={isFullscreen ? "Quitter le plein écran (F)" : "Plein écran (F)"}
           >
             {isFullscreen ? (
               <Minimize2 className="w-4 h-4 text-orange-400" />
@@ -755,7 +749,7 @@ export default function PlayerModal({
             onClick={onClose}
             data-focusable="true"
             className="p-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-orange-500"
-            title="Fermer (Touche B manette / Échap)"
+            title="Fermer (Échap)"
           >
             <X className="w-5 h-5" />
           </button>
