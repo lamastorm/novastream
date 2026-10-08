@@ -8,6 +8,8 @@ function MediaCard({
   isFavorite,
   onToggleFavorite,
 }) {
+  if (!item) return null;
+
   const title = item.title || item.name || "Titre inconnu";
   const date = String(item.release_date || item.first_air_date || "");
   const year = date ? (isNaN(new Date(date).getFullYear()) ? "" : String(new Date(date).getFullYear())) : "";

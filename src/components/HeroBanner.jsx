@@ -85,6 +85,7 @@ export default function HeroBanner({
   if (slides.length === 0) return null;
 
   const currentItem = slides[currentIndex] || slides[0];
+  if (!currentItem) return null;
   const title = currentItem.title || currentItem.name || "";
   const overview =
     currentItem.overview || "Découvrez ce titre incontournable en streaming haute définition sur Erodium.";

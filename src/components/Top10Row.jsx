@@ -23,7 +23,7 @@ function Top10Row({
     }
   };
 
-  const top10 = (items || []).slice(0, 10);
+  const top10 = (items || []).filter(Boolean).slice(0, 10);
   if (top10.length === 0) return null;
 
   return (

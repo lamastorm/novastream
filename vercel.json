@@ -3,10 +3,6 @@
     {
       "path": "/api/keep-alive",
       "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/catalog-sync",
-      "schedule": "0 6 * * *"
     }
   ],
   "rewrites": [

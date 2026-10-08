@@ -6,7 +6,9 @@ export const storage = {
   getWatchlist: () => {
     try {
       const saved = localStorage.getItem(WATCHLIST_KEY);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
     } catch {
       return [];
     }
@@ -71,8 +73,9 @@ export const storage = {
       const saved = localStorage.getItem(HISTORY_KEY);
       if (!saved) return [];
       const list = JSON.parse(saved);
+      if (!Array.isArray(list)) return [];
       // Auto-heal and normalize legacy history items
-      return list.map((item) => {
+      return list.filter(Boolean).map((item) => {
         const isExplicitMovie =
           item.media_type === "movie" ||
           Boolean(item.release_date && !item.first_air_date) ||

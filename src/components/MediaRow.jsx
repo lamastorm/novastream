@@ -67,13 +67,21 @@ function MediaRow({
         className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {items.map((item, idx) => {
-          const isItemTV =
+        {items.filter(Boolean).map((item, idx) => {
+          const isItemMovie =
+            item.media_type === "movie" ||
+            Boolean(item.release_date && !item.first_air_date) ||
+            Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+          const isItemTV = !isItemMovie && (
             item.media_type === "tv" ||
-            Boolean(item.season !== undefined && item.episode !== undefined) ||
-            Boolean(item.first_air_date && !item.release_date);
-          const type = isItemTV ? "tv" : (item.media_type || (item.name && !item.title ? "tv" : "movie"));
-          const isFav = favorites.some((f) => f.id === item.id && f.media_type === type);
+            Boolean(item.first_air_date && !item.release_date) ||
+            Boolean(item.name && !item.title) ||
+            Boolean(item.number_of_seasons) ||
+            Boolean(item.seasons?.length) ||
+            (Number(item.season) > 1 || Number(item.episode) > 1)
+          );
+          const type = isItemMovie ? "movie" : (isItemTV ? "tv" : (item.media_type || "movie"));
+          const isFav = favorites.some((f) => f && f.id === item.id && f.media_type === type);
 
           return (
             <div
