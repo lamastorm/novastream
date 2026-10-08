@@ -1421,7 +1421,7 @@ export default function PlayerModal({
                     <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
                       💬 {activeDetails.subs}
                     </span>
-                    {selectedServer.badge?.includes("DoH") && (
+                    {(selectedServer.badge?.includes("DoH") || selectedServer.badge?.includes("DNS")) && (
                       <button
                         onClick={() => setShowDnsModal(true)}
                         className="px-2 py-0.5 rounded bg-orange-600/90 hover:bg-orange-500 text-white font-bold text-[10px] shadow-sm flex items-center gap-1 cursor-pointer transition-colors"
