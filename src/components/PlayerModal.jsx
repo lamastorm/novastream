@@ -24,6 +24,8 @@ import {
   Check,
   Tv,
   ShieldCheck,
+  SkipForward,
+  PlayCircle,
 } from "lucide-react";
 import {
   STREAMING_SERVERS,
@@ -202,6 +204,11 @@ export default function PlayerModal({
   const [season, setSeason] = useState(initialSeason);
   const [episode, setEpisode] = useState(initialEpisode);
   const [iframeKey, setIframeKey] = useState(0);
+  const [autoNext, setAutoNext] = useState(() => {
+    const saved = localStorage.getItem("erodium_auto_next");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [autoNextCountdown, setAutoNextCountdown] = useState(null);
 
   // État spécifique pour la passerelle officielle Anime-Sama
   const [animeData, setAnimeData] = useState(null);
@@ -515,6 +522,7 @@ export default function PlayerModal({
     : "";
 
   const handleNextEpisode = () => {
+    setAutoNextCountdown(null);
     setEpisode((prev) => prev + 1);
     setDirectStreamUrl(null);
     setNativeMovieStreamUrl(null);
@@ -522,6 +530,7 @@ export default function PlayerModal({
   };
 
   const handlePrevEpisode = () => {
+    setAutoNextCountdown(null);
     if (episode > 1) {
       setEpisode((prev) => prev - 1);
       setDirectStreamUrl(null);
@@ -531,6 +540,7 @@ export default function PlayerModal({
   };
 
   const handleSelectEpisode = (targetSeason, targetEpisode) => {
+    setAutoNextCountdown(null);
     setSeason(targetSeason);
     setEpisode(targetEpisode);
     setDirectStreamUrl(null);
@@ -538,6 +548,52 @@ export default function PlayerModal({
     setIframeKey((prev) => prev + 1);
     setShowEpisodeDrawer(false);
   };
+
+  const toggleAutoNext = () => {
+    const nextVal = !autoNext;
+    setAutoNext(nextVal);
+    localStorage.setItem("erodium_auto_next", String(nextVal));
+    if (!nextVal) setAutoNextCountdown(null);
+  };
+
+  // Interception des signaux de fin de vidéo des lecteurs externes via postMessage
+  useEffect(() => {
+    if (!isTV) return;
+    const handleMessage = (e) => {
+      try {
+        const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (!d) return;
+        const isEnded =
+          d.event === "ended" ||
+          d.event === "video_ended" ||
+          d.type === "ended" ||
+          d.status === "ended" ||
+          d === "ended" ||
+          d.event === "onComplete";
+
+        if (isEnded && autoNext) {
+          setAutoNextCountdown(5);
+        }
+      } catch {}
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [isTV, autoNext]);
+
+  // Compte à rebours avant passage automatique à l'épisode suivant
+  useEffect(() => {
+    if (autoNextCountdown === null) return;
+    if (autoNextCountdown <= 0) {
+      setAutoNextCountdown(null);
+      handleNextEpisode();
+      return;
+    }
+    const timer = setTimeout(() => {
+      setAutoNextCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [autoNextCountdown]);
 
   const containerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -725,6 +781,20 @@ export default function PlayerModal({
                 title="Épisode suivant"
               >
                 <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Bouton Toggle Auto-Suivant */}
+              <button
+                onClick={toggleAutoNext}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                  autoNext
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
+                    : "bg-zinc-800 text-zinc-500 hover:text-zinc-300 border border-white/5"
+                }`}
+                title={autoNext ? "Épisode suivant automatique ACTIF" : "Épisode suivant automatique DÉSACTIVÉ"}
+              >
+                <SkipForward className={`w-3 h-3 ${autoNext ? "text-emerald-400" : "text-zinc-500"}`} />
+                <span className="hidden sm:inline">Auto</span>
               </button>
             </div>
           )}
@@ -991,6 +1061,41 @@ export default function PlayerModal({
                   </div>
                 );
               })()}
+
+            {/* Overlay Compte à Rebours Épisode Suivant Automatique */}
+            {autoNextCountdown !== null && (
+              <div className="absolute bottom-6 right-6 z-40 animate-fade-in pointer-events-auto">
+                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-950/95 backdrop-blur-md border border-orange-500/50 shadow-2xl shadow-orange-500/20 text-white">
+                  <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center font-black text-sm text-white shadow-md">
+                    {autoNextCountdown}s
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <SkipForward className="w-3.5 h-3.5 text-orange-400" />
+                      Épisode suivant dans {autoNextCountdown}s
+                    </span>
+                    <span className="text-[10px] text-zinc-400">
+                      Saison {season} • Épisode {episode + 1}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <button
+                      onClick={handleNextEpisode}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-orange-600/30 transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Play className="w-3 h-3 fill-white" />
+                      <span>Lire</span>
+                    </button>
+                    <button
+                      onClick={() => setAutoNextCountdown(null)}
+                      className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold text-xs border border-white/10 transition-colors cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1378,6 +1483,16 @@ export default function PlayerModal({
                   <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
                   <span className="hidden sm:inline">Vidéo 404 ou bloquée ?</span>
                 </div>
+                {isTV && (
+                  <button
+                    onClick={handleNextEpisode}
+                    className="px-2.5 py-0.5 rounded bg-orange-600/90 hover:bg-orange-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                    title="Passer immédiatement à l'épisode suivant"
+                  >
+                    <SkipForward className="w-3 h-3" />
+                    <span>Épisode suivant (EP {episode + 1})</span>
+                  </button>
+                )}
                 <button
                   onClick={handleNextServer}
                   className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 font-semibold transition-colors cursor-pointer"

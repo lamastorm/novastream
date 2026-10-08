@@ -17,10 +17,12 @@ import {
   Globe,
   Loader2,
   ShieldCheck,
+  RotateCcw,
 } from "lucide-react";
 import { tmdbApi, IMAGE_BASE_URL } from "../api/tmdb";
 import { languageAdvisor } from "../services/languageAdvisor";
 import { useMediaLiveViewers } from "../services/liveCounter";
+import { storage } from "../services/storage";
 
 const safeGetYear = (dateStr) => {
   if (!dateStr) return "";
@@ -247,6 +249,14 @@ export default function DetailModal({
     ? `${IMAGE_BASE_URL}/w500${details?.poster_path || activeMedia.poster_path}`
     : null;
 
+  // Récupérer le dernier épisode regardé depuis l'historique
+  const lastWatchedItem = isTV
+    ? storage.getHistory().find((h) => String(h.id) === String(activeMedia.id) && h.media_type === "tv")
+    : null;
+  const resumeSeason = lastWatchedItem?.season || selectedSeason || 1;
+  const resumeEpisode = lastWatchedItem?.episode || 1;
+  const hasHistoryResume = Boolean(lastWatchedItem && (lastWatchedItem.season > 1 || lastWatchedItem.episode > 1));
+
   const trailer = details?.videos?.results?.find(
     (v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
   );
@@ -379,16 +389,52 @@ export default function DetailModal({
                   };
                   onPlay(
                     targetMedia,
-                    isTV ? selectedSeason : 1,
-                    1,
+                    isTV ? (hasHistoryResume ? resumeSeason : selectedSeason) : 1,
+                    isTV ? (hasHistoryResume ? resumeEpisode : 1) : 1,
                     isNoVF ? "vostfr" : selectedLang
                   );
                 }}
                 className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 focus-visible:ring-4 focus-visible:ring-orange-500 text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-orange-600/30 transition-all hover:scale-[1.02] cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-white" />
-                <span>{isTV ? "Lancer la série" : "Regarder le film"}</span>
+                {hasHistoryResume ? (
+                  <>
+                    <RotateCcw className="w-4 h-4 text-white" />
+                    <span>Reprendre (S{resumeSeason}:EP{resumeEpisode})</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>{isTV ? "Lancer la série" : "Regarder le film"}</span>
+                  </>
+                )}
               </button>
+
+              {/* Bouton Recommencer au S1:EP1 si historique existant */}
+              {isTV && hasHistoryResume && (
+                <button
+                  onClick={() => {
+                    const targetMedia = {
+                      ...activeMedia,
+                      ...details,
+                      id: details?.id || activeMedia.id,
+                      media_type: "tv",
+                      title: details?.name || details?.title || activeMedia.title,
+                      original_language: details?.original_language || activeMedia.original_language,
+                    };
+                    onPlay(
+                      targetMedia,
+                      1,
+                      1,
+                      isNoVF ? "vostfr" : selectedLang
+                    );
+                  }}
+                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-bold border border-white/10 transition-all cursor-pointer"
+                  title="Recommencer depuis l'épisode 1"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>S1:EP1</span>
+                </button>
+              )}
 
               {/* Bouton Favoris */}
               <button
