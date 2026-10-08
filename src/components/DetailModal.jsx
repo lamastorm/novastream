@@ -250,12 +250,23 @@ export default function DetailModal({
     : null;
 
   // Récupérer le dernier épisode regardé depuis l'historique
-  const lastWatchedItem = isTV
-    ? storage.getHistory().find((h) => String(h.id) === String(activeMedia.id) && h.media_type === "tv")
-    : null;
-  const resumeSeason = lastWatchedItem?.season || selectedSeason || 1;
-  const resumeEpisode = lastWatchedItem?.episode || 1;
-  const hasHistoryResume = Boolean(lastWatchedItem && (lastWatchedItem.season > 1 || lastWatchedItem.episode > 1));
+  const historyList = storage.getHistory();
+  const lastWatchedItem = historyList.find((h) => {
+    const idMatch = String(h.id) === String(activeMedia.id) || (details?.id && String(h.id) === String(details.id));
+    const titleMatch =
+      (h.title && (h.title === activeMedia.title || h.title === activeMedia.name || h.title === details?.title || h.title === details?.name)) ||
+      (h.name && (h.name === activeMedia.name || h.name === activeMedia.title || h.name === details?.name || h.name === details?.title));
+    return idMatch || titleMatch;
+  });
+
+  const resumeSeason = Number(lastWatchedItem?.season) || selectedSeason || 1;
+  const resumeEpisode = Number(lastWatchedItem?.episode) || 1;
+  const hasHistoryResume = Boolean(
+    lastWatchedItem &&
+      (isTV
+        ? lastWatchedItem.season !== undefined || lastWatchedItem.episode !== undefined
+        : true)
+  );
 
   const trailer = details?.videos?.results?.find(
     (v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
@@ -399,7 +410,11 @@ export default function DetailModal({
                 {hasHistoryResume ? (
                   <>
                     <RotateCcw className="w-4 h-4 text-white" />
-                    <span>Reprendre (S{resumeSeason}:EP{resumeEpisode})</span>
+                    <span>
+                      {isTV
+                        ? `Reprendre (S${resumeSeason}:EP${resumeEpisode})`
+                        : "Reprendre le film"}
+                    </span>
                   </>
                 ) : (
                   <>
@@ -646,15 +661,39 @@ export default function DetailModal({
                 </div>
               ) : episodes.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
-                  {episodes.map((ep) => (
-                    <div
-                      key={ep.id}
-                      tabIndex={0}
-                      role="button"
-                      data-focusable="true"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
+                  {episodes.map((ep) => {
+                    const isResumeEp =
+                      isTV &&
+                      hasHistoryResume &&
+                      selectedSeason === resumeSeason &&
+                      ep.episode_number === resumeEpisode;
+
+                    return (
+                      <div
+                        key={ep.id}
+                        tabIndex={0}
+                        role="button"
+                        data-focusable="true"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const targetMedia = {
+                              ...activeMedia,
+                              ...details,
+                              id: details?.id || activeMedia.id,
+                              media_type: isTV ? "tv" : "movie",
+                              title: details?.name || details?.title || activeMedia.title,
+                              original_language: details?.original_language || activeMedia.original_language,
+                            };
+                            onPlay(
+                              targetMedia,
+                              selectedSeason,
+                              ep.episode_number,
+                              isNoVF ? "vostfr" : selectedLang
+                            );
+                          }
+                        }}
+                        onClick={() => {
                           const targetMedia = {
                             ...activeMedia,
                             ...details,
@@ -669,65 +708,59 @@ export default function DetailModal({
                             ep.episode_number,
                             isNoVF ? "vostfr" : selectedLang
                           );
-                        }
-                      }}
-                      onClick={() => {
-                        const targetMedia = {
-                          ...activeMedia,
-                          ...details,
-                          id: details?.id || activeMedia.id,
-                          media_type: isTV ? "tv" : "movie",
-                          title: details?.name || details?.title || activeMedia.title,
-                          original_language: details?.original_language || activeMedia.original_language,
-                        };
-                        onPlay(
-                          targetMedia,
-                          selectedSeason,
-                          ep.episode_number,
-                          isNoVF ? "vostfr" : selectedLang
-                        );
-                      }}
-                      className="group flex gap-3 p-2.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-orange-500 focus-visible:bg-zinc-800 border border-white/5 hover:border-orange-500/40 cursor-pointer transition-all active:scale-95"
-                    >
-                      {/* Episode Thumbnail */}
-                      <div className="relative w-24 h-16 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
-                        {ep.still_path ? (
-                          <img
-                            src={`${IMAGE_BASE_URL}/w300${ep.still_path}`}
-                            alt={ep.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
-                            Ep {ep.episode_number}
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                          <Play className="w-4 h-4 fill-white text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </div>
-
-                      {/* Episode Info */}
-                      <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[10px] font-bold text-orange-400">
-                            EP {ep.episode_number}
-                          </span>
-                          {ep.runtime && (
-                            <span className="text-[10px] text-zinc-500">
-                              {ep.runtime} min
-                            </span>
+                        }}
+                        className={`group flex gap-3 p-2.5 rounded-xl cursor-pointer transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-orange-500 ${
+                          isResumeEp
+                            ? "bg-orange-950/30 border-2 border-orange-500/70 shadow-lg shadow-orange-600/10"
+                            : "bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 hover:border-orange-500/40"
+                        }`}
+                      >
+                        {/* Episode Thumbnail */}
+                        <div className="relative w-24 h-16 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                          {ep.still_path ? (
+                            <img
+                              src={`${IMAGE_BASE_URL}/w300${ep.still_path}`}
+                              alt={ep.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
+                              Ep {ep.episode_number}
+                            </div>
                           )}
+                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                            <Play className="w-4 h-4 fill-white text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                         </div>
-                        <h5 className="text-xs font-semibold text-white truncate group-hover:text-orange-400 group-focus-visible:text-orange-400 transition-colors">
-                          {ep.name || `Épisode ${ep.episode_number}`}
-                        </h5>
-                        <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
-                          {ep.overview || "Visionner cet épisode"}
-                        </p>
+
+                        {/* Episode Info */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                            <span className="text-[10px] font-bold text-orange-400">
+                              EP {ep.episode_number}
+                            </span>
+                            {isResumeEp && (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center gap-1 shadow-sm">
+                                <RotateCcw className="w-2.5 h-2.5" />
+                                Dernier vu
+                              </span>
+                            )}
+                            {ep.runtime && (
+                              <span className="text-[10px] text-zinc-500">
+                                {ep.runtime} min
+                              </span>
+                            )}
+                          </div>
+                          <h5 className="text-xs font-semibold text-white truncate group-hover:text-orange-400 group-focus-visible:text-orange-400 transition-colors">
+                            {ep.name || `Épisode ${ep.episode_number}`}
+                          </h5>
+                          <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
+                            {ep.overview || "Visionner cet épisode"}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="py-6 text-center text-xs text-zinc-500">

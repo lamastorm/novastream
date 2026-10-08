@@ -68,7 +68,11 @@ function MediaRow({
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {items.map((item, idx) => {
-          const type = item.media_type || (item.title ? "movie" : "tv");
+          const isItemTV =
+            item.media_type === "tv" ||
+            Boolean(item.season !== undefined && item.episode !== undefined) ||
+            Boolean(item.first_air_date && !item.release_date);
+          const type = isItemTV ? "tv" : (item.media_type || (item.name && !item.title ? "tv" : "movie"));
           const isFav = favorites.some((f) => f.id === item.id && f.media_type === type);
 
           return (

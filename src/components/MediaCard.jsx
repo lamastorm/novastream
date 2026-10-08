@@ -20,14 +20,30 @@ function MediaCard({
       : "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=400&auto=format&fit=crop&q=80");
 
   // Determine media type
+  const hasProgress = Boolean(
+    (item.season !== undefined && item.episode !== undefined) ||
+    item.watchedAt ||
+    item.lastSeason ||
+    item.lastEpisode
+  );
+  const isSeries =
+    item.media_type === "tv" ||
+    Boolean(item.season !== undefined && item.episode !== undefined) ||
+    Boolean(item.first_air_date && !item.release_date) ||
+    Boolean(item.name && !item.release_date);
+
   const isAnime =
     item.original_language === "ja" &&
     (item.genre_ids?.includes(16) || item.genres?.some((g) => g.id === 16));
+
   const mediaTypeLabel = isAnime
     ? "Anime"
-    : item.media_type === "movie" || item.title
-    ? "Film"
-    : "Série";
+    : isSeries
+    ? "Série"
+    : "Film";
+
+  const seasonNum = Number(item.season) || 1;
+  const episodeNum = Number(item.episode) || 1;
 
   const isUpcoming =
     (item.status === "In Production" || item.status === "Planned") ||
@@ -57,8 +73,24 @@ function MediaCard({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"
         />
 
+        {/* Permanent Resume Banner for History / In-Progress Items (Visible before hover) */}
+        {hasProgress && (
+          <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-md border border-orange-500/50 shadow-lg text-white group-hover:opacity-0 transition-opacity duration-200">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
+              <span className="text-[11px] font-bold text-orange-400 truncate">
+                {isSeries ? `S${seasonNum} : EP ${episodeNum}` : "En cours"}
+              </span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center gap-1 flex-shrink-0 shadow-sm">
+              <Play className="w-2.5 h-2.5 fill-white" />
+              Reprendre
+            </span>
+          </div>
+        )}
+
         {/* Gradient Overlay on Hover & Focus (Visible on TV controller focus too) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3 pointer-events-none group-hover:pointer-events-auto group-focus-visible:pointer-events-auto">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3 pointer-events-none group-hover:pointer-events-auto group-focus-visible:pointer-events-auto">
           {/* Top Actions */}
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -66,13 +98,18 @@ function MediaCard({
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   isAnime
                     ? "bg-red-600/90 text-white"
-                    : mediaTypeLabel === "Film"
-                    ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white"
-                    : "bg-emerald-600/90 text-white"
+                    : isSeries
+                    ? "bg-emerald-600/90 text-white"
+                    : "bg-gradient-to-r from-orange-600 to-amber-600 text-white"
                 }`}
               >
                 {mediaTypeLabel}
               </span>
+              {hasProgress && isSeries && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                  S{seasonNum}:EP{episodeNum}
+                </span>
+              )}
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ⚡ 0 Pub
               </span>
@@ -99,14 +136,23 @@ function MediaCard({
             </button>
           </div>
 
-          {/* Centered Play Button */}
-          <div className="self-center w-12 h-12 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center justify-center shadow-lg shadow-orange-600/50 transform translate-y-4 group-hover:translate-y-0 group-focus-visible:translate-y-0 transition-transform duration-200">
-            <Play className="w-5 h-5 ml-0.5 fill-white" />
+          {/* Centered Resume / Play Button */}
+          <div className="self-center flex flex-col items-center gap-1.5 transform translate-y-3 group-hover:translate-y-0 group-focus-visible:translate-y-0 transition-transform duration-200">
+            <div className="px-3.5 py-2 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center gap-2 shadow-xl shadow-orange-600/50 hover:scale-105 active:scale-95 transition-all">
+              <Play className="w-4 h-4 fill-white flex-shrink-0" />
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider">
+                {hasProgress
+                  ? (isSeries ? `Reprendre S${seasonNum}:EP${episodeNum}` : "Reprendre le film")
+                  : (isSeries ? "Lancer la série" : "Regarder le film")}
+              </span>
+            </div>
           </div>
 
           {/* Bottom overview snippet */}
           <p className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">
-            {item.overview || "Cliquez pour voir les détails et lancer la lecture."}
+            {hasProgress && isSeries
+              ? `Reprendre directement la Saison ${seasonNum}, Épisode ${episodeNum}.`
+              : item.overview || "Cliquez pour voir les détails et lancer la lecture."}
           </p>
         </div>
 
@@ -131,8 +177,14 @@ function MediaCard({
         </h4>
         <div className="flex items-center justify-between text-xs text-zinc-400">
           <span>{year || "—"}</span>
-          <span className="text-[11px] text-zinc-500 font-medium">
-            {mediaTypeLabel}
+          <span className="text-[11px] font-medium flex items-center gap-1">
+            {hasProgress && isSeries ? (
+              <span className="text-orange-400 font-bold">
+                S{seasonNum} • EP {episodeNum}
+              </span>
+            ) : (
+              <span className="text-zinc-500">{mediaTypeLabel}</span>
+            )}
           </span>
         </div>
       </div>

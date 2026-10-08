@@ -463,8 +463,17 @@ export default function PlayerModal({
 
   // Register in History
   useEffect(() => {
-    storage.addToHistory(currentMedia, season, episode);
-  }, [currentMedia, season, episode]);
+    storage.addToHistory(
+      {
+        ...currentMedia,
+        media_type: mediaType,
+        name: currentMedia.name || currentMedia.title,
+        title: currentMedia.title || currentMedia.name,
+      },
+      mediaType === "tv" ? season : 1,
+      mediaType === "tv" ? episode : 1
+    );
+  }, [currentMedia, season, episode, mediaType]);
 
   // Synchroniser le média en cours de visionnage avec le réseau temps réel
   useEffect(() => {

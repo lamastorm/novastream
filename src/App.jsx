@@ -579,13 +579,19 @@ export default function App() {
 
   const handleStartPlay = (media, season = 1, episode = 1, language) => {
     const isExplicitMovie = media.media_type === "movie";
-    const type = isExplicitMovie
-      ? "movie"
-      : media.media_type || (media.first_air_date && !media.release_date ? "tv" : (media.title ? "movie" : "tv"));
+    const isSeries =
+      media.media_type === "tv" ||
+      Boolean(season > 1 || episode > 1) ||
+      Boolean(media.season !== undefined && media.episode !== undefined) ||
+      Boolean(media.first_air_date && !media.release_date) ||
+      Boolean(media.name && !media.title);
+    const type = isSeries ? "tv" : (isExplicitMovie ? "movie" : (media.media_type || (media.title ? "movie" : "tv")));
+    const finalSeason = type === "movie" ? 1 : (Number(season) || Number(media.season) || 1);
+    const finalEpisode = type === "movie" ? 1 : (Number(episode) || Number(media.episode) || 1);
     setActivePlayer({
       media: { ...media, media_type: type },
-      season: type === "movie" ? 1 : season,
-      episode: type === "movie" ? 1 : episode,
+      season: finalSeason,
+      episode: finalEpisode,
       language: language || languageAdvisor.getRecommendedLanguage(media),
     });
     setHistory(storage.getHistory());

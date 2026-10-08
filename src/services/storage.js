@@ -69,7 +69,20 @@ export const storage = {
   getHistory: () => {
     try {
       const saved = localStorage.getItem(HISTORY_KEY);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const list = JSON.parse(saved);
+      // Auto-heal and normalize legacy history items
+      return list.map((item) => {
+        const isTV =
+          item.media_type === "tv" ||
+          Boolean(item.season !== undefined && item.episode !== undefined) ||
+          Boolean(item.season > 1 || item.episode > 1) ||
+          Boolean(item.first_air_date && !item.release_date);
+        return {
+          ...item,
+          media_type: isTV ? "tv" : (item.media_type || "movie"),
+        };
+      });
     } catch {
       return [];
     }
@@ -77,19 +90,31 @@ export const storage = {
 
   addToHistory: (item, season = 1, episode = 1) => {
     const list = storage.getHistory();
+    const isTV =
+      item.media_type === "tv" ||
+      Boolean(season > 1 || episode > 1) ||
+      Boolean(item.season !== undefined && item.episode !== undefined) ||
+      Boolean(item.number_of_seasons) ||
+      Boolean(item.seasons?.length) ||
+      Boolean(item.first_air_date && !item.release_date) ||
+      Boolean(item.name && !item.title);
+    const media_type = isTV ? "tv" : (item.media_type || "movie");
+    const targetTitle = item.title || item.name || "Titre inconnu";
+
     const filtered = list.filter(
-      (i) => !(i.id === item.id && i.media_type === item.media_type)
+      (i) => !(String(i.id) === String(item.id) && (i.media_type === media_type || (!i.media_type && !item.media_type)))
     );
 
     const updated = [
       {
         id: item.id,
-        title: item.title || item.name,
+        title: targetTitle,
+        name: item.name || targetTitle,
         poster_path: item.poster_path,
         backdrop_path: item.backdrop_path,
-        media_type: item.media_type,
-        season,
-        episode,
+        media_type,
+        season: isTV ? (Number(season) || 1) : undefined,
+        episode: isTV ? (Number(episode) || 1) : undefined,
         watchedAt: new Date().toISOString(),
       },
       ...filtered,
