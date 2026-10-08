@@ -231,7 +231,7 @@ export default function PlayerModal({
   const [drawerEpisodes, setDrawerEpisodes] = useState([]);
   const [isLoadingDrawerEpisodes, setIsLoadingDrawerEpisodes] = useState(false);
 
-  const isExplicitMovie = currentMedia.media_type === "movie";
+  const isExplicitMovie = currentMedia.media_type === "movie" && !currentMedia.seasons && !currentMedia.number_of_seasons;
   const isExplicitTV = currentMedia.media_type === "tv";
 
   const isTV = isExplicitMovie
@@ -242,6 +242,8 @@ export default function PlayerModal({
       Boolean(seriesDetails?.seasons?.length) ||
       Boolean(currentMedia.number_of_seasons) ||
       Boolean(currentMedia.seasons?.length) ||
+      Boolean(currentMedia.season) ||
+      Boolean(currentMedia.episode) ||
       (Boolean(currentMedia.name) && !currentMedia.title) ||
       (Boolean(currentMedia.first_air_date) && !currentMedia.release_date) ||
       currentMedia.source === "anime-sama" ||
@@ -254,12 +256,12 @@ export default function PlayerModal({
 
   // Fetch TV Details for seasons
   useEffect(() => {
-    if (!isTV || !currentMedia?.id) return;
+    if (!currentMedia?.id || isExplicitMovie) return;
     let isMounted = true;
     tmdbApi
       .getDetails("tv", currentMedia.id)
       .then((data) => {
-        if (isMounted && data) {
+        if (isMounted && data && (data.seasons?.length || data.number_of_seasons)) {
           setSeriesDetails(data);
           if (data.seasons && data.seasons.length > 0) {
             const hasCurrent = data.seasons.some((s) => s.season_number === season);
@@ -273,11 +275,11 @@ export default function PlayerModal({
           }
         }
       })
-      .catch((err) => console.error("Error fetching tv details in player:", err));
+      .catch(() => {});
     return () => {
       isMounted = false;
     };
-  }, [currentMedia?.id, isTV]);
+  }, [currentMedia?.id, isExplicitMovie]);
 
   // Fetch Season episodes when drawerSeason changes
   useEffect(() => {
@@ -530,9 +532,30 @@ export default function PlayerModal({
     ? activeServer.getUrl(mediaType, currentMedia.id, season, episode, title)
     : "";
 
+  // Calcul de la saison et de l'épisode suivant pour transition transparente
+  const validSeasonsList = (seriesDetails?.seasons || [])
+    .filter((s) => s.season_number > 0)
+    .sort((a, b) => a.season_number - b.season_number);
+  const currentSeasonData = validSeasonsList.find((s) => s.season_number === season);
+  const maxEpsInCurrentSeason = currentSeasonData?.episode_count || 0;
+  const isEndOfCurrentSeason = maxEpsInCurrentSeason > 0 && episode >= maxEpsInCurrentSeason;
+  const nextSeasonObj = isEndOfCurrentSeason ? validSeasonsList.find((s) => s.season_number > season) : null;
+  const nextEpisodeLabel = nextSeasonObj
+    ? `S${nextSeasonObj.season_number}:EP1`
+    : `EP ${episode + 1}`;
+
   const handleNextEpisode = () => {
     setAutoNextCountdown(null);
-    setEpisode((prev) => prev + 1);
+
+    // Si on atteint la fin de la saison et qu'il y a une saison suivante (ex: S2 EP 10 -> S3 EP 1)
+    if (isEndOfCurrentSeason && nextSeasonObj) {
+      setSeason(nextSeasonObj.season_number);
+      setEpisode(1);
+      setDrawerSeason(nextSeasonObj.season_number);
+    } else {
+      setEpisode((prev) => prev + 1);
+    }
+
     setDirectStreamUrl(null);
     setNativeMovieStreamUrl(null);
     setIframeKey((prev) => prev + 1);
@@ -540,12 +563,22 @@ export default function PlayerModal({
 
   const handlePrevEpisode = () => {
     setAutoNextCountdown(null);
+
     if (episode > 1) {
       setEpisode((prev) => prev - 1);
-      setDirectStreamUrl(null);
-      setNativeMovieStreamUrl(null);
-      setIframeKey((prev) => prev + 1);
+    } else {
+      // Si on est à l'épisode 1 et qu'on clique sur précédent, basculer sur le dernier épisode de la saison précédente
+      const prevSeasonObj = [...validSeasonsList].reverse().find((s) => s.season_number < season);
+      if (prevSeasonObj) {
+        setSeason(prevSeasonObj.season_number);
+        setEpisode(prevSeasonObj.episode_count || 1);
+        setDrawerSeason(prevSeasonObj.season_number);
+      }
     }
+
+    setDirectStreamUrl(null);
+    setNativeMovieStreamUrl(null);
+    setIframeKey((prev) => prev + 1);
   };
 
   const handleSelectEpisode = (targetSeason, targetEpisode) => {
@@ -994,7 +1027,9 @@ export default function PlayerModal({
               <div className="w-14 h-14 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20">
                 <ShieldCheck className="w-7 h-7 text-orange-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Titre bientôt disponible en 0 Pub</h3>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {nativeMovieError || "Titre bientôt disponible en 0 Pub"}
+              </h3>
               <p className="text-xs text-zinc-300 mb-6 max-w-md leading-relaxed">
                 Erodium applique une politique stricte : <strong>100% de nos films sont diffusés sans aucune publicité, sans pop-up et en Full HD 1080p natif</strong>. Ce titre n'a pas encore de flux direct sans pub et sera disponible très prochainement.
               </p>
@@ -1047,6 +1082,20 @@ export default function PlayerModal({
               className="w-full h-full border-0 absolute inset-0"
             />
 
+            {/* Bouton Rapide Épisode Suivant en surimpression pour les flux externes */}
+            {isTV && (
+              <div className="absolute top-3 right-3 z-30 pointer-events-auto">
+                <button
+                  onClick={handleNextEpisode}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/85 hover:bg-orange-600 backdrop-blur-md border border-white/20 hover:border-orange-500 text-white text-xs font-bold shadow-xl transition-all hover:scale-105 cursor-pointer group/nextbtn"
+                  title={`Passer immédiatement à l'épisode suivant (${nextEpisodeLabel})`}
+                >
+                  <SkipForward className="w-3.5 h-3.5 text-orange-400 group-hover/nextbtn:text-white" />
+                  <span>Suivant ({nextEpisodeLabel})</span>
+                </button>
+              </div>
+            )}
+
             {/* In-Player Rescue Bar (Floating overlay at top of video) */}
             {!activeServer?.isAnimeSama &&
               selectedLanguage === "vf" &&
@@ -1084,7 +1133,9 @@ export default function PlayerModal({
                       Épisode suivant dans {autoNextCountdown}s
                     </span>
                     <span className="text-[10px] text-zinc-400">
-                      Saison {season} • Épisode {episode + 1}
+                      {nextSeasonObj
+                        ? `Saison ${nextSeasonObj.season_number} • Épisode 1`
+                        : `Saison ${season} • Épisode ${episode + 1}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 ml-2">
@@ -1496,10 +1547,10 @@ export default function PlayerModal({
                   <button
                     onClick={handleNextEpisode}
                     className="px-2.5 py-0.5 rounded bg-orange-600/90 hover:bg-orange-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                    title="Passer immédiatement à l'épisode suivant"
+                    title={`Passer immédiatement à l'épisode suivant (${nextEpisodeLabel})`}
                   >
                     <SkipForward className="w-3 h-3" />
-                    <span>Épisode suivant (EP {episode + 1})</span>
+                    <span>Épisode suivant ({nextEpisodeLabel})</span>
                   </button>
                 )}
                 <button

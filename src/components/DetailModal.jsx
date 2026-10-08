@@ -215,6 +215,12 @@ export default function DetailModal({
     };
   }, [details?.id, selectedSeason, isTV]);
 
+  const currentMediaTarget = details || activeMedia;
+  const liveWatchers = useMediaLiveViewers(
+    currentMediaTarget?.id,
+    details?.popularity || activeMedia?.popularity
+  );
+
   if (!activeMedia) return null;
 
   // Anime-Sama animes don't have TMDB episodes, so we must NOT use episodes.length === 0 for them
@@ -232,13 +238,8 @@ export default function DetailModal({
       (details?.first_air_date && new Date(details.first_air_date) > new Date()) ||
       (!loading && episodes.length === 0 && !loadingEpisodes && details?.number_of_episodes === 0));
 
-  const currentMediaTarget = details || activeMedia;
   const isNoVF = languageAdvisor.hasNoOfficialVF(currentMediaTarget);
   const langAdvice = languageAdvisor.getExplanation(currentMediaTarget);
-  const liveWatchers = useMediaLiveViewers(
-    currentMediaTarget.id,
-    details?.popularity || activeMedia.popularity
-  );
 
   const title = details?.title || details?.name || activeMedia.title || activeMedia.name;
   const originalTitle = details?.original_title || details?.original_name;

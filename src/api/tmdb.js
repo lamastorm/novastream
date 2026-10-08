@@ -54,24 +54,9 @@ export const tmdbApi = {
     return fetchFromTMDB("/movie/top_rated", { page });
   },
 
-  // --- DISCOVER AVANCÉ (Films & Séries illimités) ---
-  discoverMovies: async (page = 1, { genre, year, sortBy = "popularity.desc", minVote } = {}) => {
-    const params = { page, sort_by: sortBy };
-    if (genre) params.with_genres = genre;
-    if (year) params.primary_release_year = year;
-    if (minVote) params["vote_average.gte"] = minVote;
-    if (sortBy === "vote_average.desc" || minVote) params["vote_count.gte"] = 80;
-    return fetchFromTMDB("/discover/movie", params);
-  },
 
-  discoverTV: async (page = 1, { genre, year, sortBy = "popularity.desc", minVote } = {}) => {
-    const params = { page, sort_by: sortBy };
-    if (genre) params.with_genres = genre;
-    if (year) params.first_air_date_year = year;
-    if (minVote) params["vote_average.gte"] = minVote;
-    if (sortBy === "vote_average.desc" || minVote) params["vote_count.gte"] = 40;
-    return fetchFromTMDB("/discover/tv", params);
-  },
+
+
 
   // --- SÉRIES ---
   getTrendingTV: async (page = 1) => {

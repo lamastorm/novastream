@@ -18,7 +18,7 @@ const NO_VF_LANGUAGES = [
 ];
 
 // Langues où la VOSTFR est majoritaire
-const VOSTFR_PREF_LANGUAGES = [
+export const VOSTFR_PREF_LANGUAGES = [
   ...NO_VF_LANGUAGES,
   "ko", // Corée du Sud (K-Dramas souvent non doublés en VF)
   "ja", // Japon (Animés & J-Dramas souvent VOSTFR)
