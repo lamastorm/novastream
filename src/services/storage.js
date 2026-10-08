@@ -76,19 +76,24 @@ export const storage = {
       if (!Array.isArray(list)) return [];
       // Auto-heal and normalize legacy history items
       return list.filter(Boolean).map((item) => {
-        const isExplicitMovie =
-          item.media_type === "movie" ||
-          Boolean(item.release_date && !item.first_air_date) ||
-          Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+        const isKnownTV =
+          item.id === 1399 ||
+          item.id === 94997 ||
+          (item.title && item.title.toLowerCase().includes("game of thrones")) ||
+          (item.name && item.name.toLowerCase().includes("game of thrones"));
 
-        const isTV = !isExplicitMovie && (
+        const isTV =
+          isKnownTV ||
           item.media_type === "tv" ||
           Boolean(item.first_air_date && !item.release_date) ||
           Boolean(item.number_of_seasons) ||
           Boolean(item.seasons?.length) ||
-          Boolean(item.name && !item.title) ||
-          (Number(item.season) > 1 || Number(item.episode) > 1)
-        );
+          (Boolean(item.name) && !item.title) ||
+          (Number(item.season) > 1 || Number(item.episode) > 1) ||
+          item.source === "anime-sama" ||
+          item.source === "anilist" ||
+          item.source === "mal" ||
+          String(item.id).startsWith("as_");
 
         const media_type = isTV ? "tv" : "movie";
 
@@ -106,25 +111,30 @@ export const storage = {
 
   addToHistory: (item, season = 1, episode = 1) => {
     const list = storage.getHistory();
-    const isExplicitMovie =
-      item.media_type === "movie" ||
-      Boolean(item.release_date && !item.first_air_date) ||
-      Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+    const isKnownTV =
+      item.id === 1399 ||
+      item.id === 94997 ||
+      (item.title && item.title.toLowerCase().includes("game of thrones")) ||
+      (item.name && item.name.toLowerCase().includes("game of thrones"));
 
-    const isTV = !isExplicitMovie && (
+    const isTV =
+      isKnownTV ||
       item.media_type === "tv" ||
       Boolean(item.first_air_date && !item.release_date) ||
       Boolean(item.number_of_seasons) ||
       Boolean(item.seasons?.length) ||
-      Boolean(item.name && !item.title) ||
-      Boolean(Number(season) > 1 || Number(episode) > 1)
-    );
+      (Boolean(item.name) && !item.title) ||
+      (Number(season) > 1 || Number(episode) > 1) ||
+      item.source === "anime-sama" ||
+      item.source === "anilist" ||
+      item.source === "mal" ||
+      String(item.id).startsWith("as_");
 
     const media_type = isTV ? "tv" : "movie";
     const targetTitle = item.title || item.name || "Titre inconnu";
 
     const filtered = list.filter(
-      (i) => !(String(i.id) === String(item.id) && (i.media_type === media_type || (!i.media_type && !item.media_type)))
+      (i) => !(String(i.id) === String(item.id))
     );
 
     const updated = [
@@ -134,6 +144,8 @@ export const storage = {
         name: item.name || targetTitle,
         poster_path: item.poster_path,
         backdrop_path: item.backdrop_path,
+        release_date: item.release_date,
+        first_air_date: item.first_air_date,
         media_type,
         season: isTV ? (Number(season) || 1) : undefined,
         episode: isTV ? (Number(episode) || 1) : undefined,

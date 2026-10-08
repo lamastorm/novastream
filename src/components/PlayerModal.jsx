@@ -231,17 +231,21 @@ export default function PlayerModal({
   const [drawerEpisodes, setDrawerEpisodes] = useState([]);
   const [isLoadingDrawerEpisodes, setIsLoadingDrawerEpisodes] = useState(false);
 
-  const isExplicitMovie =
-    (currentMedia.media_type === "movie" ||
-      Boolean(currentMedia.release_date && !currentMedia.first_air_date) ||
-      Boolean(currentMedia.title && !currentMedia.first_air_date)) &&
-    !currentMedia.seasons?.length &&
-    !currentMedia.number_of_seasons;
-  const isExplicitTV = currentMedia.media_type === "tv";
+  const isKnownTV =
+    currentMedia.id === 1399 ||
+    currentMedia.id === 94997 ||
+    (currentMedia.title && currentMedia.title.toLowerCase().includes("game of thrones")) ||
+    (currentMedia.name && currentMedia.name.toLowerCase().includes("game of thrones"));
 
-  const isTV = isExplicitMovie
-    ? false
-    : isExplicitTV ||
+  const isExplicitMovie =
+    !isKnownTV &&
+    (currentMedia.media_type === "movie" ||
+      Boolean(currentMedia.release_date && !currentMedia.first_air_date && !currentMedia.number_of_seasons && !currentMedia.seasons?.length && !initialSeason && !initialEpisode));
+
+  const isExplicitTV = isKnownTV || currentMedia.media_type === "tv";
+
+  const isTV = isExplicitTV ||
+    (!isExplicitMovie && (
       initialSeason > 1 ||
       initialEpisode > 1 ||
       Boolean(seriesDetails?.seasons?.length) ||
@@ -252,7 +256,8 @@ export default function PlayerModal({
       currentMedia.source === "anime-sama" ||
       currentMedia.source === "anilist" ||
       currentMedia.source === "mal" ||
-      String(currentMedia.id).startsWith("as_");
+      String(currentMedia.id).startsWith("as_")
+    ));
   const mediaType = isTV ? "tv" : "movie";
   const title = currentMedia.title || currentMedia.name || "Lecture en cours";
   const liveViewersCount = useMediaLiveViewers(currentMedia.id, currentMedia.popularity);

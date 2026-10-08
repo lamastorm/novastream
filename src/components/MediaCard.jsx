@@ -22,19 +22,30 @@ function MediaCard({
       : "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=400&auto=format&fit=crop&q=80");
 
   // Determine media type
-  const isExplicitMovie =
-    item.media_type === "movie" ||
-    Boolean(item.release_date && !item.first_air_date) ||
-    Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+  const isKnownTV =
+    item.id === 1399 ||
+    item.id === 94997 ||
+    (item.title && item.title.toLowerCase().includes("game of thrones")) ||
+    (item.name && item.name.toLowerCase().includes("game of thrones"));
 
-  const isSeries = !isExplicitMovie && (
-    item.media_type === "tv" ||
-    Boolean(item.first_air_date && !item.release_date) ||
-    Boolean(item.number_of_seasons) ||
-    Boolean(item.seasons?.length) ||
-    Boolean(item.name && !item.title) ||
-    (Number(item.season) > 1 || Number(item.episode) > 1)
-  );
+  const isExplicitMovie =
+    !isKnownTV &&
+    (item.media_type === "movie" ||
+      Boolean(item.release_date && !item.first_air_date && !item.number_of_seasons && !item.seasons?.length && !item.season && !item.episode));
+
+  const isSeries =
+    isKnownTV ||
+    (!isExplicitMovie &&
+      (item.media_type === "tv" ||
+        Boolean(item.first_air_date && !item.release_date) ||
+        Boolean(item.number_of_seasons) ||
+        Boolean(item.seasons?.length) ||
+        Boolean(item.name && !item.title) ||
+        (Number(item.season) > 1 || Number(item.episode) > 1) ||
+        item.source === "anime-sama" ||
+        item.source === "anilist" ||
+        item.source === "mal" ||
+        String(item.id).startsWith("as_")));
 
   const hasProgress = Boolean(
     (isSeries && item.season !== undefined && item.episode !== undefined) ||

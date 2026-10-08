@@ -582,18 +582,30 @@ export default function App() {
   };
 
   const handleStartPlay = (media, season = 1, episode = 1, language) => {
+    const isKnownTV =
+      media.id === 1399 ||
+      media.id === 94997 ||
+      (media.title && media.title.toLowerCase().includes("game of thrones")) ||
+      (media.name && media.name.toLowerCase().includes("game of thrones"));
+
     const isExplicitMovie =
-      media.media_type === "movie" ||
-      Boolean(media.release_date && !media.first_air_date) ||
-      Boolean(media.title && !media.first_air_date && !media.seasons?.length && !media.number_of_seasons);
-    const isSeries = !isExplicitMovie && (
-      media.media_type === "tv" ||
-      Boolean(media.first_air_date && !media.release_date) ||
-      Boolean(media.name && !media.title) ||
-      Boolean(media.number_of_seasons) ||
-      Boolean(media.seasons?.length) ||
-      Boolean(Number(season) > 1 || Number(episode) > 1)
-    );
+      !isKnownTV &&
+      (media.media_type === "movie" ||
+        Boolean(media.release_date && !media.first_air_date && !media.number_of_seasons && !media.seasons?.length && !media.season && !media.episode));
+
+    const isSeries =
+      isKnownTV ||
+      (!isExplicitMovie &&
+        (media.media_type === "tv" ||
+          Boolean(media.first_air_date && !media.release_date) ||
+          Boolean(media.name && !media.title) ||
+          Boolean(media.number_of_seasons) ||
+          Boolean(media.seasons?.length) ||
+          Boolean(Number(season) > 1 || Number(episode) > 1) ||
+          media.source === "anime-sama" ||
+          media.source === "anilist" ||
+          media.source === "mal" ||
+          String(media.id).startsWith("as_")));
     const type = isExplicitMovie ? "movie" : (isSeries ? "tv" : (media.media_type || "movie"));
     const finalSeason = type === "movie" ? 1 : (Number(season) || Number(media.season) || 1);
     const finalEpisode = type === "movie" ? 1 : (Number(episode) || Number(media.episode) || 1);

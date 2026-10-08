@@ -68,18 +68,30 @@ function MediaRow({
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {items.filter(Boolean).map((item, idx) => {
+          const isKnownTV =
+            item.id === 1399 ||
+            item.id === 94997 ||
+            (item.title && item.title.toLowerCase().includes("game of thrones")) ||
+            (item.name && item.name.toLowerCase().includes("game of thrones"));
+
           const isItemMovie =
-            item.media_type === "movie" ||
-            Boolean(item.release_date && !item.first_air_date) ||
-            Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
-          const isItemTV = !isItemMovie && (
-            item.media_type === "tv" ||
-            Boolean(item.first_air_date && !item.release_date) ||
-            Boolean(item.name && !item.title) ||
-            Boolean(item.number_of_seasons) ||
-            Boolean(item.seasons?.length) ||
-            (Number(item.season) > 1 || Number(item.episode) > 1)
-          );
+            !isKnownTV &&
+            (item.media_type === "movie" ||
+              Boolean(item.release_date && !item.first_air_date && !item.number_of_seasons && !item.seasons?.length && !item.season && !item.episode));
+
+          const isItemTV =
+            isKnownTV ||
+            (!isItemMovie &&
+              (item.media_type === "tv" ||
+                Boolean(item.first_air_date && !item.release_date) ||
+                Boolean(item.name && !item.title) ||
+                Boolean(item.number_of_seasons) ||
+                Boolean(item.seasons?.length) ||
+                (Number(item.season) > 1 || Number(item.episode) > 1) ||
+                item.source === "anime-sama" ||
+                item.source === "anilist" ||
+                item.source === "mal" ||
+                String(item.id).startsWith("as_")));
           const type = isItemMovie ? "movie" : (isItemTV ? "tv" : (item.media_type || "movie"));
           const isFav = favorites.some((f) => f && f.id === item.id && f.media_type === type);
 
