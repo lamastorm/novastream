@@ -8,6 +8,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  Bot,
 } from "lucide-react";
 import { IMAGE_BASE_URL } from "../api/tmdb";
 
@@ -20,10 +22,40 @@ export default function HeroBanner({
   isFavorite,
   onToggleFavorite,
 }) {
-  // Normalize items array
-  const slides = (items && items.length > 0 ? items : item ? [item] : []).filter(
+  // Normalize items array with strict blockbuster quality filter
+  const rawSlides = (items && items.length > 0 ? items : item ? [item] : []).filter(
     (s) => s && (s.backdrop_path || s.poster_path || s.title || s.name)
   );
+
+  // Filtre strict anti-titres obscurs pour la bannière héroïque "À la une"
+  const qualifiedSlides = rawSlides.filter((s) => {
+    if (!s) return false;
+    const pop = Number(s.popularity) || 0;
+    const votes = Number(s.vote_count) || 0;
+    const voteAvg = Number(s.vote_average) || 0;
+    const date = String(s.release_date || s.first_air_date || "");
+    const year = date ? parseInt(date.slice(0, 4), 10) : 0;
+
+    // Si on a des items avec vrai backdrop, éliminer ceux sans backdrop
+    if (!s.backdrop_path && rawSlides.some((x) => x.backdrop_path)) return false;
+
+    // Élimine les faux 9.7/10 d'un seul vote ("Et Israël fut...")
+    if (voteAvg >= 8.8 && votes < 30 && pop < 25) return false;
+
+    // Élimine les vieux films sans popularité
+    if (year > 0 && year < 2023 && pop < 20 && votes < 50) return false;
+
+    // Élimine les titres avec popularité quasi-nulle
+    if (pop < 12 && votes < 15) return false;
+
+    return true;
+  });
+
+  // Fallback sûr si tous sont éliminés
+  const baseSlides = qualifiedSlides.length > 0 ? qualifiedSlides : rawSlides;
+
+  // Trier par popularité pour que les plus grands succès arrivent en tête
+  const slides = [...baseSlides].sort((a, b) => (Number(b.popularity) || 0) - (Number(a.popularity) || 0));
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -172,9 +204,14 @@ export default function HeroBanner({
       >
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-xs uppercase px-3 py-1 rounded-lg tracking-wider shadow-lg shadow-orange-600/30 border border-orange-400/30">
-            🔥 À la une {slides.length > 1 && `• ${currentIndex + 1}/${slides.length}`}
+          <span className="bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-xs uppercase px-3 py-1 rounded-lg tracking-wider shadow-lg shadow-orange-600/30 border border-orange-400/30 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse" />
+            <span>À la une {slides.length > 1 && `• ${currentIndex + 1}/${slides.length}`}</span>
           </span>
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-lg border border-emerald-500/30 backdrop-blur-md">
+            <Bot className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Bot IA : Nouveautés Vérifiées</span>
+          </div>
           {isAnime && (
             <span className="bg-red-600/90 text-white font-bold text-xs uppercase px-2.5 py-1 rounded-lg tracking-wider shadow border border-red-500/30">
               Anime

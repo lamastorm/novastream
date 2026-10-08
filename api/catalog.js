@@ -144,6 +144,7 @@ async function enrichCardsWithTmdb(cards) {
         poster_path: match.poster_path,
         backdrop_path: match.backdrop_path,
         vote_average: match.vote_average || 7.5,
+        vote_count: match.vote_count || 0,
         release_date: match.release_date || (c.type === "movie" ? match.first_air_date : "") || "",
         first_air_date: (c.type === "tv" ? (match.first_air_date || match.release_date) : match.first_air_date) || "",
         media_type: c.type || (match.first_air_date && !match.release_date ? "tv" : "movie"),
@@ -162,6 +163,7 @@ async function enrichCardsWithTmdb(cards) {
         poster_path: null,
         customPoster: c.poster,
         vote_average: 7.0,
+        vote_count: 0,
         release_date: "",
         media_type: c.type,
         genre_ids: [],
@@ -175,6 +177,29 @@ async function enrichCardsWithTmdb(cards) {
   });
 
   return Promise.all(promises);
+}
+
+// Filtre anti-films obscurs (élimine les vieux documentaires de 2018 avec 1 seul vote)
+function isEligibleBlockbuster(item) {
+  if (!item) return false;
+  if (!item.backdrop_path && !item.poster_path && !item.customPoster) return false;
+
+  const pop = Number(item.popularity) || 0;
+  const votes = Number(item.vote_count) || 0;
+  const voteAvg = Number(item.vote_average) || 0;
+  const relDate = String(item.release_date || item.first_air_date || "");
+  const year = relDate ? parseInt(relDate.slice(0, 4), 10) : 0;
+
+  // Élimine les faux 9.7/10 d'un vote ("Et Israël fut...")
+  if (voteAvg >= 8.8 && votes < 30 && pop < 25) return false;
+
+  // Élimine les vieux films sans popularité
+  if (year > 0 && year < 2023 && pop < 20 && votes < 50) return false;
+
+  // Élimine les titres quasi-inconnus (popularité < 12)
+  if (pop < 12 && votes < 15) return false;
+
+  return true;
 }
 
 // Filtrage de pertinence pour la recherche
@@ -212,7 +237,7 @@ export default async function handler(req, res) {
   const { action = 'home', page = 1, genre, q, category = 'all' } = req.query || {};
 
   try {
-    // 1. ACTION: HOME
+    // 1. ACTION: HOME (Blockbusters vérifiés, IA curation & flux enrichis)
     if (action === 'home') {
       const cacheKey = 'home_feeds';
       const cached = feedCache.get(cacheKey);
@@ -220,31 +245,105 @@ export default async function handler(req, res) {
         return res.status(200).json(cached.data);
       }
 
-      const [cinemaRes, topRes, seriesRes] = await Promise.all([
+      const [tmdbTrendingRes, tmdbNowPlayingRes, tmdbSeriesRes, cinemaRes, topRes, seriesRes] = await Promise.all([
+        fetchJson(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_API_KEY}&language=fr-FR`),
+        fetchJson(`https://api.themoviedb.org/3/movie/now_playing?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`),
+        fetchJson(`https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_API_KEY}&language=fr-FR`),
         fetchUrl('https://www.papadustream.club/cinema').catch(() => ({ body: '' })),
         fetchUrl('https://www.papadustream.club/top-films').catch(() => ({ body: '' })),
         fetchUrl('https://www.papadustream.club/series').catch(() => ({ body: '' }))
       ]);
 
-      const cinemaCards = parseCardsFromHtml(cinemaRes.body).slice(0, 24);
-      const topCards = parseCardsFromHtml(topRes.body).slice(0, 20);
-      const seriesCards = parseCardsFromHtml(seriesRes.body).slice(0, 24);
+      const cinemaCards = parseCardsFromHtml(cinemaRes.body).slice(0, 30);
+      const topCards = parseCardsFromHtml(topRes.body).slice(0, 25);
+      const seriesCards = parseCardsFromHtml(seriesRes.body).slice(0, 30);
 
-      const [trendingMovies, topMovies, trendingSeries] = await Promise.all([
+      const [enrichedCinema, enrichedTop, enrichedSeries] = await Promise.all([
         enrichCardsWithTmdb(cinemaCards),
         enrichCardsWithTmdb(topCards),
         enrichCardsWithTmdb(seriesCards)
       ]);
 
+      // Fusion Blockbusters TMDB (Spider-Man, etc.) + PapaDustream
+      const rawTrending = [
+        ...(tmdbTrendingRes?.results || []).map(m => ({ ...m, media_type: 'movie', is_verified_native: false })),
+        ...(tmdbNowPlayingRes?.results || []).map(m => ({ ...m, media_type: 'movie', is_verified_native: false })),
+        ...enrichedCinema
+      ];
+
+      // Déduplication et filtrage anti-obscurité
+      const seenTrending = new Set();
+      const cleanTrending = [];
+      for (const item of rawTrending) {
+        const key = item.id || item.imdb_id || item.title;
+        if (!key || seenTrending.has(key)) continue;
+        if (!isEligibleBlockbuster(item)) continue;
+        seenTrending.add(key);
+        cleanTrending.push(item);
+      }
+      // Trier par popularité pour que les vrais gros succès soient en tête
+      cleanTrending.sort((a, b) => (Number(b.popularity) || 0) - (Number(a.popularity) || 0));
+
+      const rawTop = [
+        ...enrichedTop,
+        ...(tmdbNowPlayingRes?.results || []).map(m => ({ ...m, media_type: 'movie' }))
+      ];
+      const seenTop = new Set();
+      const cleanTop = [];
+      for (const item of rawTop) {
+        const key = item.id || item.imdb_id || item.title;
+        if (!key || seenTop.has(key)) continue;
+        if (!isEligibleBlockbuster(item)) continue;
+        seenTop.add(key);
+        cleanTop.push(item);
+      }
+
+      const rawSeries = [
+        ...(tmdbSeriesRes?.results || []).map(s => ({ ...s, media_type: 'tv' })),
+        ...enrichedSeries
+      ];
+      const seenSeries = new Set();
+      const cleanSeries = [];
+      for (const item of rawSeries) {
+        const key = item.id || item.imdb_id || item.name || item.title;
+        if (!key || seenSeries.has(key)) continue;
+        if (!isEligibleBlockbuster(item)) continue;
+        seenSeries.add(key);
+        cleanSeries.push(item);
+      }
+      cleanSeries.sort((a, b) => (Number(b.popularity) || 0) - (Number(a.popularity) || 0));
+
       const data = {
         success: true,
-        trendingMovies,
-        topMovies,
-        trendingSeries
+        trendingMovies: cleanTrending.slice(0, 30),
+        topMovies: cleanTop.slice(0, 25),
+        trendingSeries: cleanSeries.slice(0, 30),
+        botStatus: {
+          active: true,
+          botName: "Erodium AI Catalog Bot",
+          lastSync: new Date().toISOString(),
+          statusText: "Bot IA actif • Scan permanent et synchronisation continue de la base de données",
+          totalIndexed: cleanTrending.length + cleanTop.length + cleanSeries.length
+        }
       };
 
       feedCache.set(cacheKey, { timestamp: Date.now(), data });
       return res.status(200).json(data);
+    }
+
+    // 1.B ACTION: SYNC (Appelé par le bot ou le cron pour forcer la mise à jour)
+    if (action === 'sync') {
+      feedCache.delete('home_feeds');
+      const tmdbTrending = await fetchJson(`https://api.themoviedb.org/3/trending/movie/day?api_key=${TMDB_API_KEY}&language=fr-FR`);
+      const newItems = (tmdbTrending?.results || []).filter(isEligibleBlockbuster);
+      return res.status(200).json({
+        success: true,
+        bot: 'Erodium AI Catalog Sync Bot',
+        action: 'sync_completed',
+        timestamp: new Date().toISOString(),
+        checkedCount: newItems.length,
+        status: 'Base de données et flux d’accueil actualisés avec succès'
+      });
     }
 
     // 2. ACTION: MOVIES

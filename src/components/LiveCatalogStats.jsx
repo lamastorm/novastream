@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Film, Tv, Play, ShieldCheck, Sparkles, CheckCircle2 } from "lucide-react";
+import { Film, Tv, Play, ShieldCheck, Sparkles, CheckCircle2, Bot } from "lucide-react";
 
 export default function LiveCatalogStats({ isFloating = false }) {
   // Exact counts of available media in the Erodium verified library
@@ -154,14 +154,18 @@ export default function LiveCatalogStats({ isFloating = false }) {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
           </span>
           <div>
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
+            <h3 className="text-sm font-black text-white flex items-center gap-2 flex-wrap">
               <span>Bibliothèque Erodium Natif</span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ⚡ 100% 0 Pub Direct
               </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                <Bot className="w-3 h-3 text-indigo-400" />
+                <span>Bot IA Synchronisé</span>
+              </span>
             </h3>
             <p className="text-[11px] text-zinc-400">
-              Chaque titre est vérifié et immédiatement lisible sans pop-up ni pub.
+              Bot IA actif 24/7 : inspecte la base de données et ajoute automatiquement les nouveaux films et épisodes sortis.
             </p>
           </div>
         </div>

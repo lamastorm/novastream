@@ -205,7 +205,11 @@ export default function App() {
           setAiringTodayTV(airingToday.results || []);
 
           if (trendingList.length > 0) {
-            setHeroItem(trendingList[0]);
+            const bestHero =
+              trendingList.find(
+                (m) => m && m.backdrop_path && (Number(m.popularity) > 25 || Number(m.vote_count) > 30)
+              ) || trendingList[0];
+            setHeroItem(bestHero);
           }
           setLoadingHome(false);
 
