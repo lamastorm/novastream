@@ -73,14 +73,27 @@ export const storage = {
       const list = JSON.parse(saved);
       // Auto-heal and normalize legacy history items
       return list.map((item) => {
-        const isTV =
+        const isExplicitMovie =
+          item.media_type === "movie" ||
+          Boolean(item.release_date && !item.first_air_date) ||
+          Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+
+        const isTV = !isExplicitMovie && (
           item.media_type === "tv" ||
-          Boolean(item.season !== undefined && item.episode !== undefined) ||
-          Boolean(item.season > 1 || item.episode > 1) ||
-          Boolean(item.first_air_date && !item.release_date);
+          Boolean(item.first_air_date && !item.release_date) ||
+          Boolean(item.number_of_seasons) ||
+          Boolean(item.seasons?.length) ||
+          Boolean(item.name && !item.title) ||
+          (Number(item.season) > 1 || Number(item.episode) > 1)
+        );
+
+        const media_type = isTV ? "tv" : "movie";
+
         return {
           ...item,
-          media_type: isTV ? "tv" : (item.media_type || "movie"),
+          media_type,
+          season: isTV ? (Number(item.season) || 1) : undefined,
+          episode: isTV ? (Number(item.episode) || 1) : undefined,
         };
       });
     } catch {
@@ -90,15 +103,21 @@ export const storage = {
 
   addToHistory: (item, season = 1, episode = 1) => {
     const list = storage.getHistory();
-    const isTV =
+    const isExplicitMovie =
+      item.media_type === "movie" ||
+      Boolean(item.release_date && !item.first_air_date) ||
+      Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+
+    const isTV = !isExplicitMovie && (
       item.media_type === "tv" ||
-      Boolean(season > 1 || episode > 1) ||
-      Boolean(item.season !== undefined && item.episode !== undefined) ||
+      Boolean(item.first_air_date && !item.release_date) ||
       Boolean(item.number_of_seasons) ||
       Boolean(item.seasons?.length) ||
-      Boolean(item.first_air_date && !item.release_date) ||
-      Boolean(item.name && !item.title);
-    const media_type = isTV ? "tv" : (item.media_type || "movie");
+      Boolean(item.name && !item.title) ||
+      Boolean(Number(season) > 1 || Number(episode) > 1)
+    );
+
+    const media_type = isTV ? "tv" : "movie";
     const targetTitle = item.title || item.name || "Titre inconnu";
 
     const filtered = list.filter(

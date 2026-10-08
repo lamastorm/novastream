@@ -231,7 +231,12 @@ export default function PlayerModal({
   const [drawerEpisodes, setDrawerEpisodes] = useState([]);
   const [isLoadingDrawerEpisodes, setIsLoadingDrawerEpisodes] = useState(false);
 
-  const isExplicitMovie = currentMedia.media_type === "movie" && !currentMedia.seasons && !currentMedia.number_of_seasons;
+  const isExplicitMovie =
+    (currentMedia.media_type === "movie" ||
+      Boolean(currentMedia.release_date && !currentMedia.first_air_date) ||
+      Boolean(currentMedia.title && !currentMedia.first_air_date)) &&
+    !currentMedia.seasons?.length &&
+    !currentMedia.number_of_seasons;
   const isExplicitTV = currentMedia.media_type === "tv";
 
   const isTV = isExplicitMovie
@@ -242,8 +247,6 @@ export default function PlayerModal({
       Boolean(seriesDetails?.seasons?.length) ||
       Boolean(currentMedia.number_of_seasons) ||
       Boolean(currentMedia.seasons?.length) ||
-      Boolean(currentMedia.season) ||
-      Boolean(currentMedia.episode) ||
       (Boolean(currentMedia.name) && !currentMedia.title) ||
       (Boolean(currentMedia.first_air_date) && !currentMedia.release_date) ||
       currentMedia.source === "anime-sama" ||
@@ -472,8 +475,8 @@ export default function PlayerModal({
         name: currentMedia.name || currentMedia.title,
         title: currentMedia.title || currentMedia.name,
       },
-      mediaType === "tv" ? season : 1,
-      mediaType === "tv" ? episode : 1
+      mediaType === "tv" ? season : undefined,
+      mediaType === "tv" ? episode : undefined
     );
   }, [currentMedia, season, episode, mediaType]);
 

@@ -20,17 +20,27 @@ function MediaCard({
       : "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=400&auto=format&fit=crop&q=80");
 
   // Determine media type
+  const isExplicitMovie =
+    item.media_type === "movie" ||
+    Boolean(item.release_date && !item.first_air_date) ||
+    Boolean(item.title && !item.first_air_date && !item.seasons?.length && !item.number_of_seasons);
+
+  const isSeries = !isExplicitMovie && (
+    item.media_type === "tv" ||
+    Boolean(item.first_air_date && !item.release_date) ||
+    Boolean(item.number_of_seasons) ||
+    Boolean(item.seasons?.length) ||
+    Boolean(item.name && !item.title) ||
+    (Number(item.season) > 1 || Number(item.episode) > 1)
+  );
+
   const hasProgress = Boolean(
-    (item.season !== undefined && item.episode !== undefined) ||
+    (isSeries && item.season !== undefined && item.episode !== undefined) ||
     item.watchedAt ||
     item.lastSeason ||
-    item.lastEpisode
+    item.lastEpisode ||
+    item.progress !== undefined
   );
-  const isSeries =
-    item.media_type === "tv" ||
-    Boolean(item.season !== undefined && item.episode !== undefined) ||
-    Boolean(item.first_air_date && !item.release_date) ||
-    Boolean(item.name && !item.release_date);
 
   const isAnime =
     item.original_language === "ja" &&
@@ -79,7 +89,7 @@ function MediaCard({
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
               <span className="text-[11px] font-bold text-orange-400 truncate">
-                {isSeries ? `S${seasonNum} : EP ${episodeNum}` : "En cours"}
+                {isSeries ? `S${seasonNum} : EP ${episodeNum}` : "Film"}
               </span>
             </div>
             <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center gap-1 flex-shrink-0 shadow-sm">

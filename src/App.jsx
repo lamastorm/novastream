@@ -582,14 +582,19 @@ export default function App() {
   };
 
   const handleStartPlay = (media, season = 1, episode = 1, language) => {
-    const isExplicitMovie = media.media_type === "movie";
-    const isSeries =
+    const isExplicitMovie =
+      media.media_type === "movie" ||
+      Boolean(media.release_date && !media.first_air_date) ||
+      Boolean(media.title && !media.first_air_date && !media.seasons?.length && !media.number_of_seasons);
+    const isSeries = !isExplicitMovie && (
       media.media_type === "tv" ||
-      Boolean(season > 1 || episode > 1) ||
-      Boolean(media.season !== undefined && media.episode !== undefined) ||
       Boolean(media.first_air_date && !media.release_date) ||
-      Boolean(media.name && !media.title);
-    const type = isSeries ? "tv" : (isExplicitMovie ? "movie" : (media.media_type || (media.title ? "movie" : "tv")));
+      Boolean(media.name && !media.title) ||
+      Boolean(media.number_of_seasons) ||
+      Boolean(media.seasons?.length) ||
+      Boolean(Number(season) > 1 || Number(episode) > 1)
+    );
+    const type = isExplicitMovie ? "movie" : (isSeries ? "tv" : (media.media_type || "movie"));
     const finalSeason = type === "movie" ? 1 : (Number(season) || Number(media.season) || 1);
     const finalEpisode = type === "movie" ? 1 : (Number(episode) || Number(media.episode) || 1);
     setActivePlayer({
@@ -781,7 +786,11 @@ export default function App() {
                     subtitle="Vos derniers films, épisodes et animes visionnés"
                     items={history}
                     onSelect={(item) =>
-                      handleStartPlay(item, item.season || 1, item.episode || 1)
+                      handleStartPlay(
+                        item,
+                        item.media_type === "tv" ? (item.season || 1) : 1,
+                        item.media_type === "tv" ? (item.episode || 1) : 1
+                      )
                     }
                     favorites={favorites}
                     onToggleFavorite={toggleFavorite}
