@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import { resolveAnimeSama } from './api/anime.js'
 import { resolveNativeMovieStream } from './api/movie.js'
+import { resolveSkyStream } from './api/skystream.js'
 
 function apiPlugin() {
   return {
@@ -40,6 +41,27 @@ function apiPlugin() {
             const title = url.searchParams.get('title') || '';
 
             const result = await resolveNativeMovieStream({ tmdbId, imdbId, type, season, episode, title });
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.end(JSON.stringify(result));
+          } catch (err) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: false, error: err.message }));
+          }
+          return;
+        }
+
+        if (req.url.startsWith('/api/skystream')) {
+          try {
+            const url = new URL(req.url, 'http://localhost');
+            const title = url.searchParams.get('title') || '';
+            const year = url.searchParams.get('year');
+            const type = url.searchParams.get('type') || 'movie';
+            const season = url.searchParams.get('season') || 1;
+            const episode = url.searchParams.get('episode') || 1;
+
+            const result = await resolveSkyStream({ title, year, type, season, episode });
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.end(JSON.stringify(result));

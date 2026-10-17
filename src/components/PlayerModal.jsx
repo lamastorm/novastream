@@ -1109,12 +1109,12 @@ export default function PlayerModal({
               {availableServers.length > 1 && (
                 <button
                   onClick={() => {
-                    const fallback = availableServers.find((s) => s.id !== "skystream_direct");
+                    const fallback = availableServers.find((s) => s.id !== "skystream_direct") || availableServers[1];
                     if (fallback) setSelectedServer(fallback);
                   }}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <span>Changer de lecteur vidéo</span>
+                  <span>▶ Regarder sur le Lecteur VidMoly</span>
                 </button>
               )}
             </div>

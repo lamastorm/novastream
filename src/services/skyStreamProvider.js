@@ -48,8 +48,30 @@ export const skyStreamProvider = {
       return cache.get(cacheKey);
     }
 
+    // 1. Tenter la résolution via l'API interne /api/skystream (compatible Web, sans blocage CORS)
     try {
-      // 1. Recherche du média sur SkyStream
+      const params = new URLSearchParams({
+        title,
+        type: mediaType,
+        season: String(season || 1),
+        episode: String(episode || 1),
+      });
+      if (year) params.append('year', String(year));
+
+      const apiRes = await fetch(`/api/skystream?${params.toString()}`);
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        if (data && data.success && data.streamUrl) {
+          cache.set(cacheKey, data);
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn('[skyStreamProvider] /api/skystream indisponible, essai direct:', e.message);
+    }
+
+    try {
+      // 2. Fallback direct sur SkyStream
       const items = await this.search(title);
       if (!items || items.length === 0) {
         return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };

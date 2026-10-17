@@ -369,61 +369,30 @@ export const isDesktopApp = () => {
 };
 
 /**
- * Retourne la liste des serveurs adaptés :
- * - SUR LE SITE WEB : UNIQUEMENT le lecteur VidMoly (frembed.bar)
- * - SUR L'APPLICATION DE BUREAU : conserve tous les lecteurs spéciaux application (SkyStream, Erodium Natif, Anime-Sama, etc.)
+ * Retourne la liste des serveurs adaptés pour le site :
+ * - #1 : SkyStream (1080p FHD direct, multilingue, 0 pub)
+ * - #2 : Lecteur VidMoly (frembed.bar)
+ * - Animés : Lecteur Erodium VF / VOSTFR en #1 + VidMoly
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
-  // SUR LE SITE WEB : uniquement le lecteur VidMoly !
-  if (!isDesktopApp()) {
-    return [VIDMOLY_VF_SERVER];
-  }
-
-  // SUR L'APPLICATION DE BUREAU : lecteurs spéciaux pour appli
   const mediaInfo = getMediaLanguageInfo(media);
-  const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
 
-  // CAS 1 : ANIMÉS SUR L'APPLI -> Lecteur Erodium Natif (Anime-Sama VF / VOSTFR) en #1
+  // CAS 1 : ANIMÉS -> Lecteur Erodium (VF / VOSTFR) en #1 + VidMoly
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
-      return [
-        ERODIUM_VF_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vf" && s.id !== "erodium_direct" && s.id !== "skystream_direct"),
-      ];
+      return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
     }
     if (lang === "vostfr") {
-      return [
-        ERODIUM_VOSTFR_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vostfr" && s.id !== "erodium_direct" && s.id !== "skystream_direct"),
-      ];
+      return [ERODIUM_VOSTFR_SERVER, VIDMOLY_VF_SERVER];
     }
-    return baseServers;
+    return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
   }
 
-  const isTV =
-    media?.media_type === "tv" ||
-    Boolean(media?.first_air_date) ||
-    Boolean(media?.number_of_seasons) ||
-    Boolean(media?.seasons) ||
-    media?.source === "anime-sama" ||
-    media?.source === "anilist" ||
-    media?.source === "mal" ||
-    String(media?.id).startsWith("as_");
-
-  // CAS 2 : SÉRIES SUR L'APPLI -> SkyStream en #1
-  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct" && s.id !== "skystream_direct");
-  if (isTV) {
-    return [
-      SKYSTREAM_SERVER,
-      ...filteredBase,
-    ];
-  }
-
-  // CAS 3 : FILMS SUR L'APPLI -> SkyStream en #1 puis Lecteur Erodium Natif
+  // CAS 2 : FILMS & SÉRIES -> SkyStream 0 Pub en #1 + VidMoly en #2
   return [
     SKYSTREAM_SERVER,
-    ERODIUM_DIRECT_MOVIE_SERVER,
-    ...filteredBase,
+    VIDMOLY_VF_SERVER,
   ];
 };
+
 
