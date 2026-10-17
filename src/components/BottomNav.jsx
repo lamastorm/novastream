@@ -1,5 +1,6 @@
 import React from "react";
-import { Sparkles, Film, Tv, Play, Bookmark, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import ErodiumIconBadge from "./ErodiumIconBadge";
 
 export default function BottomNav({
   activeTab,
@@ -7,45 +8,41 @@ export default function BottomNav({
   onOpenSearch,
 }) {
   const items = [
-    { id: "home", label: "Accueil", icon: Sparkles },
-    { id: "movies", label: "Films", icon: Film },
-    { id: "series", label: "Séries", icon: Tv },
-    { id: "anime", label: "Animes", icon: Play },
-    { id: "favorites", label: "Favoris", icon: Bookmark },
+    { id: "home", label: "Accueil" },
+    { id: "movies", label: "Films" },
+    { id: "series", label: "Séries" },
+    { id: "anime", label: "Animes" },
+    { id: "favorites", label: "Favoris" },
   ];
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-black/90 backdrop-blur-xl border-t border-white/10 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-2xl transition-all select-none"
+      className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#080312]/95 backdrop-blur-2xl border-t border-purple-500/30 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.9)] transition-all select-none"
       role="navigation"
       aria-label="Navigation Mobile"
     >
       {items.map((item) => {
-        const Icon = item.icon;
         const isActive = activeTab === item.id;
         return (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
+            className={`group flex flex-col items-center justify-center gap-1 flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
               isActive
-                ? "text-orange-400 font-bold"
+                ? "text-white font-extrabold"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
             {/* Active glowing indicator pill at top */}
             {isActive && (
-              <span className="absolute -top-2 w-8 h-1 rounded-full bg-erodium-gradient shadow-[0_0_12px_rgba(249,115,22,0.75)]" />
+              <span className="absolute -top-2 w-8 h-1 rounded-full bg-erodium-gradient shadow-[0_0_12px_rgba(249,115,22,0.85)]" />
             )}
-            <div
-              className={`p-1 rounded-xl transition-all ${
-                isActive
-                  ? "bg-gradient-to-r from-orange-500/20 to-purple-500/20 shadow-sm shadow-purple-500/30 scale-110"
-                  : ""
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-            </div>
+            <ErodiumIconBadge
+              type={item.id}
+              variant="badge"
+              size="sm"
+              active={isActive}
+            />
             <span className="text-[10px] tracking-tight">{item.label}</span>
           </button>
         );
@@ -57,11 +54,14 @@ export default function BottomNav({
         className="flex flex-col items-center justify-center gap-1 flex-1 py-1 px-1 rounded-xl text-zinc-400 hover:text-orange-400 transition-all cursor-pointer"
         title="Rechercher un film ou animé"
       >
-        <div className="p-1 rounded-xl">
-          <Search className="w-5 h-5" />
+        <div className="w-7 h-7 rounded-lg -skew-x-12 p-[1.5px] bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 flex items-center justify-center">
+          <div className="w-full h-full rounded-[inherit] bg-[#080312] flex items-center justify-center">
+            <Search className="w-4 h-4 text-orange-400 skew-x-12" />
+          </div>
         </div>
         <span className="text-[10px] tracking-tight">Recherche</span>
       </button>
     </nav>
   );
 }
+

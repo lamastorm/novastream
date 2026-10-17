@@ -11,6 +11,7 @@ import PlayerModal from "./components/PlayerModal";
 import SettingsModal from "./components/SettingsModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import BottomNav from "./components/BottomNav";
+import ErodiumIconBadge from "./components/ErodiumIconBadge";
 import { tmdbApi } from "./api/tmdb";
 import { catalogProvider } from "./services/catalogProvider";
 import { anilistApi } from "./api/anilist";
@@ -434,7 +435,14 @@ export default function App() {
     );
 
     if (activeTab === "movies") {
-      if (hasCustomFilter) {
+      if (selectedLetter) {
+        promise = tmdbApi.searchMulti(selectedLetter === "#" ? "1" : selectedLetter, page).then((data) => ({
+          ...data,
+          results: (data.results || []).filter(
+            (r) => r.media_type === "movie" && (r.poster_path || r.backdrop_path)
+          ),
+        }));
+      } else if (hasCustomFilter) {
         promise = tmdbApi.discoverMovies(page, {
           genre: selectedGenre,
           platform: platformObj?.providerId,
@@ -462,7 +470,14 @@ export default function App() {
         });
       }
     } else if (activeTab === "series") {
-      if (hasCustomFilter) {
+      if (selectedLetter) {
+        promise = tmdbApi.searchMulti(selectedLetter === "#" ? "1" : selectedLetter, page).then((data) => ({
+          ...data,
+          results: (data.results || []).filter(
+            (r) => r.media_type === "tv" && (r.poster_path || r.backdrop_path)
+          ),
+        }));
+      } else if (hasCustomFilter) {
         promise = tmdbApi.discoverTV(page, {
           genre: selectedGenre,
           platform: platformObj?.providerId,
@@ -1037,14 +1052,19 @@ export default function App() {
             {activeTab === "movies" && (
               <div>
                 <div className="flex flex-col gap-4 mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <Film className="w-6 h-6 text-orange-400" />
-                      <span>Catalogue Films</span>
-                    </h2>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Parcourez l'intégralité du box-office, nouveautés et classiques
-                    </p>
+                  <div className="flex items-stretch gap-3.5">
+                    <span className="erodium-section-bar flex-shrink-0 my-0.5" />
+                    <div className="flex items-center gap-3">
+                      <ErodiumIconBadge type="movies" variant="badge" size="md" active />
+                      <div>
+                        <h2 className="text-2xl sm:text-3xl font-black text-erodium-gradient tracking-tight leading-tight">
+                          Catalogue Films
+                        </h2>
+                        <p className="text-xs sm:text-[13px] text-purple-200/70 font-medium mt-0.5">
+                          Parcourez l'intégralité du box-office, nouveautés et classiques
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Platforms filter */}
@@ -1059,7 +1079,7 @@ export default function App() {
                       onClick={() => setSelectedGenre(null)}
                       className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                         selectedGenre === null
-                          ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
+                          ? "bg-erodium-gradient glow-erodium text-white shadow-md"
                           : "bg-zinc-850 text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -1071,7 +1091,7 @@ export default function App() {
                         onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
                         className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                           selectedGenre === g.id
-                            ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
+                            ? "bg-erodium-gradient glow-erodium text-white shadow-md"
                             : "bg-zinc-850 text-zinc-400 hover:text-white"
                         }`}
                       >
@@ -1145,11 +1165,17 @@ export default function App() {
                       </button>
                     )}
                   </div>
+
+                  {/* Alphabet Bar A-Z (Image 3 Neon Dock) */}
+                  <AlphabetBar
+                    activeLetter={selectedLetter}
+                    onSelectLetter={(letter) => setSelectedLetter(letter)}
+                  />
                 </div>
 
                 {tabLoading ? (
                   <div className="py-20 flex justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
                   </div>
                 ) : (
                   <>
@@ -1172,11 +1198,11 @@ export default function App() {
                       <button
                         onClick={handleLoadMore}
                         disabled={loadingMore}
-                        className="flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-white/10 hover:border-indigo-500/40 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                        className="erodium-btn-info flex items-center gap-2 px-8 py-3 text-white font-extrabold text-sm disabled:opacity-50 cursor-pointer"
                       >
                         {loadingMore ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                            <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
                             <span>Chargement de la page {currentPage + 1}...</span>
                           </>
                         ) : (
@@ -1193,14 +1219,19 @@ export default function App() {
             {activeTab === "series" && (
               <div>
                 <div className="flex flex-col gap-4 mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <Tv className="w-6 h-6 text-emerald-400" />
-                      <span>Catalogue Séries TV</span>
-                    </h2>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Toutes les séries avec sélection des saisons et épisodes
-                    </p>
+                  <div className="flex items-stretch gap-3.5">
+                    <span className="erodium-section-bar flex-shrink-0 my-0.5" />
+                    <div className="flex items-center gap-3">
+                      <ErodiumIconBadge type="series" variant="badge" size="md" active />
+                      <div>
+                        <h2 className="text-2xl sm:text-3xl font-black text-erodium-gradient tracking-tight leading-tight">
+                          Catalogue Séries TV
+                        </h2>
+                        <p className="text-xs sm:text-[13px] text-purple-200/70 font-medium mt-0.5">
+                          Toutes les séries avec sélection des saisons et épisodes
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Platforms filter */}
@@ -1215,7 +1246,7 @@ export default function App() {
                       onClick={() => setSelectedGenre(null)}
                       className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                         selectedGenre === null
-                          ? "bg-emerald-600 text-white shadow"
+                          ? "bg-erodium-gradient glow-erodium text-white shadow"
                           : "bg-zinc-800 text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -1227,7 +1258,7 @@ export default function App() {
                         onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
                         className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                           selectedGenre === g.id
-                            ? "bg-emerald-600 text-white shadow"
+                            ? "bg-erodium-gradient glow-erodium text-white shadow"
                             : "bg-zinc-800 text-zinc-400 hover:text-white"
                         }`}
                       >
@@ -1299,11 +1330,17 @@ export default function App() {
                       </button>
                     )}
                   </div>
+
+                  {/* Alphabet Bar A-Z (Image 3 Neon Dock) */}
+                  <AlphabetBar
+                    activeLetter={selectedLetter}
+                    onSelectLetter={(letter) => setSelectedLetter(letter)}
+                  />
                 </div>
 
                 {tabLoading ? (
                   <div className="py-20 flex justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
                   </div>
                 ) : (
                   <>
@@ -1326,11 +1363,11 @@ export default function App() {
                       <button
                         onClick={handleLoadMore}
                         disabled={loadingMore}
-                        className="flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-white/10 hover:border-emerald-500/40 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                        className="erodium-btn-info flex items-center gap-2 px-8 py-3 text-white font-extrabold text-sm disabled:opacity-50 cursor-pointer"
                       >
                         {loadingMore ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                            <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
                             <span>Chargement de la page {currentPage + 1}...</span>
                           </>
                         ) : (
@@ -1348,17 +1385,22 @@ export default function App() {
               <div>
                 <div className="flex flex-col gap-4 mb-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <Play className="w-6 h-6 text-pink-400 fill-pink-400" />
-                        <span>Espace Animes</span>
-                      </h2>
-                      <p className="text-xs text-zinc-400 mt-1">
-                        AniList • MyAnimeList • TMDB
-                      </p>
+                    <div className="flex items-stretch gap-3.5">
+                      <span className="erodium-section-bar flex-shrink-0 my-0.5" />
+                      <div className="flex items-center gap-3">
+                        <ErodiumIconBadge type="anime" variant="badge" size="md" active />
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-erodium-gradient tracking-tight leading-tight">
+                            Espace Animes
+                          </h2>
+                          <p className="text-xs sm:text-[13px] text-purple-200/70 font-medium mt-0.5">
+                            AniList • MyAnimeList • TMDB
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/30">
+                      <span className="text-xs font-bold px-3.5 py-1.5 rounded-full bg-purple-500/20 text-orange-300 border border-purple-500/40 shadow-sm">
                         🌸 Multi-Sources Otaku
                       </span>
                     </div>
@@ -1372,13 +1414,13 @@ export default function App() {
                         setSelectedStudio(null);
                         setSelectedLetter(null);
                       }}
-                      className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                      className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                         animeSource === "anilist_trending"
-                          ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-500/20"
+                          ? "bg-erodium-gradient glow-erodium text-white shadow-md"
                           : "bg-zinc-800/90 text-zinc-400 hover:text-white hover:bg-zinc-800"
                       }`}
                     >
-                      <Flame className="w-3.5 h-3.5 text-orange-400" />
+                      <Flame className="w-3.5 h-3.5 text-orange-300" />
                       <span>Tendances (AniList)</span>
                     </button>
 
@@ -1388,13 +1430,13 @@ export default function App() {
                         setSelectedStudio(null);
                         setSelectedLetter(null);
                       }}
-                      className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                      className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                         animeSource === "anilist_season"
-                          ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-500/20"
+                          ? "bg-erodium-gradient glow-erodium text-white shadow-md"
                           : "bg-zinc-800/90 text-zinc-400 hover:text-white hover:bg-zinc-800"
                       }`}
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-pink-300" />
+                      <Sparkles className="w-3.5 h-3.5 text-pink-200" />
                       <span>Simulcast / Saison en cours (AniList)</span>
                     </button>
 
@@ -1404,9 +1446,9 @@ export default function App() {
                         setSelectedStudio(null);
                         setSelectedLetter(null);
                       }}
-                      className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                      className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                         animeSource === "mal_top"
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                          ? "bg-erodium-gradient glow-erodium text-white shadow-md"
                           : "bg-zinc-800/90 text-zinc-400 hover:text-white hover:bg-zinc-800"
                       }`}
                     >
@@ -1426,9 +1468,9 @@ export default function App() {
                               setSelectedStudio(studio);
                               setSelectedLetter(null);
                             }}
-                            className={`text-xs font-medium px-2.5 py-1 rounded-lg transition-all whitespace-nowrap ${
+                            className={`text-xs font-medium px-2.5 py-1 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                               isStudioActive
-                                ? "bg-pink-600 text-white font-bold shadow"
+                                ? "bg-erodium-gradient text-white font-bold shadow"
                                 : "text-zinc-400 hover:text-white hover:bg-white/5"
                             }`}
                           >
@@ -1443,9 +1485,9 @@ export default function App() {
                         setAnimeSource("tmdb_all");
                         setSelectedStudio(null);
                       }}
-                      className={`text-xs font-bold px-3 py-2 rounded-xl transition-all ${
+                      className={`text-xs font-bold px-3 py-2 rounded-xl transition-all cursor-pointer ${
                         animeSource === "tmdb_all"
-                          ? "bg-zinc-700 text-white"
+                          ? "bg-erodium-gradient glow-erodium text-white"
                           : "bg-zinc-800/50 text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -1453,7 +1495,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Alphabet Bar A-Z (Anime-Sama style) */}
+                  {/* Alphabet Bar A-Z (Image 3 Neon Dock) */}
                   <AlphabetBar
                     activeLetter={selectedLetter}
                     onSelectLetter={(letter) => {
@@ -1501,7 +1543,7 @@ export default function App() {
                     <button
                       onClick={handleLoadMore}
                       disabled={loadingMore}
-                      className="flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-white/10 hover:border-pink-500/40 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                      className="erodium-btn-info flex items-center gap-2 px-8 py-3 text-white font-extrabold text-sm disabled:opacity-50 cursor-pointer"
                     >
                       {loadingMore ? (
                         <>
@@ -1522,14 +1564,19 @@ export default function App() {
             {activeTab === "favorites" && (
               <div>
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <Bookmark className="w-6 h-6 text-orange-400" />
-                      <span>Mes Favoris (Watchlist)</span>
-                    </h2>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Vos films, séries et animes enregistrés
-                    </p>
+                  <div className="flex items-stretch gap-3.5">
+                    <span className="erodium-section-bar flex-shrink-0 my-0.5" />
+                    <div className="flex items-center gap-3">
+                      <ErodiumIconBadge type="favorites" variant="badge" size="md" active />
+                      <div>
+                        <h2 className="text-2xl sm:text-3xl font-black text-erodium-gradient tracking-tight leading-tight">
+                          Mes Favoris (Watchlist)
+                        </h2>
+                        <p className="text-xs sm:text-[13px] text-purple-200/70 font-medium mt-0.5">
+                          Vos films, séries et animes enregistrés
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-zinc-400 font-medium">

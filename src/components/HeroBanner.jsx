@@ -267,22 +267,69 @@ export default function HeroBanner({
           {overview}
         </p>
 
-        {/* SkyStream Action Buttons with Animated Orange-Violet Gradient */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Action Buttons (Image 4 style : Capsule Néon "Lecture" + Capsule Contour Néon "Plus d'infos") */}
+        <div className="flex flex-wrap items-center gap-3.5">
           <button
             onClick={() => onPlay(currentItem)}
-            className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-erodium-gradient glow-erodium text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer"
+            className="erodium-btn-play flex items-center gap-3 px-7 py-3 sm:py-3.5 text-white font-extrabold text-sm sm:text-base active:scale-95 cursor-pointer"
           >
-            <Play className="w-4 h-4 fill-white" />
-            <span>Lecture</span>
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5 flex-shrink-0"
+              style={{
+                filter:
+                  "drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px rgba(255, 42, 133, 0.9))",
+              }}
+            >
+              <polygon
+                points="6 3 20 12 6 21 6 3"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="2.6"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="tracking-wide drop-shadow-sm">Lecture</span>
           </button>
 
           <button
             onClick={() => onMoreInfo(currentItem)}
-            className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-white font-semibold text-xs sm:text-sm backdrop-blur-md border border-white/10 hover:border-purple-500/40 transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer"
+            className="erodium-btn-info flex items-center gap-3 px-6 py-3 sm:py-3.5 text-white font-extrabold text-sm sm:text-base active:scale-95 cursor-pointer"
           >
-            <Info className="w-4 h-4 text-orange-400" />
-            <span>Plus d'infos</span>
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5 flex-shrink-0"
+              style={{
+                filter: "drop-shadow(0 0 8px rgba(255, 80, 120, 0.55))",
+              }}
+            >
+              <defs>
+                <linearGradient id="erodium-info-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ff9e00" />
+                  <stop offset="60%" stopColor="#ff2a85" />
+                  <stop offset="100%" stopColor="#b5179e" />
+                </linearGradient>
+              </defs>
+              <circle
+                cx="12"
+                cy="12"
+                r="9.5"
+                fill="none"
+                stroke="url(#erodium-info-grad)"
+                strokeWidth="2.3"
+              />
+              <line
+                x1="12"
+                y1="11"
+                x2="12"
+                y2="16.5"
+                stroke="url(#erodium-info-grad)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+              <circle cx="12" cy="7.5" r="1.3" fill="url(#erodium-info-grad)" />
+            </svg>
+            <span className="tracking-wide">Plus d'infos</span>
           </button>
         </div>
       </div>

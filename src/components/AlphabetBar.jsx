@@ -7,38 +7,53 @@ const LETTERS = [
 
 export default function AlphabetBar({ activeLetter, onSelectLetter }) {
   return (
-    <div className="flex items-center gap-1 overflow-x-auto py-2 px-1 scrollbar-none mb-6">
-      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mr-2 flex-shrink-0">
-        Index A-Z :
-      </span>
+    <div className="w-full overflow-x-auto py-2 scrollbar-none mb-5">
+      <div className="inline-flex items-center gap-1.5 sm:gap-2 p-2 rounded-2xl bg-[#090414]/90 backdrop-blur-xl border border-purple-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_28px_rgba(255,123,0,0.14),0_0_28px_rgba(157,78,221,0.2)]">
+        <button
+          onClick={() => onSelectLetter(null)}
+          className={`h-9 px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all duration-300 flex-shrink-0 cursor-pointer ${
+            activeLetter === null
+              ? "text-white shadow-[0_0_20px_rgba(255,123,0,0.65),0_0_25px_rgba(255,42,133,0.45)] border border-orange-300/60 scale-[1.03]"
+              : "erodium-letter-btn text-zinc-200 hover:text-white"
+          }`}
+          style={
+            activeLetter === null
+              ? {
+                  background:
+                    "linear-gradient(135deg, #ff9e00 0%, #ff2a85 55%, #b5179e 100%)",
+                }
+              : undefined
+          }
+        >
+          TOUS
+        </button>
 
-      <button
-        onClick={() => onSelectLetter(null)}
-        className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-          activeLetter === null
-            ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
-            : "bg-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800"
-        }`}
-      >
-        TOUS
-      </button>
-
-      {LETTERS.map((letter) => {
-        const isSelected = activeLetter === letter;
-        return (
-          <button
-            key={letter}
-            onClick={() => onSelectLetter(isSelected ? null : letter)}
-            className={`w-7 h-7 flex-shrink-0 text-xs font-bold rounded-lg transition-all flex items-center justify-center cursor-pointer ${
-              isSelected
-                ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-md shadow-orange-600/30 scale-105 border border-orange-400/50"
-                : "bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-white/5"
-            }`}
-          >
-            {letter}
-          </button>
-        );
-      })}
+        {LETTERS.map((letter) => {
+          const isSelected = activeLetter === letter;
+          return (
+            <button
+              key={letter}
+              onClick={() => onSelectLetter(isSelected ? null : letter)}
+              className={`w-9 h-9 flex-shrink-0 text-xs font-extrabold rounded-xl flex items-center justify-center cursor-pointer transition-all duration-250 ${
+                isSelected
+                  ? "text-white shadow-[0_0_20px_rgba(255,123,0,0.7),0_0_25px_rgba(255,42,133,0.5)] border border-orange-300/60 scale-105"
+                  : "erodium-letter-btn text-white/90 hover:text-white"
+              }`}
+              style={
+                isSelected
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #ff9e00 0%, #ff2a85 55%, #b5179e 100%)",
+                    }
+                  : undefined
+              }
+            >
+              {letter}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
+

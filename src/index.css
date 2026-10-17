@@ -52,8 +52,8 @@
 }
 
 .text-erodium-gradient {
-  background: linear-gradient(120deg, #fb923c, #f472b6, #a78bfa, #fb923c);
-  background-size: 250% 250%;
+  background: linear-gradient(95deg, #ff9e00 0%, #ff2a85 50%, #a855f7 100%);
+  background-size: 200% 200%;
   animation: gradientShift 5s ease infinite;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -66,6 +66,82 @@
 .animate-float-orb {
   animation: floatOrb 9s ease-in-out infinite;
 }
+
+/* Bouton "Lecture" officiel (Image 4 : Capsule dégradée + double anneau néon orange-rose-violet) */
+.erodium-btn-play {
+  position: relative;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(95deg, #ff8800 0%, #ff2a85 52%, #7209b7 100%) padding-box,
+    linear-gradient(90deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
+  box-shadow:
+    0 0 24px -2px rgba(255, 136, 0, 0.65),
+    0 0 32px -4px rgba(168, 85, 247, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.erodium-btn-play:hover {
+  transform: scale(1.04);
+  box-shadow:
+    0 0 32px 2px rgba(255, 136, 0, 0.8),
+    0 0 42px 2px rgba(168, 85, 247, 0.7),
+    inset 0 1px 3px rgba(255, 255, 255, 0.45);
+}
+
+/* Bouton "Plus d'infos" officiel (Image 4 : Capsule sombre vitrée + contour néon orange-rose-violet) */
+.erodium-btn-info {
+  position: relative;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(14, 7, 26, 0.92), rgba(9, 4, 18, 0.96)) padding-box,
+    linear-gradient(95deg, #ff9e00 0%, #ff2a85 50%, #8338ec 100%) border-box;
+  box-shadow:
+    0 0 20px -4px rgba(255, 136, 0, 0.4),
+    0 0 24px -4px rgba(139, 92, 246, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.erodium-btn-info:hover {
+  transform: scale(1.04);
+  background:
+    linear-gradient(180deg, rgba(24, 12, 42, 0.95), rgba(15, 7, 30, 0.98)) padding-box,
+    linear-gradient(95deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
+  box-shadow:
+    0 0 28px 0px rgba(255, 136, 0, 0.55),
+    0 0 34px 0px rgba(168, 85, 247, 0.6);
+}
+
+/* Touches A-Z néon (Image 3 : Carré arrondi sombre + bordure dégradée orange/rose/violet) */
+.erodium-letter-btn {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(14, 7, 26, 0.92), rgba(8, 4, 16, 0.96)) padding-box,
+    linear-gradient(135deg, rgba(255, 158, 0, 0.85) 0%, rgba(255, 42, 133, 0.8) 50%, rgba(131, 56, 236, 0.9) 100%) border-box;
+  box-shadow: 0 0 12px -3px rgba(168, 85, 247, 0.35);
+  transition: all 0.25s ease;
+}
+
+.erodium-letter-btn:hover {
+  transform: translateY(-1px) scale(1.06);
+  background:
+    linear-gradient(135deg, rgba(255, 158, 0, 0.2), rgba(131, 56, 236, 0.25)) padding-box,
+    linear-gradient(135deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
+  box-shadow: 0 0 18px rgba(255, 42, 133, 0.45);
+}
+
+/* Barre verticale néon des titres de section (Image 4 : "Reprendre la lecture") */
+.erodium-section-bar {
+  width: 5px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #ffb703 0%, #ff2a85 52%, #9d4edd 100%);
+  box-shadow:
+    0 0 14px rgba(255, 158, 0, 0.75),
+    0 0 22px rgba(157, 78, 221, 0.6);
+}
+
 
 @layer base {
   body {

@@ -28,14 +28,19 @@ function Top10Row({
 
   return (
     <section className="mb-12 select-none">
-      {/* Section Header */}
-      <div className="mb-4">
-        <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-          {title}
-        </h3>
-        {subtitle && (
-          <p className="text-xs text-zinc-400 mt-0.5">{subtitle}</p>
-        )}
+      {/* Section Header (Image 4 style : Barre verticale néon + Titre en dégradé Orange/Rose/Violet) */}
+      <div className="flex items-stretch gap-3 mb-4">
+        <span className="erodium-section-bar flex-shrink-0 my-0.5" />
+        <div>
+          <h3 className="text-xl sm:text-2xl font-black tracking-tight text-erodium-gradient leading-tight">
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="text-xs sm:text-[13px] text-purple-200/70 font-medium mt-0.5">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Top 3 Large Landscape Cards (#1, #2, #3) */}

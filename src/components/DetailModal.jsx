@@ -374,7 +374,7 @@ export default function DetailModal({
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* Primary Orange & Violet Gradient Lecture Button */}
+              {/* Primary Neon Capsule Lecture Button (Image 4 style) */}
               <button
                 onClick={() =>
                   launchPlay(
@@ -382,9 +382,24 @@ export default function DetailModal({
                     isTV ? (hasHistoryResume ? resumeEpisode : 1) : 1
                   )
                 }
-                className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-erodium-gradient glow-erodium text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer"
+                className="erodium-btn-play flex items-center gap-2.5 px-7 py-3 text-white font-extrabold text-xs sm:text-sm active:scale-95 cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-white" />
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-4.5 h-4.5 flex-shrink-0"
+                  style={{
+                    filter:
+                      "drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px rgba(255, 42, 133, 0.9))",
+                  }}
+                >
+                  <polygon
+                    points="6 3 20 12 6 21 6 3"
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="2.6"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <span>
                   {isTV
                     ? `Lecture S${hasHistoryResume ? resumeSeason : selectedSeason}E${
@@ -398,9 +413,9 @@ export default function DetailModal({
               {isTV && hasHistoryResume && (resumeSeason > 1 || resumeEpisode > 1) && (
                 <button
                   onClick={() => launchPlay(1, 1)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-purple-500/40 transition-all cursor-pointer"
+                  className="erodium-btn-info flex items-center gap-1.5 px-4 py-2.5 sm:py-3 text-zinc-100 hover:text-white text-xs sm:text-sm font-bold cursor-pointer"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5 text-orange-400" />
                   <span>S1E1</span>
                 </button>
               )}
@@ -409,7 +424,7 @@ export default function DetailModal({
               {trailer && (
                 <button
                   onClick={() => setShowTrailerModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-purple-500/40 transition-all cursor-pointer"
+                  className="erodium-btn-info flex items-center gap-2 px-5 py-2.5 sm:py-3 text-zinc-100 hover:text-white text-xs sm:text-sm font-bold cursor-pointer"
                 >
                   <Film className="w-4 h-4 text-orange-400" />
                   <span>Bande-annonce</span>
