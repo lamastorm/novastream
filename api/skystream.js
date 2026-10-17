@@ -17,6 +17,7 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
 
   try {
     // 1. Recherche du média sur SkyStream (via corsproxy.org pour contourner instantanément le blocage Cloudflare sur IP datacenter Vercel)
+    let items = [];
     let proxyError = null;
     let proxyStatus = null;
     try {
