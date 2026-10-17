@@ -36,27 +36,11 @@ export default function Navbar({
 
   return (
     <>
-      {/* INTERACTIVE ERODIUM BANNER HEADER */}
-      <header className="relative z-30 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2 select-none">
-        <div className="relative w-full h-[215px] sm:h-[265px] md:h-[305px] rounded-3xl overflow-hidden border border-purple-500/35 shadow-[0_14px_45px_rgba(0,0,0,0.85),0_0_35px_rgba(139,92,246,0.24)] bg-[#070510]">
-          {/* Banner Artwork Background */}
-          <img
-            src="/erodium-banner.png"
-            alt="Erodium — Votre Univers de Streaming"
-            className="w-full h-full object-cover object-center"
-          />
-
-          {/* Subtle vignette to blend the interactive dock seamlessly over the static bottom text */}
-          <div
-            className="absolute inset-x-0 bottom-0 h-[46%] pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(ellipse 58% 88% at 50% 74%, rgba(11, 5, 22, 0.95) 28%, rgba(11, 5, 22, 0.6) 68%, transparent 100%)",
-            }}
-          />
-
+      {/* TRANSPARENT UNIFIED HEADER OVER THE FULL-SCREEN ERODIUM BACKGROUND */}
+      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2 select-none">
+        <div className="relative w-full h-[185px] sm:h-[225px] md:h-[260px] flex flex-col justify-between">
           {/* TOP BAR OVERLAY (Live Badge + Surprise Left | Search + Support + Settings Right) */}
-          <div className="absolute top-3 sm:top-4 inset-x-3 sm:inset-x-5 z-20 flex items-center justify-between gap-2">
+          <div className="relative z-20 flex items-center justify-between gap-2 pt-1">
             {/* Top-Left: Live Viewers & Surprise */}
             <div className="flex items-center gap-2">
               <div
@@ -113,21 +97,21 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* CENTER CLICKABLE HITBOX OVER THE "ERODIUM" LOGO */}
+          {/* CENTER CLICKABLE HITBOX OVER THE "ERODIUM" LOGO IN THE UNIFIED BACKGROUND */}
           <div
             onClick={() => {
               setActiveTab("home");
               setSearchQuery("");
             }}
             title="Retour à l'accueil Erodium"
-            className="absolute inset-x-1/4 top-[22%] bottom-[38%] z-10 cursor-pointer"
+            className="absolute inset-x-1/4 top-[14%] bottom-[32%] z-10 cursor-pointer"
           />
 
-          {/* BOTTOM INTEGRATED NAVIGATION DOCK (Logos Néon inclinés Image 1 + Capsule & Séparateurs Image 2) */}
-          <div className="absolute bottom-2.5 sm:bottom-4 inset-x-2 z-20 flex justify-center">
+          {/* BOTTOM NAVIGATION DOCK SITTING SEAMLESSLY BELOW "VOTRE UNIVERS DE STREAMING" */}
+          <div className="relative z-20 flex justify-center pb-1">
             <nav
               aria-label="Navigation principale"
-              className="flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#0b0518]/92 backdrop-blur-2xl border border-purple-500/30 shadow-[0_12px_40px_rgba(0,0,0,0.9),0_0_28px_rgba(249,115,22,0.16),0_0_28px_rgba(139,92,246,0.2)] overflow-x-auto max-w-full scrollbar-none"
+              className="flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#0b0518]/90 backdrop-blur-2xl border border-purple-500/30 shadow-[0_12px_40px_rgba(0,0,0,0.9),0_0_28px_rgba(249,115,22,0.16),0_0_28px_rgba(139,92,246,0.2)] overflow-x-auto max-w-full scrollbar-none"
             >
               {bannerTabs.map((tab, idx) => {
                 const isActive = activeTab === tab.id && !searchQuery;

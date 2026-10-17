@@ -712,12 +712,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-transparent text-[#f4f4f5] flex flex-col relative overflow-x-hidden">
-      {/* Fixed Official Erodium Background Image (Orange Filmstrip Left & Violet Screens Right) */}
+      {/* Single Unified Full-Screen Erodium Artwork (Logo + Orange Filmstrip Left + Violet Screens Right) */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-85"
+        className="fixed inset-0 z-0 pointer-events-none bg-cover bg-top bg-no-repeat"
         style={{ backgroundImage: 'url("/erodium-bg.png")' }}
       />
-      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#05040a]/30 via-[#05040a]/45 to-[#05040a]/80" />
+      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-transparent via-[#05030a]/25 to-[#05030a]/70" />
 
       {/* Subtle Ambient Floating Orange & Violet Glow Orbs */}
       <div className="fixed -top-32 -left-32 w-[420px] h-[420px] rounded-full bg-orange-500/10 blur-[130px] pointer-events-none animate-float-orb z-0" />
