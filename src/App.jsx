@@ -802,16 +802,6 @@ export default function App() {
             {/* VIEW 2: ACCUEIL */}
             {activeTab === "home" && (
               <>
-                {/* Official ERODIUM Banner Header */}
-                <div className="relative w-full mb-7 rounded-3xl overflow-hidden border border-white/10 shadow-[0_12px_40px_rgba(139,92,246,0.25)] group">
-                  <img
-                    src="/erodium-banner.png"
-                    alt="Erodium — Votre Univers de Streaming (Films, Séries, Animes)"
-                    className="w-full h-auto max-h-[260px] sm:max-h-[310px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.015]"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#05040a]/60 via-transparent to-transparent pointer-events-none" />
-                </div>
-
                 {/* Hero Featured Banner (Rotating Carousel) */}
                 {(trendingMovies.length > 0 || heroItem) && (
                   <HeroBanner
