@@ -164,7 +164,7 @@ export default function HeroBanner({
 
   return (
     <div
-      className="group relative w-full h-[66vh] min-h-[480px] max-h-[700px] mb-10 rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 select-none"
+      className="group relative w-full max-w-5xl mx-auto h-[42vh] min-h-[320px] max-h-[440px] mb-10 rounded-3xl overflow-hidden bg-black/80 shadow-[0_15px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(139,92,246,0.18)] border border-purple-500/25 select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
