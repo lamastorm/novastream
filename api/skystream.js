@@ -119,9 +119,14 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       return { success: false, error: 'Flux vidéo direct indisponible sur ce titre' };
     }
 
+    const proxiedStreamUrl = streamUrl.includes('.m3u8')
+      ? `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}`
+      : streamUrl;
+
     return {
       success: true,
-      streamUrl,
+      streamUrl: proxiedStreamUrl,
+      rawStreamUrl: streamUrl,
       format: data.format || (streamUrl.includes('.m3u8') ? 'hls' : 'mp4'),
       subtitles: Array.isArray(data.subtitles) ? data.subtitles : [],
       audioTracks: Array.isArray(data.audioTracks) ? data.audioTracks : [],

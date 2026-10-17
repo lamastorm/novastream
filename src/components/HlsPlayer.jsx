@@ -77,8 +77,12 @@ export default function HlsPlayer({
 
     setIsBuffering(true);
 
+    const baseOrigin = typeof window !== 'undefined' && window.location.origin.startsWith('http')
+      ? window.location.origin
+      : 'https://erodium.vercel.app';
+
     const resolvedStreamUrl = (streamUrl.startsWith('/api/') || streamUrl.startsWith('file:///api/'))
-      ? `https://erodium.vercel.app${streamUrl.replace(/^file:\/\//, '')}`
+      ? `${baseOrigin}${streamUrl.replace(/^file:\/\//, '')}`
       : streamUrl;
 
     if (Hls.isSupported() && resolvedStreamUrl.includes(".m3u8")) {
@@ -86,14 +90,14 @@ export default function HlsPlayer({
         load(context, config, callbacks) {
           if (context.url && (context.url.includes('/api/hls-proxy') || context.url.startsWith('/api/') || context.url.startsWith('file:///api/'))) {
             const idx = context.url.indexOf('/api/');
-            context.url = 'https://erodium.vercel.app' + context.url.slice(idx);
+            context.url = baseOrigin + context.url.slice(idx);
           }
           super.load(context, config, callbacks);
         }
       }
 
       const hls = new Hls({
-        enableWorker: true,
+        enableWorker: false,
         enableWebVTT: true,
         subtitleDisplay: true,
         maxBufferLength: 60,
@@ -121,12 +125,13 @@ export default function HlsPlayer({
           setSubtitleTracks([...hls.subtitleTracks]);
         }
 
-        // Attempt playback (muted fallback if browser blocks sound autoplay)
+        // Attempt playback
         video.play().then(() => {
           setIsPlaying(true);
+          setIsBuffering(false);
         }).catch(() => {
-          // Autoplay was prevented by browser policy, keep paused and show big play button
           setIsPlaying(false);
+          setIsBuffering(false);
         });
       });
 

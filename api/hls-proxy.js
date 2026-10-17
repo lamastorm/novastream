@@ -1,12 +1,19 @@
 import https from 'https';
 import { applyHlsSecurity } from '../lib/security.js';
 
+function getRefererForUrl(url) {
+  if (url.includes('finepulfe.xyz') || url.includes('skystream')) {
+    return 'https://skystream.fun/';
+  }
+  return 'https://papadustream.club/';
+}
+
 function fetchPlaylistText(url) {
   return new Promise((resolve, reject) => {
     https.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://papadustream.club/'
+        'Referer': getRefererForUrl(url)
       }
     }, res => {
       let d = '';
@@ -64,19 +71,29 @@ export default async function handler(req, res) {
       return;
     }
 
-    // 1. If it's a TS segment (binary video/audio chunk)
-    if (decodedUrl.includes('.ts')) {
+    // 1. If it's a binary media chunk (.ts, .aac, .m4s, .mp4)
+    const isBinaryChunk = 
+      decodedUrl.includes('.ts') || 
+      decodedUrl.includes('.aac') || 
+      decodedUrl.includes('.m4s') || 
+      decodedUrl.includes('.mp4');
+
+    if (isBinaryChunk) {
       const headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://papadustream.club/'
+        'Referer': getRefererForUrl(decodedUrl)
       };
       if (req.headers['range']) {
         headers['Range'] = req.headers['range'];
       }
 
+      let contentType = 'video/mp2t';
+      if (decodedUrl.includes('.aac')) contentType = 'audio/aac';
+      if (decodedUrl.includes('.m4s') || decodedUrl.includes('.mp4')) contentType = 'video/mp4';
+
       const clientReq = https.get(decodedUrl, { headers }, (clientRes) => {
         res.writeHead(clientRes.statusCode, {
-          'Content-Type': 'video/mp2t',
+          'Content-Type': contentType,
           'Content-Length': clientRes.headers['content-length'] || '',
           'Access-Control-Allow-Origin': '*',
           'Cache-Control': 'public, max-age=86400, s-maxage=86400',
