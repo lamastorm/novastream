@@ -671,7 +671,14 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#050507] text-[#f4f4f5] flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-[#f4f4f5] flex flex-col relative overflow-x-hidden">
+      {/* Fixed Official Erodium Background Image (Orange Filmstrip Left & Violet Screens Right) */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-85"
+        style={{ backgroundImage: 'url("/erodium-bg.png")' }}
+      />
+      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#05040a]/30 via-[#05040a]/45 to-[#05040a]/80" />
+
       {/* Subtle Ambient Floating Orange & Violet Glow Orbs */}
       <div className="fixed -top-32 -left-32 w-[420px] h-[420px] rounded-full bg-orange-500/10 blur-[130px] pointer-events-none animate-float-orb z-0" />
       <div
@@ -795,6 +802,16 @@ export default function App() {
             {/* VIEW 2: ACCUEIL */}
             {activeTab === "home" && (
               <>
+                {/* Official ERODIUM Banner Header */}
+                <div className="relative w-full mb-7 rounded-3xl overflow-hidden border border-white/10 shadow-[0_12px_40px_rgba(139,92,246,0.25)] group">
+                  <img
+                    src="/erodium-banner.png"
+                    alt="Erodium — Votre Univers de Streaming (Films, Séries, Animes)"
+                    className="w-full h-auto max-h-[260px] sm:max-h-[310px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.015]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#05040a]/60 via-transparent to-transparent pointer-events-none" />
+                </div>
+
                 {/* Hero Featured Banner (Rotating Carousel) */}
                 {(trendingMovies.length > 0 || heroItem) && (
                   <HeroBanner
