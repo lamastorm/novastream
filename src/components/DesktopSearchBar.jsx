@@ -43,13 +43,13 @@ export default function DesktopSearchBar({ searchQuery, setSearchQuery }) {
 
   return (
     <div
-      className={`relative flex items-center w-full rounded-xl transition-all ${
+      className={`relative flex items-center w-full rounded-full transition-all ${
         isSearchFocused
-          ? "ring-2 ring-orange-500 bg-zinc-950 border-orange-500/50 shadow-md shadow-orange-500/20"
-          : "bg-zinc-900/80 hover:bg-zinc-900 border border-white/10"
+          ? "ring-1 ring-[#e50914] bg-black/80 border-[#e50914]/60 shadow-md shadow-[#e50914]/15"
+          : "bg-white/[0.04] hover:bg-white/[0.07] border border-white/10"
       }`}
     >
-      <Search className="w-4 h-4 text-zinc-400 ml-3 flex-shrink-0" />
+      <Search className="w-3.5 h-3.5 text-zinc-400 ml-3.5 flex-shrink-0" />
       <input
         ref={inputRef}
         id="global-search-input"
@@ -59,26 +59,23 @@ export default function DesktopSearchBar({ searchQuery, setSearchQuery }) {
         autoComplete="off"
         autoCorrect="off"
         spellCheck="false"
-        placeholder="Rechercher films, séries, animes..."
+        placeholder="Rechercher..."
         defaultValue={searchQuery || ""}
         onChange={handleChange}
         onFocus={() => setIsSearchFocused(true)}
         onBlur={() => setIsSearchFocused(false)}
-        className="w-full bg-transparent px-3 py-2 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none appearance-none"
+        className="w-full bg-transparent px-2.5 py-1.5 text-xs text-white placeholder-zinc-400 focus:outline-none appearance-none"
       />
-      {hasText ? (
+      {hasText && (
         <button
           type="button"
           onClick={handleClear}
-          className="p-1 mr-2 text-zinc-400 hover:text-white rounded-md"
+          className="p-1 mr-2 text-zinc-400 hover:text-white rounded-full cursor-pointer"
         >
           <X className="w-3.5 h-3.5" />
         </button>
-      ) : (
-        <span className="hidden lg:flex items-center text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded border border-white/10 mr-2 flex-shrink-0">
-          Ctrl+K
-        </span>
       )}
     </div>
   );
 }
+

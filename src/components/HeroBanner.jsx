@@ -2,32 +2,47 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Play,
   Info,
-  Bookmark,
-  BookmarkCheck,
-  Star,
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  Bot,
 } from "lucide-react";
-import { IMAGE_BASE_URL } from "../api/tmdb";
+import { tmdbApi, IMAGE_BASE_URL } from "../api/tmdb";
+
+const GENRE_NAMES = {
+  28: "Action",
+  12: "Aventure",
+  16: "Animation",
+  35: "Comédie",
+  80: "Crime",
+  99: "Documentaire",
+  18: "Drame",
+  10751: "Famille",
+  14: "Fantastique",
+  36: "Histoire",
+  27: "Horreur",
+  10402: "Musique",
+  9648: "Mystère",
+  10749: "Romance",
+  878: "Science-Fiction",
+  10770: "Téléfilm",
+  53: "Thriller",
+  10752: "Guerre",
+  37: "Western",
+  10759: "Action & Adventure",
+  10762: "Kids",
+  10765: "Science-Fiction & Fantastique",
+  10768: "War & Politics",
+};
 
 export default function HeroBanner({
   items = [],
   item,
   onPlay,
   onMoreInfo,
-  isItemFavorite,
-  isFavorite,
-  onToggleFavorite,
 }) {
-  // Normalize items array with strict blockbuster quality filter
   const rawSlides = (items && items.length > 0 ? items : item ? [item] : []).filter(
     (s) => s && (s.backdrop_path || s.poster_path || s.title || s.name)
   );
 
-  // Filtre strict anti-titres obscurs pour la bannière héroïque "À la une"
   const qualifiedSlides = rawSlides.filter((s) => {
     if (!s) return false;
     const pop = Number(s.popularity) || 0;
@@ -36,32 +51,24 @@ export default function HeroBanner({
     const date = String(s.release_date || s.first_air_date || "");
     const year = date ? parseInt(date.slice(0, 4), 10) : 0;
 
-    // Si on a des items avec vrai backdrop, éliminer ceux sans backdrop
     if (!s.backdrop_path && rawSlides.some((x) => x.backdrop_path)) return false;
-
-    // Élimine les faux 9.7/10 d'un seul vote ("Et Israël fut...")
     if (voteAvg >= 8.8 && votes < 30 && pop < 25) return false;
-
-    // Élimine les vieux films sans popularité
     if (year > 0 && year < 2023 && pop < 20 && votes < 50) return false;
-
-    // Élimine les titres avec popularité quasi-nulle
     if (pop < 12 && votes < 15) return false;
 
     return true;
   });
 
-  // Fallback sûr si tous sont éliminés
   const baseSlides = qualifiedSlides.length > 0 ? qualifiedSlides : rawSlides;
-
-  // Trier par popularité pour que les plus grands succès arrivent en tête
-  const slides = [...baseSlides].sort((a, b) => (Number(b.popularity) || 0) - (Number(a.popularity) || 0));
+  const slides = [...baseSlides]
+    .sort((a, b) => (Number(b.popularity) || 0) - (Number(a.popularity) || 0))
+    .slice(0, 6);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [logosByKey, setLogosByKey] = useState({});
   const touchStartX = useRef(null);
 
-  // Auto-advance carousel every 6.5s unless hovered or touching
   const nextSlide = useCallback(() => {
     if (slides.length <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % slides.length);
@@ -74,21 +81,46 @@ export default function HeroBanner({
 
   useEffect(() => {
     if (slides.length <= 1 || isPaused) return;
-
     const timer = setInterval(() => {
       nextSlide();
     }, 6500);
-
     return () => clearInterval(timer);
   }, [slides.length, isPaused, nextSlide]);
 
-  if (slides.length === 0) return null;
-
+  // Preload official TMDB transparent logo for current slide
   const currentItem = slides[currentIndex] || slides[0];
-  if (!currentItem) return null;
+  useEffect(() => {
+    if (!currentItem?.id) return;
+    const type =
+      currentItem.media_type === "tv" || Boolean(currentItem.first_air_date && !currentItem.release_date)
+        ? "tv"
+        : "movie";
+    const key = `${type}_${currentItem.id}`;
+    if (logosByKey[key] !== undefined) return;
+
+    let cancelled = false;
+    tmdbApi.getLogoUrl(type, currentItem.id).then((url) => {
+      if (!cancelled) {
+        setLogosByKey((prev) => ({ ...prev, [key]: url || null }));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentItem?.id, currentItem?.media_type, currentItem?.first_air_date, currentItem?.release_date]);
+
+  if (slides.length === 0 || !currentItem) return null;
+
+  const isTV =
+    currentItem.media_type === "tv" ||
+    Boolean(currentItem.first_air_date && !currentItem.release_date);
+  const mediaTypeKey = `${isTV ? "tv" : "movie"}_${currentItem.id}`;
+  const logoUrl = logosByKey[mediaTypeKey];
+
   const title = currentItem.title || currentItem.name || "";
   const overview =
-    currentItem.overview || "Découvrez ce titre incontournable en streaming haute définition sur Erodium.";
+    currentItem.overview ||
+    "Découvrez ce titre incontournable en streaming haute définition sans publicité.";
   const date = String(currentItem.release_date || currentItem.first_air_date || "");
   const year = date
     ? isNaN(new Date(date).getFullYear())
@@ -98,15 +130,23 @@ export default function HeroBanner({
   const voteNum = Number(currentItem.vote_average);
   const rating = !isNaN(voteNum) && voteNum > 0 ? voteNum.toFixed(1) : null;
 
-  const isAnime =
-    currentItem.original_language === "ja" &&
-    (currentItem.genre_ids?.includes(16) || currentItem.genres?.some((g) => g.id === 16));
+  const genreText = Array.isArray(currentItem.genres) && currentItem.genres.length > 0
+    ? currentItem.genres.slice(0, 3).map((g) => g.name).filter(Boolean).join(", ")
+    : Array.isArray(currentItem.genre_ids) && currentItem.genre_ids.length > 0
+    ? currentItem.genre_ids
+        .slice(0, 3)
+        .map((id) => GENRE_NAMES[id])
+        .filter(Boolean)
+        .join(", ")
+    : "";
 
-  const favorite = isItemFavorite
-    ? isItemFavorite(currentItem)
-    : Boolean(isFavorite);
+  const metaParts = [
+    isTV ? "Série" : "Film",
+    year,
+    genreText,
+    rating ? `★ ${rating}` : null,
+  ].filter(Boolean);
 
-  // Swipe gesture handling for mobile
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
     setIsPaused(true);
@@ -116,32 +156,27 @@ export default function HeroBanner({
     if (touchStartX.current === null) return;
     const touchEndX = e.changedTouches[0].clientX;
     const diff = touchStartX.current - touchEndX;
-
-    if (diff > 45) {
-      nextSlide();
-    } else if (diff < -45) {
-      prevSlide();
-    }
+    if (diff > 45) nextSlide();
+    else if (diff < -45) prevSlide();
     touchStartX.current = null;
     setIsPaused(false);
   };
 
   return (
     <div
-      className="group relative w-full h-[65vh] min-h-[490px] max-h-[720px] mb-8 rounded-2xl overflow-hidden glass shadow-2xl border border-white/5 select-none"
+      className="group relative w-full h-[66vh] min-h-[480px] max-h-[700px] mb-10 rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Background Slides (Stacked with crossfade transition) */}
+      {/* Background Slides */}
       {slides.map((s, idx) => {
         const bgUrl = s.backdrop_path
           ? `${IMAGE_BASE_URL}/original${s.backdrop_path}`
           : s.poster_path
           ? `${IMAGE_BASE_URL}/w1280${s.poster_path}`
           : null;
-
         const isCurrent = idx === currentIndex;
 
         return (
@@ -155,23 +190,23 @@ export default function HeroBanner({
               <img
                 src={bgUrl}
                 alt={s.title || s.name || "Affiche"}
-                className={`w-full h-full object-cover object-center filter brightness-[0.72] scale-105 transform transition-transform duration-10000 ${
-                  isCurrent ? "scale-110" : "scale-100"
+                className={`w-full h-full object-cover object-center brightness-[0.75] transform transition-transform duration-10000 ${
+                  isCurrent ? "scale-105" : "scale-100"
                 }`}
                 loading={idx === 0 ? "eager" : "lazy"}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-tr from-orange-950/60 via-zinc-950 to-black" />
+              <div className="w-full h-full bg-zinc-950" />
             )}
           </div>
         );
       })}
 
-      {/* Cinematic Gradient Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-10 pointer-events-none" />
+      {/* SkyStream Deep Cinematic Vignette Gradients */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-[#050507]/45 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#050507]/95 via-[#050507]/55 to-transparent z-10 pointer-events-none" />
 
-      {/* Left / Right Arrow Buttons (Visible on hover or mobile) */}
+      {/* Left / Right Hover Arrows */}
       {slides.length > 1 && (
         <>
           <button
@@ -179,104 +214,82 @@ export default function HeroBanner({
               e.stopPropagation();
               prevSlide();
             }}
-            aria-label="Film précédent"
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/70 hover:text-white border border-white/10 backdrop-blur-md transition-all hover:scale-110 cursor-pointer opacity-70 md:opacity-0 group-hover:opacity-100 shadow-xl"
+            aria-label="Précédent"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white/70 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer opacity-0 group-hover:opacity-100"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-
           <button
             onClick={(e) => {
               e.stopPropagation();
               nextSlide();
             }}
-            aria-label="Film suivant"
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/70 hover:text-white border border-white/10 backdrop-blur-md transition-all hover:scale-110 cursor-pointer opacity-70 md:opacity-0 group-hover:opacity-100 shadow-xl"
+            aria-label="Suivant"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white/70 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer opacity-0 group-hover:opacity-100"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </>
       )}
 
-      {/* Hero Content (Smooth fade-in on slide change) */}
+      {/* Hero Foreground Content */}
       <div
         key={currentItem.id || currentIndex}
-        className="relative z-20 h-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col justify-end pb-14 sm:pb-16 max-w-2xl animate-fade-in"
+        className="relative z-20 h-full px-6 sm:px-12 flex flex-col justify-end pb-12 sm:pb-14 max-w-2xl animate-fade-in"
       >
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-xs uppercase px-3 py-1 rounded-lg tracking-wider shadow-lg shadow-orange-600/30 border border-orange-400/30 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse" />
-            <span>À la une {slides.length > 1 && `• ${currentIndex + 1}/${slides.length}`}</span>
+        {/* Solid Red SkyStream Category Badge */}
+        <div className="mb-3">
+          <span className="inline-block bg-[#e50914] text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-md">
+            {isTV ? "SÉRIE" : "FILM"}
           </span>
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-lg border border-emerald-500/30 backdrop-blur-md">
-            <Bot className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Bot IA : Nouveautés Vérifiées</span>
-          </div>
-          {isAnime && (
-            <span className="bg-red-600/90 text-white font-bold text-xs uppercase px-2.5 py-1 rounded-lg tracking-wider shadow border border-red-500/30">
-              Anime
-            </span>
-          )}
-          {rating && (
-            <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-lg border border-white/10">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              <span>{rating}</span>
-            </div>
-          )}
-          {year && (
-            <div className="flex items-center gap-1 text-zinc-300 text-xs font-medium bg-black/40 px-2 py-1 rounded-lg border border-white/5">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{year}</span>
-            </div>
-          )}
         </div>
 
-        {/* Title */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-3 drop-shadow-md">
-          {title}
-        </h1>
+        {/* Official TMDB Logo or Bold Uppercase Title */}
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={title}
+            className="max-h-20 sm:max-h-28 max-w-[260px] sm:max-w-[380px] w-auto object-contain object-left mb-3 drop-shadow-[0_6px_20px_rgba(0,0,0,0.85)]"
+          />
+        ) : (
+          <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white leading-[1.05] mb-3 drop-shadow-lg">
+            {title}
+          </h1>
+        )}
+
+        {/* Inline Metadata Line (Film • 2026 • Genres • ★ 6.3) */}
+        <p className="text-xs sm:text-[13px] font-medium text-zinc-300 mb-3">
+          {metaParts.join(" · ")}
+        </p>
 
         {/* Synopsis */}
-        <p className="text-zinc-300 text-sm sm:text-base line-clamp-3 mb-6 max-w-xl leading-relaxed text-shadow">
+        <p className="text-zinc-300/90 text-xs sm:text-sm line-clamp-3 mb-6 max-w-xl leading-relaxed">
           {overview}
         </p>
 
-        {/* Action Buttons */}
+        {/* SkyStream Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => onPlay(currentItem)}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold text-sm shadow-xl shadow-orange-600/30 hover:scale-[1.03] transition-all cursor-pointer border border-orange-400/40"
+            className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#e50914] hover:bg-[#f6121d] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#e50914]/30 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
           >
             <Play className="w-4 h-4 fill-white" />
-            <span>Regarder maintenant</span>
+            <span>Lecture</span>
           </button>
 
           <button
             onClick={() => onMoreInfo(currentItem)}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm backdrop-blur-md border border-white/15 transition-all hover:scale-[1.02] cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-white font-semibold text-xs sm:text-sm backdrop-blur-md border border-white/10 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
           >
-            <Info className="w-4 h-4" />
-            <span>Détails & Saisons</span>
-          </button>
-
-          <button
-            onClick={() => onToggleFavorite(currentItem)}
-            className="p-3 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer"
-            title={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          >
-            {favorite ? (
-              <BookmarkCheck className="w-5 h-5 text-orange-400" />
-            ) : (
-              <Bookmark className="w-5 h-5" />
-            )}
+            <Info className="w-4 h-4 text-zinc-300" />
+            <span>Plus d'infos</span>
           </button>
         </div>
       </div>
 
-      {/* Bottom Indicator Dots / Progress Pills */}
+      {/* Bottom Right Dash Progress Indicators (SkyStream style) */}
       {slides.length > 1 && (
-        <div className="absolute bottom-4 right-6 sm:right-10 z-30 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+        <div className="absolute bottom-5 right-6 sm:right-10 z-30 flex items-center gap-2">
           {slides.map((_, idx) => {
             const isActive = idx === currentIndex;
             return (
@@ -286,11 +299,9 @@ export default function HeroBanner({
                   e.stopPropagation();
                   setCurrentIndex(idx);
                 }}
-                aria-label={`Aller au film ${idx + 1}`}
-                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  isActive
-                    ? "w-6 bg-gradient-to-r from-orange-500 to-amber-400 shadow-md shadow-orange-500/50"
-                    : "w-2 bg-white/30 hover:bg-white/60"
+                aria-label={`Slide ${idx + 1}`}
+                className={`h-1 rounded-full transition-all duration-300 cursor-pointer ${
+                  isActive ? "w-8 bg-[#e50914]" : "w-6 bg-white/25 hover:bg-white/50"
                 }`}
               />
             );
@@ -300,3 +311,4 @@ export default function HeroBanner({
     </div>
   );
 }
+

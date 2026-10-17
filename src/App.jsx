@@ -671,7 +671,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0b0c10] text-[#e0e2ec] flex flex-col">
+    <div className="min-h-screen bg-[#050507] text-[#f4f4f5] flex flex-col">
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -702,22 +702,17 @@ export default function App() {
         initialQuery={searchQuery}
       />
 
-      {/* Floating Animated Catalog Stats on the Left (for wide screens) */}
-      {activeTab === "home" && !searchQuery.trim() && (
-        <LiveCatalogStats isFloating={true} />
-      )}
-
       {/* Main Page Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 md:pb-12">
         {/* VIEW 1: SEARCH ACTIVE */}
         {searchQuery.trim() ? (
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
                   <span>Résultats pour "{searchQuery}"</span>
                   {isSearching && (
-                    <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#e50914]" />
                   )}
                 </h2>
                 <span className="text-xs text-zinc-400">
@@ -726,19 +721,19 @@ export default function App() {
               </div>
 
               {/* Search Category Filter Pills */}
-              <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1.5 rounded-2xl border border-white/10 self-start sm:self-auto overflow-x-auto shadow-inner">
+              <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1.5 rounded-full border border-white/10 self-start sm:self-auto overflow-x-auto">
                 {[
-                  { id: "all", label: "🌟 Tout" },
-                  { id: "movie", label: "🎬 Films" },
-                  { id: "tv", label: "📺 Séries" },
-                  { id: "anime", label: "⚡ Animes" },
+                  { id: "all", label: "Tout" },
+                  { id: "movie", label: "Films" },
+                  { id: "tv", label: "Séries" },
+                  { id: "anime", label: "Animes" },
                 ].map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setSearchCategory(cat.id)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                    className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
                       searchCategory === cat.id
-                        ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-600/30 border border-orange-400/40"
+                        ? "bg-[#e50914] text-white shadow-md shadow-[#e50914]/30"
                         : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -768,15 +763,15 @@ export default function App() {
                     <button
                       onClick={handleLoadMoreSearch}
                       disabled={loadingMoreSearch}
-                      className="flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-white font-bold text-sm border border-white/10 hover:border-orange-500/40 shadow-lg hover:scale-105 transition-all disabled:opacity-50 cursor-pointer"
+                      className="flex items-center gap-2 px-8 py-3 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs border border-white/10 hover:border-[#e50914]/50 shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {loadingMoreSearch ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                          <Loader2 className="w-4 h-4 animate-spin text-[#e50914]" />
                           <span>Chargement de la page {searchPage + 1}...</span>
                         </>
                       ) : (
-                        <span>⚡ Charger plus de résultats (+20)</span>
+                        <span>Charger plus de résultats (+20)</span>
                       )}
                     </button>
                   </div>
@@ -798,101 +793,88 @@ export default function App() {
                   <HeroBanner
                     items={(trendingMovies.length > 0 ? trendingMovies.slice(0, 8) : [heroItem])
                       .filter(Boolean)
-                      .map((item) => ({ ...item, media_type: "movie" }))}
-                    onPlay={(item) => handleStartPlay({ ...item, media_type: "movie" }, 1, 1)}
-                    onMoreInfo={(item) => setSelectedMedia({ ...item, media_type: "movie" })}
+                      .map((item) => ({ ...item, media_type: item.media_type || "movie" }))}
+                    onPlay={(item) =>
+                      handleStartPlay(
+                        { ...item, media_type: item.media_type || "movie" },
+                        1,
+                        1
+                      )
+                    }
+                    onMoreInfo={(item) =>
+                      setSelectedMedia({ ...item, media_type: item.media_type || "movie" })
+                    }
                     isItemFavorite={isItemFavorite}
                     onToggleFavorite={toggleFavorite}
                   />
                 )}
 
-                {/* Animated Library Status Banner (Visible on all screens) */}
-                <LiveCatalogStats isFloating={false} />
-
-                {/* Partenaire VPN Sécurité & Débridage (Haute Visibilité) */}
-                <VpnBanner />
-
                 {/* History / Continuer la lecture (if any) */}
                 {history.length > 0 && (
                   <MediaRow
-                    title="🕒 Reprendre la lecture"
-                    subtitle="Vos derniers films, épisodes et animes visionnés"
+                    title="Reprendre la lecture"
+                    subtitle="Vos derniers films, séries et animes visionnés"
                     items={history}
                     onSelect={(item) =>
                       handleStartPlay(
                         item,
-                        item.media_type === "tv" ? (item.season || 1) : 1,
-                        item.media_type === "tv" ? (item.episode || 1) : 1
+                        item.media_type === "tv" ? item.season || 1 : 1,
+                        item.media_type === "tv" ? item.episode || 1 : 1
                       )
                     }
                     favorites={favorites}
                     onToggleFavorite={toggleFavorite}
-                    badge="Historique"
                   />
-                )}
-
-                {/* Que regarder ce soir ? (Guide d'Humeur) */}
-                <MoodSelector
-                  selectedMood={selectedMood}
-                  onSelectMood={setSelectedMood}
-                />
-
-                {/* Mood Results Row if selected */}
-                {selectedMood && (
-                  <div className="mb-8">
-                    {moodLoading ? (
-                      <div className="py-12 flex justify-center items-center gap-3 text-zinc-400">
-                        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-                        <span className="text-sm">Recherche des meilleurs titres pour cette humeur...</span>
-                      </div>
-                    ) : moodResults.length > 0 ? (
-                      <MediaRow
-                        title={`✨ Sélection : ${selectedMood.label}`}
-                        subtitle={selectedMood.desc}
-                        items={moodResults}
-                        onSelect={(item) => setSelectedMedia(item)}
-                        favorites={favorites}
-                        onToggleFavorite={toggleFavorite}
-                        badge="Sur mesure"
-                      />
-                    ) : (
-                      <p className="text-xs text-zinc-500 py-4 text-center">Aucun résultat trouvé pour cette humeur.</p>
-                    )}
-                  </div>
                 )}
 
                 {/* Loading state */}
                 {loadingHome ? (
                   <div className="py-24 flex flex-col items-center justify-center gap-3 text-zinc-400">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                    <Loader2 className="w-8 h-8 animate-spin text-[#e50914]" />
                     <span className="text-sm font-medium">
-                      Chargement des catalogues en direct...
+                      Chargement du catalogue...
                     </span>
                   </div>
                 ) : (
                   <>
-                    {/* TOP 10 NETFLIX STYLE */}
+                    {/* TOP 10 DE LA SEMAINE (SkyStream 3 + 7 Layout) */}
                     <Top10Row
-                      title="Top 10 en France aujourd'hui"
-                      subtitle="Les 10 plus gros succès cinéma du moment"
-                      items={trendingMovies}
+                      title="Top 10 de la semaine"
+                      subtitle="Les films et séries les plus regardés sur Erodium"
+                      items={[
+                        ...trendingTV.slice(0, 5).map((i) => ({ ...i, media_type: "tv" })),
+                        ...trendingMovies.slice(0, 5).map((i) => ({ ...i, media_type: "movie" })),
+                      ]
+                        .sort((a, b) => (Number(b.popularity) || 0) - (Number(a.popularity) || 0))
+                        .slice(0, 10)}
                       onSelect={(item) => setSelectedMedia(item)}
                       favorites={favorites}
                       onToggleFavorite={toggleFavorite}
                     />
 
-                    {/* SORTIES DE LA SEMAINE / DU JOUR */}
+                    {/* AJOUTS RÉCENTS / SORTIES DU MOMENT */}
+                    {nowPlayingMovies.length > 0 && (
+                      <MediaRow
+                        title="Ajouts récents"
+                        subtitle="Ajoutés au catalogue récemment"
+                        items={nowPlayingMovies.map((m) => ({ ...m, media_type: "movie" }))}
+                        onSelect={(item) => setSelectedMedia({ ...item, media_type: "movie" })}
+                        favorites={favorites}
+                        onToggleFavorite={toggleFavorite}
+                      />
+                    )}
+
+                    {/* SÉRIES DIFFUSÉES AUJOURD'HUI */}
                     {airingTodayTV.length > 0 && (
                       <MediaRow
-                        title="🔔 Épisodes Séries Diffusés Aujourd'hui"
-                        subtitle="Les nouveaux épisodes diffusés ce jour sur les chaînes officielles"
+                        title="Épisodes diffusés aujourd'hui"
+                        subtitle="Les nouveaux épisodes disponibles"
                         items={airingTodayTV}
                         onSelect={(item) =>
                           setSelectedMedia({ ...item, media_type: "tv" })
                         }
                         favorites={favorites}
                         onToggleFavorite={toggleFavorite}
-                        badge="Aujourd'hui"
                       />
                     )}
 

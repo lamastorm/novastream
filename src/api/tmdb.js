@@ -147,11 +147,39 @@ export const tmdbApi = {
     }
   },
 
-  // --- DÉTAILS & IDS EXTERNES (IMDb) ---
+  // --- DÉTAILS & IDS EXTERNES (IMDb + Logos officiels TMDB) ---
   getDetails: async (type, id) => {
     return fetchFromTMDB(`/${type}/${id}`, {
-      append_to_response: "videos,credits,similar,recommendations,external_ids",
+      append_to_response: "videos,credits,similar,recommendations,external_ids,images",
+      include_image_language: "fr,en,null",
     });
+  },
+
+  getLogoUrl: async (type, id) => {
+    const cacheKey = `tmdb_logo_${type}_${id}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached !== null) return cached || null;
+    } catch {}
+    try {
+      const data = await fetchFromTMDB(
+        `/${type}/${id}/images`,
+        { include_image_language: "fr,en,null" },
+        true
+      );
+      const logos = data?.logos || [];
+      const best =
+        logos.find((l) => l.iso_639_1 === "fr") ||
+        logos.find((l) => l.iso_639_1 === "en") ||
+        logos[0];
+      const url = best?.file_path ? `${IMAGE_BASE_URL}/w500${best.file_path}` : "";
+      try {
+        sessionStorage.setItem(cacheKey, url);
+      } catch {}
+      return url || null;
+    } catch {
+      return null;
+    }
   },
 
   getExternalIds: async (type, id) => {
