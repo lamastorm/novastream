@@ -60,8 +60,9 @@ function apiPlugin() {
             const type = url.searchParams.get('type') || 'movie';
             const season = url.searchParams.get('season') || 1;
             const episode = url.searchParams.get('episode') || 1;
+            const tmdbId = url.searchParams.get('tmdbId');
 
-            const result = await resolveSkyStream({ title, year, type, season, episode });
+            const result = await resolveSkyStream({ title, year, type, season, episode, tmdbId });
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.end(JSON.stringify(result));

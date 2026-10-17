@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import Hls from "hls.js";
 import {
   Play,
@@ -15,7 +15,20 @@ import {
   Check,
   Subtitles,
   Sliders,
+  SkipForward,
+  SkipBack,
+  ListVideo,
+  FastForward,
+  X,
 } from "lucide-react";
+
+const SKIP_LABELS = {
+  intro: "Passer l'intro",
+  recap: "Passer le récap",
+  credits: "Passer le générique",
+  outro: "Passer l'outro",
+  preview: "Passer l'aperçu",
+};
 
 export default function HlsPlayer({
   streamUrl,
@@ -26,11 +39,23 @@ export default function HlsPlayer({
   videoFilter,
   preferredLanguage = "vf",
   externalSubtitles = [],
+  skipSegments = [],
+  tmdbId = null,
+  mediaType = "movie",
+  season = 1,
+  episode = 1,
+  isTV = false,
+  nextEpisodeLabel = null,
+  onNextEpisode = null,
+  onPrevEpisode = null,
+  onOpenEpisodes = null,
+  autoNext = true,
 }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
+  const autoNextTriggeredRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -51,9 +76,172 @@ export default function HlsPlayer({
 
   const [isBuffering, setIsBuffering] = useState(true);
 
+  // Skip Intro / Outro & Next Episode states
+  const [fetchedSegments, setFetchedSegments] = useState([]);
+  const [dismissedSegmentKey, setDismissedSegmentKey] = useState(null);
+  const [dismissedNextBanner, setDismissedNextBanner] = useState(false);
+  const [autoSkipIntro, setAutoSkipIntro] = useState(() => {
+    try {
+      return localStorage.getItem("erodium_auto_skip_intro") === "true";
+    } catch {
+      return false;
+    }
+  });
+
   // Settings Menu
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState("menu"); // "menu" | "quality" | "audio" | "subs" | "speed"
+
+  // Reset per-episode transient states when stream or episode changes
+  useEffect(() => {
+    setDismissedSegmentKey(null);
+    setDismissedNextBanner(false);
+    autoNextTriggeredRef.current = false;
+  }, [streamUrl, tmdbId, season, episode]);
+
+  // Fetch skip segments from TheIntroDB if not already provided by backend
+  useEffect(() => {
+    if (Array.isArray(skipSegments) && skipSegments.length > 0) {
+      setFetchedSegments(skipSegments);
+      return;
+    }
+    if (!tmdbId) {
+      setFetchedSegments([]);
+      return;
+    }
+
+    const typeNorm = isTV || mediaType === "tv" || mediaType === "anime" ? "tv" : "movie";
+    const cacheKey = `introdb_v3_${typeNorm}_${tmdbId}_${typeNorm === "tv" ? `${season}_${episode}` : "movie"}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setFetchedSegments(parsed);
+          return;
+        }
+      }
+    } catch {}
+
+    let cancelled = false;
+    const params = new URLSearchParams({ tmdb_id: String(tmdbId) });
+    if (typeNorm === "tv") {
+      params.set("season", String(season || 1));
+      params.set("episode", String(episode || 1));
+    }
+
+    fetch(`https://api.theintrodb.org/v3/media?${params.toString()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const segments = [];
+        for (const segType of ["intro", "recap", "credits", "preview"]) {
+          const list = Array.isArray(data[segType]) ? data[segType] : [];
+          for (const item of list) {
+            const startMs = item?.start_ms ?? 0;
+            const endMs = item?.end_ms ?? null;
+            if (endMs === null || endMs > startMs) {
+              segments.push({ type: segType, startMs, endMs });
+            }
+          }
+        }
+        setFetchedSegments(segments);
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(segments));
+        } catch {}
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [skipSegments, tmdbId, mediaType, isTV, season, episode]);
+
+  const effectiveSegments = useMemo(() => {
+    return Array.isArray(skipSegments) && skipSegments.length > 0 ? skipSegments : fetchedSegments;
+  }, [skipSegments, fetchedSegments]);
+
+  // Determine currently active skip segment (intro / recap / credits / preview)
+  const activeSkipSegment = useMemo(() => {
+    if (!effectiveSegments.length || duration <= 0) return null;
+    const currentMs = currentTime * 1000;
+    for (const seg of effectiveSegments) {
+      const startMs = seg.startMs ?? 0;
+      const endMs = seg.endMs ?? null;
+      const inStart = currentMs >= startMs;
+      const inEnd = endMs !== null ? currentMs < endMs - 500 : currentMs < duration * 1000 - 1500;
+      if (inStart && inEnd) {
+        const key = `${seg.type}_${startMs}_${endMs}`;
+        if (dismissedSegmentKey === key) return null;
+        return { ...seg, key };
+      }
+    }
+    return null;
+  }, [effectiveSegments, currentTime, duration, dismissedSegmentKey]);
+
+  // Execute skip action
+  const handleSkipSegment = (seg = activeSkipSegment) => {
+    if (!seg || !videoRef.current) return;
+    if (seg.endMs !== null && seg.endMs !== undefined) {
+      const targetSec = Math.min(seg.endMs / 1000, Math.max(0, duration - 0.5));
+      videoRef.current.currentTime = targetSec;
+      setCurrentTime(targetSec);
+    } else if ((seg.type === "credits" || seg.type === "outro") && isTV && onNextEpisode) {
+      onNextEpisode();
+    } else if (duration > 1) {
+      const targetSec = Math.max(0, duration - 1);
+      videoRef.current.currentTime = targetSec;
+      setCurrentTime(targetSec);
+    }
+  };
+
+  // Auto-skip intro/recap if user enabled "Passer l'intro auto"
+  useEffect(() => {
+    if (
+      autoSkipIntro &&
+      activeSkipSegment &&
+      (activeSkipSegment.type === "intro" || activeSkipSegment.type === "recap") &&
+      activeSkipSegment.endMs
+    ) {
+      handleSkipSegment(activeSkipSegment);
+    }
+  }, [autoSkipIntro, activeSkipSegment]);
+
+  // Next Episode countdown calculation (like SkyStream: last 60s of episode, auto-triggers at 20s left)
+  const remainingSeconds = duration > 120 ? Math.max(0, Math.ceil(duration - currentTime)) : null;
+  const showNextEpisodeCard =
+    isTV &&
+    Boolean(onNextEpisode) &&
+    !dismissedNextBanner &&
+    duration > 120 &&
+    remainingSeconds !== null &&
+    ((remainingSeconds <= 60 && remainingSeconds > 0) ||
+      (activeSkipSegment?.type === "credits" && activeSkipSegment?.endMs === null));
+
+  const autoNextCountdown =
+    remainingSeconds !== null ? Math.max(0, remainingSeconds - 20) : null;
+
+  useEffect(() => {
+    if (
+      showNextEpisodeCard &&
+      autoNext &&
+      remainingSeconds !== null &&
+      remainingSeconds <= 20 &&
+      remainingSeconds > 0 &&
+      !autoNextTriggeredRef.current
+    ) {
+      autoNextTriggeredRef.current = true;
+      onNextEpisode?.();
+    }
+  }, [showNextEpisodeCard, autoNext, remainingSeconds, onNextEpisode]);
+
+  const toggleAutoSkipIntro = () => {
+    const nextVal = !autoSkipIntro;
+    setAutoSkipIntro(nextVal);
+    try {
+      localStorage.setItem("erodium_auto_skip_intro", String(nextVal));
+    } catch {}
+  };
 
   // Expose video element to parent
   useEffect(() => {
@@ -401,7 +589,89 @@ export default function HlsPlayer({
           <Sparkles className="w-3 h-3 text-amber-200" />
           <span>Erodium Natif • 0 Pub</span>
         </span>
+        {isTV && (
+          <span className="px-2.5 py-1 rounded-lg bg-zinc-900/85 text-zinc-200 font-bold text-[10px] tracking-wide backdrop-blur-md border border-white/10">
+            S{season} • Ép. {episode}
+          </span>
+        )}
       </div>
+
+      {/* Floating Skip Intro / Recap / Générique (Outro) Button */}
+      {activeSkipSegment && !showNextEpisodeCard && (
+        <div
+          className={`absolute right-4 sm:right-6 z-30 flex items-center gap-1.5 transition-all duration-300 animate-fade-in ${
+            showControls || !isPlaying ? "bottom-20 sm:bottom-24" : "bottom-6 sm:bottom-8"
+          }`}
+        >
+          <button
+            onClick={() => handleSkipSegment(activeSkipSegment)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/95 hover:bg-orange-500 text-zinc-950 hover:text-white font-extrabold text-xs sm:text-sm shadow-2xl border border-white/30 backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <FastForward className="w-4 h-4 fill-current" />
+            <span>{SKIP_LABELS[activeSkipSegment.type] || "Passer"}</span>
+          </button>
+          <button
+            onClick={() => setDismissedSegmentKey(activeSkipSegment.key)}
+            title="Fermer"
+            className="p-2 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/10 backdrop-blur-md transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Floating Next Episode Card (End of Episode / Credits) */}
+      {showNextEpisodeCard && (
+        <div
+          className={`absolute right-4 sm:right-6 z-30 w-72 sm:w-80 p-3.5 rounded-2xl bg-zinc-950/95 backdrop-blur-xl border border-orange-500/40 shadow-2xl transition-all duration-300 animate-fade-in ${
+            showControls || !isPlaying ? "bottom-20 sm:bottom-24" : "bottom-6 sm:bottom-8"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-orange-400">
+                Épisode suivant
+              </p>
+              <p className="text-xs sm:text-sm font-bold text-white line-clamp-1 mt-0.5">
+                {nextEpisodeLabel || `Saison ${season} • Épisode ${Number(episode) + 1}`}
+              </p>
+            </div>
+            <button
+              onClick={() => setDismissedNextBanner(true)}
+              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title="Masquer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {autoNext && autoNextCountdown !== null && autoNextCountdown > 0 && (
+            <p className="text-[11px] text-zinc-400 mb-2.5">
+              Passage automatique dans{" "}
+              <span className="text-orange-400 font-bold">{autoNextCountdown} s</span>
+            </p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                autoNextTriggeredRef.current = true;
+                onNextEpisode?.();
+              }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-600/30 transition-all cursor-pointer"
+            >
+              <SkipForward className="w-3.5 h-3.5 fill-white" />
+              <span>Lire maintenant</span>
+            </button>
+            <button
+              onClick={() => setDismissedNextBanner(true)}
+              className="py-2 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors cursor-pointer"
+            >
+              Rester
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Custom Video Controls Bar */}
       <div
@@ -409,21 +679,37 @@ export default function HlsPlayer({
           showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
-        {/* Progress Bar (Seekbar) */}
-        <div className="flex items-center gap-3">
+        {/* Progress Bar (Seekbar) with Intro/Credits Segment Markers */}
+        <div className="relative flex items-center w-full">
+          {duration > 0 &&
+            effectiveSegments.map((seg, idx) => {
+              const startSec = Math.max(0, (seg.startMs ?? 0) / 1000);
+              const endSec = seg.endMs ? Math.min(duration, seg.endMs / 1000) : duration;
+              if (endSec <= startSec || startSec >= duration) return null;
+              const leftPct = (startSec / duration) * 100;
+              const widthPct = Math.max(0.8, ((endSec - startSec) / duration) * 100);
+              return (
+                <div
+                  key={`${seg.type}_${idx}`}
+                  title={SKIP_LABELS[seg.type] || seg.type}
+                  style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                  className="absolute h-1.5 rounded-full bg-amber-400/75 pointer-events-none z-10"
+                />
+              );
+            })}
           <input
             type="range"
             min={0}
             max={duration || 100}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-1.5 bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-orange-500 hover:h-2.5 transition-all"
+            className="relative w-full h-1.5 bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-orange-500 hover:h-2.5 transition-all"
           />
         </div>
 
         {/* Control Buttons */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             {/* Play / Pause */}
             <button
               onClick={togglePlay}
@@ -431,6 +717,28 @@ export default function HlsPlayer({
             >
               {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white" />}
             </button>
+
+            {/* Previous Episode (TV) */}
+            {isTV && onPrevEpisode && (
+              <button
+                onClick={onPrevEpisode}
+                title="Épisode précédent"
+                className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+              >
+                <SkipBack className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Next Episode (TV) */}
+            {isTV && onNextEpisode && (
+              <button
+                onClick={onNextEpisode}
+                title={nextEpisodeLabel ? `Suivant : ${nextEpisodeLabel}` : "Épisode suivant"}
+                className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+              >
+                <SkipForward className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Rewind -10s */}
             <button
@@ -483,7 +791,30 @@ export default function HlsPlayer({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-1.5 sm:gap-2 relative">
+            {/* Inline Skip Button in Control Bar when a segment is active */}
+            {activeSkipSegment && (
+              <button
+                onClick={() => handleSkipSegment(activeSkipSegment)}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-600/90 hover:bg-orange-500 text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                <FastForward className="w-3.5 h-3.5" />
+                <span>{SKIP_LABELS[activeSkipSegment.type] || "Passer"}</span>
+              </button>
+            )}
+
+            {/* Episodes List Drawer Trigger (TV) */}
+            {isTV && onOpenEpisodes && (
+              <button
+                onClick={onOpenEpisodes}
+                title="Liste des épisodes"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer text-xs font-semibold"
+              >
+                <ListVideo className="w-4 h-4 text-orange-400" />
+                <span className="hidden md:inline">Épisodes</span>
+              </button>
+            )}
+
             {/* Settings Menu Button */}
             <div className="relative">
               <button
@@ -501,13 +832,31 @@ export default function HlsPlayer({
 
               {/* Settings Dropdown Panel */}
               {showSettings && (
-                <div className="absolute bottom-11 right-0 w-60 p-3 rounded-2xl bg-zinc-950/95 backdrop-blur-xl border border-white/10 shadow-2xl text-xs space-y-2.5 z-40 animate-fade-in">
+                <div className="absolute bottom-11 right-0 w-64 p-3 rounded-2xl bg-zinc-950/95 backdrop-blur-xl border border-white/10 shadow-2xl text-xs space-y-2.5 z-40 animate-fade-in">
                   {/* MAIN MENU */}
                   {activeTab === "menu" && (
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
                         <span className="font-bold text-white text-xs">Paramètres du Lecteur</span>
                       </div>
+
+                      {/* Auto-skip Intro toggle */}
+                      <button
+                        onClick={toggleAutoSkipIntro}
+                        className="flex items-center justify-between px-2.5 py-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FastForward className="w-4 h-4 text-orange-400" />
+                          <span>Passer l'intro auto</span>
+                        </div>
+                        <span
+                          className={`text-[11px] font-bold ${
+                            autoSkipIntro ? "text-emerald-400" : "text-zinc-500"
+                          }`}
+                        >
+                          {autoSkipIntro ? "Activé" : "Désactivé"}
+                        </span>
+                      </button>
 
                       {/* Audio option */}
                       {audioTracks.length > 0 && (
@@ -753,3 +1102,4 @@ export default function HlsPlayer({
     </div>
   );
 }
+

@@ -9,7 +9,73 @@ function cleanQuery(str) {
     .trim();
 }
 
-export async function resolveSkyStream({ title, year = null, type = 'movie', season = 1, episode = 1 }) {
+const SEGMENT_TYPES = ['intro', 'recap', 'credits', 'preview'];
+
+async function fetchSkipSegments({ tmdbId, type, season, episode }) {
+  const numId = Number(tmdbId);
+  if (!Number.isFinite(numId) || numId <= 0) return [];
+
+  const params = new URLSearchParams({ tmdb_id: String(Math.trunc(numId)) });
+  if (type === 'tv') {
+    params.set('season', String(Math.trunc(Number(season) || 1)));
+    params.set('episode', String(Math.trunc(Number(episode) || 1)));
+  }
+
+  try {
+    const res = await fetch(`https://api.theintrodb.org/v3/media?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data && typeof data === 'object') {
+        const segments = [];
+        for (const segType of SEGMENT_TYPES) {
+          const list = data[segType];
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              const s = item?.start_ms == null ? 0 : Number(item.start_ms);
+              const e = item?.end_ms == null ? null : Number(item.end_ms);
+              if (Number.isFinite(s) && s >= 0 && (e == null || (Number.isFinite(e) && e > s))) {
+                if (e != null && e - s < 5000) continue;
+                segments.push({ type: segType, startMs: s, endMs: e });
+              }
+            }
+          }
+        }
+        if (segments.length > 0) {
+          return segments.sort((a, b) => a.startMs - b.startMs);
+        }
+      }
+    }
+  } catch {}
+
+  try {
+    const skyParams = new URLSearchParams({
+      tmdbId: String(Math.trunc(numId)),
+      type,
+    });
+    if (type === 'tv') {
+      skyParams.set('season', String(Math.trunc(Number(season) || 1)));
+      skyParams.set('episode', String(Math.trunc(Number(episode) || 1)));
+    }
+    const skyRes = await fetch(`https://skystream.fun/api/skip-segments?${skyParams.toString()}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://skystream.fun/',
+      },
+    });
+    if (skyRes.ok) {
+      const skyData = await skyRes.json().catch(() => null);
+      if (Array.isArray(skyData?.segments)) {
+        return skyData.segments;
+      }
+    }
+  } catch {}
+
+  return [];
+}
+
+export async function resolveSkyStream({ title, year = null, type = 'movie', season = 1, episode = 1, tmdbId = null }) {
   if (!title) {
     return { success: false, error: 'Paramètre title manquant' };
   }
@@ -119,6 +185,24 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       return { success: false, error: 'Flux vidéo direct indisponible sur ce titre' };
     }
 
+    // Extraire tmdbId depuis l'URL CDN (ex: /tv/1399-noog8/ ou /movies/27205-izjy4/) ou depuis le paramètre
+    let resolvedTmdbId = tmdbId;
+    if (!resolvedTmdbId && streamUrl) {
+      const m = streamUrl.match(/\/(?:tv|movies)\/(\d+)-/i);
+      if (m) resolvedTmdbId = Number(m[1]);
+    }
+    if (!resolvedTmdbId && data.voUrl) {
+      const m = data.voUrl.match(/\/embed\/(?:tv|movie)\/(\d+)/i);
+      if (m) resolvedTmdbId = Number(m[1]);
+    }
+
+    const skipSegments = await fetchSkipSegments({
+      tmdbId: resolvedTmdbId,
+      type: mediaType,
+      season,
+      episode,
+    });
+
     const proxiedStreamUrl = streamUrl.includes('.m3u8')
       ? `/api/hls-proxy?v=2&url=${encodeURIComponent(streamUrl)}`
       : streamUrl;
@@ -137,6 +221,8 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       format: data.format || (streamUrl.includes('.m3u8') ? 'hls' : 'mp4'),
       subtitles: proxiedSubtitles,
       audioTracks: Array.isArray(data.audioTracks) ? data.audioTracks : [],
+      skipSegments,
+      tmdbId: resolvedTmdbId || null,
       title: match.title || title,
       year: match.year,
       provider: 'skystream',
@@ -164,8 +250,9 @@ export default async function handler(req) {
   const type = url.searchParams.get('type') || 'movie';
   const season = parseInt(url.searchParams.get('season'), 10) || 1;
   const episode = parseInt(url.searchParams.get('episode'), 10) || 1;
+  const tmdbId = url.searchParams.get('tmdbId');
 
-  const result = await resolveSkyStream({ title, year, type, season, episode });
+  const result = await resolveSkyStream({ title, year, type, season, episode, tmdbId });
 
   return new Response(JSON.stringify(result), {
     status: 200,

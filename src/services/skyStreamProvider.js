@@ -49,13 +49,13 @@ export const skyStreamProvider = {
    * @param {number} [params.season] Numéro de saison
    * @param {number} [params.episode] Numéro d'épisode
    */
-  async getStream({ title, year = null, type = 'movie', season = 1, episode = 1 }) {
+  async getStream({ title, year = null, type = 'movie', season = 1, episode = 1, tmdbId = null }) {
     if (!title) {
       return { success: false, error: 'Titre manquant' };
     }
 
     const mediaType = (type === 'tv' || type === 'series') ? 'tv' : 'movie';
-    const cacheKey = `${title.toLowerCase().trim()}_${mediaType}_s${season}_e${episode}_${year || ''}`;
+    const cacheKey = `${title.toLowerCase().trim()}_${mediaType}_s${season}_e${episode}_${year || ''}_${tmdbId || ''}`;
 
     if (cache.has(cacheKey)) {
       return cache.get(cacheKey);
@@ -68,9 +68,10 @@ export const skyStreamProvider = {
         type: mediaType,
         season: String(season || 1),
         episode: String(episode || 1),
-        v: '2',
+        v: '3',
       });
       if (year) params.append('year', String(year));
+      if (tmdbId) params.append('tmdbId', String(tmdbId));
 
       const apiRes = await fetch(`/api/skystream?${params.toString()}`);
       if (apiRes.ok) {

@@ -225,6 +225,7 @@ export default function PlayerModal({
   // État spécifique pour le scraper SkyStream (0 Pub • 1080p FHD Direct)
   const [skyStreamUrl, setSkyStreamUrl] = useState(null);
   const [skyStreamSubtitles, setSkyStreamSubtitles] = useState([]);
+  const [skyStreamSkipSegments, setSkyStreamSkipSegments] = useState([]);
   const [isSkyStreamLoading, setIsSkyStreamLoading] = useState(false);
   const [skyStreamError, setSkyStreamError] = useState(null);
 
@@ -500,16 +501,19 @@ export default function PlayerModal({
         type: mType,
         season,
         episode,
+        tmdbId: currentMedia.id,
       })
       .then((res) => {
         if (!isMounted) return;
         if (res && res.success && res.streamUrl) {
           setSkyStreamUrl(res.streamUrl);
           setSkyStreamSubtitles(Array.isArray(res.subtitles) ? res.subtitles : []);
+          setSkyStreamSkipSegments(Array.isArray(res.skipSegments) ? res.skipSegments : []);
           setIsSkyStreamLoading(false);
         } else {
           setSkyStreamUrl(null);
           setSkyStreamSubtitles([]);
+          setSkyStreamSkipSegments([]);
           setSkyStreamError(res?.error || "Titre non répertorié sur le catalogue SkyStream.");
           setIsSkyStreamLoading(false);
         }
@@ -518,6 +522,7 @@ export default function PlayerModal({
         if (!isMounted) return;
         setSkyStreamUrl(null);
         setSkyStreamSubtitles([]);
+        setSkyStreamSkipSegments([]);
         setSkyStreamError(err.message || "Erreur lors de la récupération du flux SkyStream.");
         setIsSkyStreamLoading(false);
       });
@@ -1097,6 +1102,17 @@ export default function PlayerModal({
                 videoFilter={videoFilter}
                 preferredLanguage={selectedLanguage}
                 externalSubtitles={skyStreamSubtitles}
+                skipSegments={skyStreamSkipSegments}
+                tmdbId={currentMedia.id}
+                mediaType={mediaType}
+                season={season}
+                episode={episode}
+                isTV={isTV}
+                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                onNextEpisode={isTV ? handleNextEpisode : null}
+                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                autoNext={autoNext}
                 onVideoRef={(el) => { hlsVideoRef.current = el; }}
               />
             </div>
@@ -1147,6 +1163,16 @@ export default function PlayerModal({
                 onEnded={handleNextEpisode}
                 videoFilter={videoFilter}
                 preferredLanguage={selectedLanguage}
+                tmdbId={currentMedia.id}
+                mediaType={mediaType}
+                season={season}
+                episode={episode}
+                isTV={isTV}
+                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                onNextEpisode={isTV ? handleNextEpisode : null}
+                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                autoNext={autoNext}
                 onVideoRef={(el) => { hlsVideoRef.current = el; }}
               />
             </div>
