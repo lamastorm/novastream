@@ -17,40 +17,59 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
 
   try {
     // 1. Recherche du média sur SkyStream (via corsproxy.org pour contourner instantanément le blocage Cloudflare sur IP datacenter Vercel)
-    let items = [];
+    let proxyError = null;
+    let proxyStatus = null;
     try {
       const proxyRes = await fetch(`https://corsproxy.org/?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`)}`, {
         signal: AbortSignal.timeout(4000),
       });
+      proxyStatus = proxyRes.status;
       if (proxyRes.ok) {
-        const searchData = await proxyRes.json().catch(() => ({}));
+        const searchData = await proxyRes.json().catch((err) => { proxyError = 'json_parse: ' + err.message; return {}; });
         if (Array.isArray(searchData.items) && searchData.items.length > 0) {
           items = searchData.items;
+        } else {
+          proxyError = 'no_items: ' + JSON.stringify(searchData);
         }
+      } else {
+        proxyError = 'not_ok: ' + proxyRes.status;
       }
     } catch (e) {
-      console.warn('[SkyStream API] corsproxy.org search error:', e.message);
+      proxyError = e.message;
     }
 
+    let directStatus = null;
+    let directError = null;
     if (items.length === 0) {
-      const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'application/json, text/plain, */*',
-          'Referer': 'https://skystream.fun/',
-        },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (searchRes.ok) {
-        const searchData = await searchRes.json().catch(() => ({}));
-        if (Array.isArray(searchData.items)) {
-          items = searchData.items;
+      try {
+        const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Referer': 'https://skystream.fun/',
+          },
+          signal: AbortSignal.timeout(4000),
+        });
+        directStatus = searchRes.status;
+        if (searchRes.ok) {
+          const searchData = await searchRes.json().catch(() => ({}));
+          if (Array.isArray(searchData.items)) {
+            items = searchData.items;
+          }
+        } else {
+          directError = 'status ' + searchRes.status;
         }
+      } catch (e) {
+        directError = e.message;
       }
     }
 
     if (items.length === 0) {
-      return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
+      return { 
+        success: false, 
+        error: `Titre « ${title} » introuvable sur SkyStream`,
+        debug: { query, proxyStatus, proxyError, directStatus, directError }
+      };
     }
 
     // Filtrer par type (film ou série)
