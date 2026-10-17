@@ -43,10 +43,10 @@ export default function DesktopSearchBar({ searchQuery, setSearchQuery }) {
 
   return (
     <div
-      className={`relative flex items-center w-full rounded-full transition-all ${
+      className={`relative flex items-center w-full rounded-full transition-all duration-300 ${
         isSearchFocused
-          ? "ring-1 ring-[#e50914] bg-black/80 border-[#e50914]/60 shadow-md shadow-[#e50914]/15"
-          : "bg-white/[0.04] hover:bg-white/[0.07] border border-white/10"
+          ? "ring-2 ring-purple-500/80 bg-black/90 border-orange-500/60 shadow-[0_0_20px_rgba(249,115,22,0.25),0_0_25px_rgba(139,92,246,0.3)]"
+          : "bg-white/[0.04] hover:bg-white/[0.08] border border-white/10"
       }`}
     >
       <Search className="w-3.5 h-3.5 text-zinc-400 ml-3.5 flex-shrink-0" />

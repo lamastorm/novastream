@@ -1,8 +1,75 @@
 @import "tailwindcss";
 
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 22px -2px rgba(249, 115, 22, 0.45), 0 0 32px -4px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 32px 2px rgba(139, 92, 246, 0.6), 0 0 42px 0px rgba(249, 115, 22, 0.55);
+  }
+}
+
+@keyframes floatOrb {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(20px, -18px, 0) scale(1.08);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.bg-erodium-gradient {
+  background: linear-gradient(125deg, #f97316, #ec4899, #8b5cf6, #f97316);
+  background-size: 250% 250%;
+  animation: gradientShift 5s ease infinite;
+}
+
+.text-erodium-gradient {
+  background: linear-gradient(120deg, #fb923c, #f472b6, #a78bfa, #fb923c);
+  background-size: 250% 250%;
+  animation: gradientShift 5s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-erodium {
+  animation: pulseGlow 3.5s ease-in-out infinite;
+}
+
+.animate-float-orb {
+  animation: floatOrb 9s ease-in-out infinite;
+}
+
 @layer base {
   body {
-    @apply bg-[#000000] text-[#f4f4f5] font-sans antialiased overflow-x-hidden;
+    @apply bg-[#050508] text-[#f4f4f5] font-sans antialiased overflow-x-hidden;
     margin: 0;
     padding: 0;
   }
@@ -17,38 +84,40 @@
     max-width: 100%;
     border: none;
     text-align: left;
-    background: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.08) 0%, #000000 70%);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(249, 115, 22, 0.11) 0%, transparent 45%),
+      radial-gradient(circle at 82% 5%, rgba(139, 92, 246, 0.13) 0%, transparent 50%),
+      #050508;
   }
 }
 
-/* Custom modern scrollbar - Thème Orange & Noir brillant */
+/* Custom modern scrollbar - Thème Orange & Violet */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: #050508;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: linear-gradient(180deg, #f97316, #8b5cf6);
   border-radius: 4px;
-  border: 1px solid rgba(249, 115, 22, 0.2);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #f97316;
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.8);
+  background: linear-gradient(180deg, #fb923c, #a78bfa);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.8);
 }
 
-/* Glassmorphism utility - Noir brillant & bordures orangées subtiles */
+/* Glassmorphism utility - Noir profond & bordures Orange/Violet */
 .glass {
-  background: rgba(8, 8, 10, 0.85);
+  background: rgba(8, 8, 14, 0.85);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.2);
 }
 
-/* Glass-card: Carte noir brillant avec lueur orange électrique au survol */
+/* Glass-card: Carte noir brillant avec lueur Orange/Violet au survol */
 .glass-card {
-  background: #09090b;
+  background: #09090f;
   border: 1px solid rgba(255, 255, 255, 0.07);
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -57,17 +126,17 @@
 }
 
 .glass-card:hover {
-  border-color: rgba(249, 115, 22, 0.6);
-  box-shadow: 0 12px 35px -5px rgba(249, 115, 22, 0.3);
+  border-color: rgba(168, 85, 247, 0.65);
+  box-shadow: 0 12px 35px -5px rgba(249, 115, 22, 0.28), 0 8px 25px -5px rgba(139, 92, 246, 0.35);
 }
 
-/* Boutons et Accents Orange Brillant */
+/* Boutons et Accents Orange & Violet */
 .glow-orange {
-  box-shadow: 0 0 25px -4px rgba(249, 115, 22, 0.5);
+  box-shadow: 0 0 25px -4px rgba(249, 115, 22, 0.5), 0 0 25px -4px rgba(139, 92, 246, 0.4);
 }
 
 .glow-orange-sm {
-  box-shadow: 0 0 15px -2px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 15px -2px rgba(249, 115, 22, 0.4), 0 0 15px -2px rgba(139, 92, 246, 0.35);
 }
 
 /* Off-screen row virtualization */
@@ -100,17 +169,18 @@ html.tv-mode {
 
 html.tv-mode body {
   padding: 16px 28px;
-  background-color: #000000;
+  background-color: #050508;
 }
 
 /* Enhanced TV focus styling for D-Pad navigation */
 html.tv-mode [data-focusable="true"]:focus-visible,
 html.tv-mode button:focus-visible,
 html.tv-mode a:focus-visible {
-  outline: 4px solid #f97316 !important;
+  outline: 4px solid #a855f7 !important;
   outline-offset: 4px !important;
   transform: scale(1.06) !important;
-  box-shadow: 0 0 40px rgba(249, 115, 22, 0.9) !important;
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.7), 0 0 40px rgba(139, 92, 246, 0.8) !important;
   z-index: 50 !important;
 }
+
 

@@ -341,9 +341,9 @@ export default function DetailModal({
 
         {/* Hero Foreground Content */}
         <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-8 pb-8 pt-24">
-          {/* Solid Red Badge (SÉRIE / FILM) */}
+          {/* Animated Orange & Violet Badge (SÉRIE / FILM) */}
           <div className="mb-3">
-            <span className="inline-block bg-[#e50914] text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow">
+            <span className="inline-block bg-erodium-gradient glow-erodium text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow">
               {isTV ? "SÉRIE" : "FILM"}
             </span>
           </div>
@@ -374,7 +374,7 @@ export default function DetailModal({
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* Primary Red Lecture Button */}
+              {/* Primary Orange & Violet Gradient Lecture Button */}
               <button
                 onClick={() =>
                   launchPlay(
@@ -382,7 +382,7 @@ export default function DetailModal({
                     isTV ? (hasHistoryResume ? resumeEpisode : 1) : 1
                   )
                 }
-                className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#e50914] hover:bg-[#f6121d] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#e50914]/30 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-erodium-gradient glow-erodium text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer"
               >
                 <Play className="w-4 h-4 fill-white" />
                 <span>
@@ -398,7 +398,7 @@ export default function DetailModal({
               {isTV && hasHistoryResume && (resumeSeason > 1 || resumeEpisode > 1) && (
                 <button
                   onClick={() => launchPlay(1, 1)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-purple-500/40 transition-all cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>S1E1</span>
@@ -409,9 +409,9 @@ export default function DetailModal({
               {trailer && (
                 <button
                   onClick={() => setShowTrailerModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-purple-500/40 transition-all cursor-pointer"
                 >
-                  <Film className="w-4 h-4 text-zinc-400" />
+                  <Film className="w-4 h-4 text-orange-400" />
                   <span>Bande-annonce</span>
                 </button>
               )}
@@ -422,11 +422,11 @@ export default function DetailModal({
                 title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                 className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
                   isFavorite
-                    ? "bg-[#e50914]/20 border-[#e50914] text-[#e50914]"
+                    ? "bg-orange-500/20 border-orange-500 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.35)]"
                     : "bg-zinc-900/85 hover:bg-zinc-800 border-white/10 text-zinc-300 hover:text-white"
                 }`}
               >
-                <Heart className={`w-4 h-4 ${isFavorite ? "fill-[#e50914]" : ""}`} />
+                <Heart className={`w-4 h-4 ${isFavorite ? "fill-orange-400" : ""}`} />
               </button>
 
               {/* Circular Watchlist + Button */}
@@ -435,7 +435,7 @@ export default function DetailModal({
                 title="Ma liste"
                 className="w-10 h-10 rounded-full bg-zinc-900/85 hover:bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >
-                {isFavorite ? <Check className="w-4 h-4 text-[#e50914]" /> : <Plus className="w-4 h-4" />}
+                {isFavorite ? <Check className="w-4 h-4 text-orange-400" /> : <Plus className="w-4 h-4" />}
               </button>
 
               {/* Circular Star Button */}
@@ -450,9 +450,9 @@ export default function DetailModal({
               {/* Partager Pill Button */}
               <button
                 onClick={handleShare}
-                className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-purple-500/40 transition-all cursor-pointer"
               >
-                <Share2 className="w-3.5 h-3.5" />
+                <Share2 className="w-3.5 h-3.5 text-purple-400" />
                 <span>{copiedShare ? "Lien copié !" : "Partager"}</span>
               </button>
             </div>
@@ -493,10 +493,10 @@ export default function DetailModal({
                       <button
                         key={s.id || s.season_number}
                         onClick={() => setSelectedSeason(s.season_number)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 cursor-pointer ${
                           isActiveSeason
-                            ? "bg-white text-black shadow-md"
-                            : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-white/10"
+                            ? "bg-erodium-gradient glow-erodium text-white shadow-md scale-105"
+                            : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-white/10 hover:border-purple-500/40"
                         }`}
                       >
                         Saison {s.season_number}
@@ -508,7 +508,7 @@ export default function DetailModal({
               {/* 4-Column Episode Cards Grid (Matches Screenshot 2) */}
               {loadingEpisodes ? (
                 <div className="py-12 flex items-center justify-center gap-2 text-xs text-zinc-400">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#e50914]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
                   <span>Chargement des épisodes...</span>
                 </div>
               ) : episodes.length > 0 ? (
@@ -528,10 +528,10 @@ export default function DetailModal({
                       <div
                         key={ep.id || ep.episode_number}
                         onClick={() => launchPlay(selectedSeason, ep.episode_number)}
-                        className={`group rounded-xl overflow-hidden bg-[#0d0d11] transition-all duration-200 cursor-pointer hover:scale-[1.02] flex flex-col ${
+                        className={`group rounded-xl overflow-hidden bg-[#0d0d11] transition-all duration-300 cursor-pointer hover:scale-[1.025] flex flex-col ${
                           isHighlighted
-                            ? "border-2 border-[#e50914] shadow-lg shadow-[#e50914]/15"
-                            : "border border-white/10 hover:border-white/25"
+                            ? "border-2 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.25)]"
+                            : "border border-white/10 hover:border-purple-500/50"
                         }`}
                       >
                         {/* Episode Still Image */}
@@ -556,7 +556,7 @@ export default function DetailModal({
 
                           {/* Center Play Hover Icon */}
                           <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="w-9 h-9 rounded-full bg-[#e50914] text-white flex items-center justify-center shadow-lg">
+                            <div className="w-9 h-9 rounded-full bg-erodium-gradient glow-erodium text-white flex items-center justify-center shadow-lg">
                               <Play className="w-4 h-4 fill-white ml-0.5" />
                             </div>
                           </div>
@@ -564,7 +564,7 @@ export default function DetailModal({
 
                         {/* Episode Title Footer */}
                         <div className="p-3 flex-1 flex items-center">
-                          <h5 className="text-xs font-bold text-white line-clamp-2 group-hover:text-[#ff4d4d] transition-colors">
+                          <h5 className="text-xs font-bold text-white line-clamp-2 group-hover:text-orange-400 transition-colors">
                             {ep.name || `Épisode ${ep.episode_number}`}
                           </h5>
                         </div>
@@ -607,7 +607,7 @@ export default function DetailModal({
                       }}
                       className="w-24 sm:w-28 flex-shrink-0 cursor-pointer group text-center"
                     >
-                      <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/10 mb-2">
+                      <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/10 group-hover:border-orange-500/50 transition-colors mb-2">
                         {actor.profile_path ? (
                           <img
                             src={`${IMAGE_BASE_URL}/w300${actor.profile_path}`}
@@ -621,7 +621,7 @@ export default function DetailModal({
                           </div>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-white line-clamp-1 group-hover:text-[#ff4d4d] transition-colors">
+                      <p className="text-xs font-bold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">
                         {actor.name}
                       </p>
                       <p className="text-[11px] text-zinc-400 line-clamp-2 mt-0.5 leading-tight">
@@ -659,8 +659,8 @@ export default function DetailModal({
                         }}
                         className={`group cursor-pointer rounded-xl overflow-hidden bg-[#0d0d11] border transition-all ${
                           isCurrent
-                            ? "border-[#e50914] ring-1 ring-[#e50914]"
-                            : "border-white/10 hover:border-white/25"
+                            ? "border-orange-500 ring-1 ring-orange-500"
+                            : "border-white/10 hover:border-purple-500/50"
                         }`}
                       >
                         <div className="aspect-[2/3] w-full bg-zinc-900 overflow-hidden">
@@ -863,7 +863,7 @@ export default function DetailModal({
                 <img
                   src={`${IMAGE_BASE_URL}/w185${selectedActor.profile_path}`}
                   alt={selectedActor.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-[#e50914]"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-orange-500"
                 />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center">
@@ -879,7 +879,7 @@ export default function DetailModal({
             </div>
             {actorLoading ? (
               <div className="py-12 flex items-center justify-center gap-3 text-zinc-400">
-                <Loader2 className="w-6 h-6 animate-spin text-[#e50914]" />
+                <Loader2 className="w-6 h-6 animate-spin text-orange-400" />
                 <span className="text-sm">Chargement de la filmographie...</span>
               </div>
             ) : (
@@ -893,7 +893,7 @@ export default function DetailModal({
                     }}
                     className="group cursor-pointer"
                   >
-                    <div className="aspect-[2/3] rounded-lg overflow-hidden bg-zinc-800 border border-white/5 group-hover:border-[#e50914]/60 group-hover:scale-105 transition-all">
+                    <div className="aspect-[2/3] rounded-lg overflow-hidden bg-zinc-800 border border-white/5 group-hover:border-orange-500/60 group-hover:scale-105 transition-all">
                       <img
                         src={`${IMAGE_BASE_URL}/w300${credit.poster_path}`}
                         alt={credit.title || credit.name}

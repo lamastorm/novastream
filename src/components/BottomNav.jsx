@@ -35,12 +35,12 @@ export default function BottomNav({
           >
             {/* Active glowing indicator pill at top */}
             {isActive && (
-              <span className="absolute -top-2 w-8 h-1 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 shadow-[0_0_10px_#f97316]" />
+              <span className="absolute -top-2 w-8 h-1 rounded-full bg-erodium-gradient shadow-[0_0_12px_rgba(249,115,22,0.75)]" />
             )}
             <div
               className={`p-1 rounded-xl transition-all ${
                 isActive
-                  ? "bg-orange-500/20 shadow-sm shadow-orange-500/30 scale-110"
+                  ? "bg-gradient-to-r from-orange-500/20 to-purple-500/20 shadow-sm shadow-purple-500/30 scale-110"
                   : ""
               }`}
             >

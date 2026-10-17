@@ -671,7 +671,14 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#050507] text-[#f4f4f5] flex flex-col">
+    <div className="min-h-screen bg-[#050507] text-[#f4f4f5] flex flex-col relative overflow-x-hidden">
+      {/* Subtle Ambient Floating Orange & Violet Glow Orbs */}
+      <div className="fixed -top-32 -left-32 w-[420px] h-[420px] rounded-full bg-orange-500/10 blur-[130px] pointer-events-none animate-float-orb z-0" />
+      <div
+        className="fixed top-1/3 -right-40 w-[460px] h-[460px] rounded-full bg-purple-600/10 blur-[140px] pointer-events-none animate-float-orb z-0"
+        style={{ animationDelay: "-5s" }}
+      />
+
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -703,7 +710,7 @@ export default function App() {
       />
 
       {/* Main Page Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 md:pb-12">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 md:pb-12">
         {/* VIEW 1: SEARCH ACTIVE */}
         {searchQuery.trim() ? (
           <div>
@@ -712,7 +719,7 @@ export default function App() {
                 <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
                   <span>Résultats pour "{searchQuery}"</span>
                   {isSearching && (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#e50914]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
                   )}
                 </h2>
                 <span className="text-xs text-zinc-400">
@@ -733,7 +740,7 @@ export default function App() {
                     onClick={() => setSearchCategory(cat.id)}
                     className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
                       searchCategory === cat.id
-                        ? "bg-[#e50914] text-white shadow-md shadow-[#e50914]/30"
+                        ? "bg-erodium-gradient glow-erodium text-white shadow-md"
                         : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -763,11 +770,11 @@ export default function App() {
                     <button
                       onClick={handleLoadMoreSearch}
                       disabled={loadingMoreSearch}
-                      className="flex items-center gap-2 px-8 py-3 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs border border-white/10 hover:border-[#e50914]/50 shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+                      className="flex items-center gap-2 px-8 py-3 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs border border-white/10 hover:border-orange-500/50 shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {loadingMoreSearch ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-[#e50914]" />
+                          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
                           <span>Chargement de la page {searchPage + 1}...</span>
                         </>
                       ) : (
@@ -830,7 +837,7 @@ export default function App() {
                 {/* Loading state */}
                 {loadingHome ? (
                   <div className="py-24 flex flex-col items-center justify-center gap-3 text-zinc-400">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#e50914]" />
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
                     <span className="text-sm font-medium">
                       Chargement du catalogue...
                     </span>

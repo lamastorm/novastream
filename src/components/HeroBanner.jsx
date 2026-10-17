@@ -237,9 +237,9 @@ export default function HeroBanner({
         key={currentItem.id || currentIndex}
         className="relative z-20 h-full px-6 sm:px-12 flex flex-col justify-end pb-12 sm:pb-14 max-w-2xl animate-fade-in"
       >
-        {/* Solid Red SkyStream Category Badge */}
+        {/* Animated Orange & Violet Category Badge */}
         <div className="mb-3">
-          <span className="inline-block bg-[#e50914] text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-md">
+          <span className="inline-block bg-erodium-gradient glow-erodium text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-md">
             {isTV ? "SÉRIE" : "FILM"}
           </span>
         </div>
@@ -267,11 +267,11 @@ export default function HeroBanner({
           {overview}
         </p>
 
-        {/* SkyStream Action Buttons */}
+        {/* SkyStream Action Buttons with Animated Orange-Violet Gradient */}
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => onPlay(currentItem)}
-            className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#e50914] hover:bg-[#f6121d] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#e50914]/30 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-erodium-gradient glow-erodium text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer"
           >
             <Play className="w-4 h-4 fill-white" />
             <span>Lecture</span>
@@ -279,15 +279,15 @@ export default function HeroBanner({
 
           <button
             onClick={() => onMoreInfo(currentItem)}
-            className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-white font-semibold text-xs sm:text-sm backdrop-blur-md border border-white/10 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-zinc-900/85 hover:bg-zinc-800 text-white font-semibold text-xs sm:text-sm backdrop-blur-md border border-white/10 hover:border-purple-500/40 transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer"
           >
-            <Info className="w-4 h-4 text-zinc-300" />
+            <Info className="w-4 h-4 text-orange-400" />
             <span>Plus d'infos</span>
           </button>
         </div>
       </div>
 
-      {/* Bottom Right Dash Progress Indicators (SkyStream style) */}
+      {/* Bottom Right Dash Progress Indicators (Animated Orange & Violet style) */}
       {slides.length > 1 && (
         <div className="absolute bottom-5 right-6 sm:right-10 z-30 flex items-center gap-2">
           {slides.map((_, idx) => {
@@ -301,7 +301,9 @@ export default function HeroBanner({
                 }}
                 aria-label={`Slide ${idx + 1}`}
                 className={`h-1 rounded-full transition-all duration-300 cursor-pointer ${
-                  isActive ? "w-8 bg-[#e50914]" : "w-6 bg-white/25 hover:bg-white/50"
+                  isActive
+                    ? "w-8 bg-erodium-gradient shadow-[0_0_12px_rgba(249,115,22,0.7)]"
+                    : "w-6 bg-white/25 hover:bg-white/50"
                 }`}
               />
             );

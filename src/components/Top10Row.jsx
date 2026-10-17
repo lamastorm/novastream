@@ -57,7 +57,7 @@ function Top10Row({
             <div
               key={`${item.id}-${rank}`}
               onClick={() => onSelect({ ...item, media_type: type })}
-              className="group relative aspect-[16/9] rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-300 hover:scale-[1.015] shadow-xl"
+              className="group relative aspect-[16/9] rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-orange-500/50 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_30px_rgba(139,92,246,0.25)] shadow-xl"
             >
               {bgUrl && (
                 <img
@@ -71,14 +71,15 @@ function Top10Row({
               {/* Dark bottom vignette */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
 
-              {/* Top-left SkyStream 3D Rank Number (1, 2, 3) */}
+              {/* Top-left SkyStream 3D Rank Number (1, 2, 3) with Orange & Violet Neon Drop-Shadow */}
               <div className="absolute top-3 left-4 z-10 pointer-events-none">
                 <span
-                  className="text-5xl sm:text-6xl font-black leading-none tracking-tighter select-none"
+                  className="text-5xl sm:text-6xl font-black leading-none tracking-tighter select-none transition-transform duration-300 group-hover:scale-110 inline-block"
                   style={{
                     color: "#09090b",
-                    WebkitTextStroke: "1.5px rgba(255,255,255,0.85)",
-                    filter: "drop-shadow(3px 3px 0px #e50914)",
+                    WebkitTextStroke: "1.5px rgba(255,255,255,0.9)",
+                    filter:
+                      "drop-shadow(3px 3px 0px #f97316) drop-shadow(-2px -2px 10px rgba(139,92,246,0.75))",
                   }}
                 >
                   {rank}
@@ -95,13 +96,13 @@ function Top10Row({
                   title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
                   className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white/80 hover:text-white border border-white/15 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
                 >
-                  {isFav ? <Check className="w-3.5 h-3.5 text-[#e50914]" /> : <Plus className="w-3.5 h-3.5" />}
+                  {isFav ? <Check className="w-3.5 h-3.5 text-orange-400" /> : <Plus className="w-3.5 h-3.5" />}
                 </button>
               )}
 
               {/* Bottom-left Title & Metadata */}
               <div className="absolute bottom-3.5 left-4 right-4 z-10">
-                <h4 className="text-base sm:text-lg font-extrabold text-white line-clamp-1 drop-shadow">
+                <h4 className="text-base sm:text-lg font-extrabold text-white line-clamp-1 drop-shadow group-hover:text-orange-300 transition-colors">
                   {mediaTitle}
                 </h4>
                 <p className="text-[11px] font-medium text-zinc-300 mt-0.5">
@@ -132,7 +133,7 @@ function Top10Row({
               <div
                 key={`${item.id}-${rank}`}
                 onClick={() => onSelect({ ...item, media_type: type })}
-                className="group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-300 hover:scale-[1.03] shadow-lg"
+                className="group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-purple-500/50 cursor-pointer transition-all duration-300 hover:scale-[1.035] hover:shadow-[0_10px_28px_rgba(249,115,22,0.22)] shadow-lg"
               >
                 {posterUrl && (
                   <img
@@ -148,7 +149,7 @@ function Top10Row({
 
                 {/* Bottom-left Title + Meta */}
                 <div className="absolute bottom-2.5 left-2.5 right-12 z-10">
-                  <h5 className="text-xs font-extrabold text-white line-clamp-1 drop-shadow">
+                  <h5 className="text-xs font-extrabold text-white line-clamp-1 drop-shadow group-hover:text-orange-300 transition-colors">
                     {mediaTitle}
                   </h5>
                   <p className="text-[10px] text-zinc-300 mt-0.5">
@@ -156,14 +157,15 @@ function Top10Row({
                   </p>
                 </div>
 
-                {/* Bottom-right SkyStream 3D Rank Number (4..10) */}
+                {/* Bottom-right SkyStream 3D Rank Number (4..10) with Orange & Violet Neon Drop-Shadow */}
                 <div className="absolute bottom-1 right-2 z-10 pointer-events-none">
                   <span
-                    className="text-4xl sm:text-5xl font-black leading-none tracking-tighter select-none"
+                    className="text-4xl sm:text-5xl font-black leading-none tracking-tighter select-none transition-transform duration-300 group-hover:scale-110 inline-block"
                     style={{
                       color: "#09090b",
-                      WebkitTextStroke: "1.5px rgba(255,255,255,0.85)",
-                      filter: "drop-shadow(2.5px 2.5px 0px #e50914)",
+                      WebkitTextStroke: "1.5px rgba(255,255,255,0.9)",
+                      filter:
+                        "drop-shadow(2.5px 2.5px 0px #f97316) drop-shadow(-2px -2px 8px rgba(139,92,246,0.75))",
                     }}
                   >
                     {rank}
