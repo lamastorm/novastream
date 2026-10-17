@@ -340,31 +340,36 @@ export default function App() {
 
     try {
       const cleanQ = query.trim().toLowerCase();
-      const data = await catalogProvider.search({ query, category, page });
-      setSearchTotalPages(data.total_pages || 1);
+      const [catalogData, tmdbRes] = await Promise.all([
+        catalogProvider.search({ query, category, page }).catch(() => ({ results: [], total_pages: 1 })),
+        tmdbApi.searchMulti(cleanQ, page).catch(() => ({ results: [], total_pages: 1 })),
+      ]);
 
-      let valid = data.results || [];
+      const rawCatalog = catalogData.results || [];
+      const rawTmdb = (tmdbRes.results || []).filter((m) => {
+        if (!m.poster_path && !m.backdrop_path) return false;
+        if (category === "movie") return m.media_type === "movie";
+        if (category === "tv") return m.media_type === "tv";
+        if (category === "anime") {
+          return (
+            m.original_language === "ja" &&
+            (m.genre_ids?.includes(16) || m.genres?.some((g) => g.id === 16))
+          );
+        }
+        return m.media_type === "movie" || m.media_type === "tv";
+      });
 
-      // Si le catalogue natif vérifié n'a pas trouvé de titre, fallback automatique sur TMDB universel
-      if (valid.length === 0 && page === 1) {
-        try {
-          const tmdbRes = await tmdbApi.searchMulti(cleanQ, page);
-          const rawTmdb = tmdbRes.results || [];
-          valid = rawTmdb.filter((m) => {
-            if (!m.poster_path && !m.backdrop_path) return false;
-            if (category === "movie") return m.media_type === "movie";
-            if (category === "tv") return m.media_type === "tv";
-            if (category === "anime") {
-              return (
-                m.original_language === "ja" &&
-                (m.genre_ids?.includes(16) || m.genres?.some((g) => g.id === 16))
-              );
-            }
-            return m.media_type === "movie" || m.media_type === "tv";
-          });
-          setSearchTotalPages(tmdbRes.total_pages || 1);
-        } catch {}
+      const seenSearch = new Set();
+      const valid = [];
+      for (const item of [...rawCatalog, ...rawTmdb]) {
+        const mType = item.media_type || (item.first_air_date ? "tv" : "movie");
+        const key = `${item.id}-${mType}`;
+        if (seenSearch.has(key)) continue;
+        seenSearch.add(key);
+        valid.push({ ...item, media_type: mType });
       }
+
+      setSearchTotalPages(Math.max(catalogData.total_pages || 1, tmdbRes.total_pages || 1));
 
       // Smart ranking: Exact title matches and franchise prefixes first
       valid.sort((a, b) => {
@@ -438,13 +443,23 @@ export default function App() {
           minRating: selectedMinRating,
         });
       } else {
-        promise = catalogProvider
-          .getMovies({ page, genre: selectedGenre })
-          .then((res) => {
-            if (res && res.results && res.results.length > 0) return res;
-            return tmdbApi.discoverMovies(page, { genre: selectedGenre });
-          })
-          .catch(() => tmdbApi.discoverMovies(page, { genre: selectedGenre }));
+        promise = Promise.all([
+          catalogProvider.getMovies({ page, genre: selectedGenre }).catch(() => ({ results: [], total_pages: 1 })),
+          tmdbApi.discoverMovies(page, { genre: selectedGenre }).catch(() => ({ results: [], total_pages: 1 })),
+        ]).then(([catRes, tmdbRes]) => {
+          const seen = new Set();
+          const merged = [];
+          for (const item of [...(tmdbRes?.results || []), ...(catRes?.results || [])]) {
+            const key = String(item.id || item.imdb_id || item.title);
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            merged.push({ ...item, media_type: "movie" });
+          }
+          return {
+            results: merged,
+            total_pages: Math.max(catRes?.total_pages || 1, tmdbRes?.total_pages ? Math.min(tmdbRes.total_pages, 500) : 500),
+          };
+        });
       }
     } else if (activeTab === "series") {
       if (hasCustomFilter) {
@@ -456,13 +471,23 @@ export default function App() {
           minRating: selectedMinRating,
         });
       } else {
-        promise = catalogProvider
-          .getSeries({ page, genre: selectedGenre })
-          .then((res) => {
-            if (res && res.results && res.results.length > 0) return res;
-            return tmdbApi.discoverTV(page, { genre: selectedGenre });
-          })
-          .catch(() => tmdbApi.discoverTV(page, { genre: selectedGenre }));
+        promise = Promise.all([
+          catalogProvider.getSeries({ page, genre: selectedGenre }).catch(() => ({ results: [], total_pages: 1 })),
+          tmdbApi.discoverTV(page, { genre: selectedGenre }).catch(() => ({ results: [], total_pages: 1 })),
+        ]).then(([catRes, tmdbRes]) => {
+          const seen = new Set();
+          const merged = [];
+          for (const item of [...(tmdbRes?.results || []), ...(catRes?.results || [])]) {
+            const key = String(item.id || item.imdb_id || item.name || item.title);
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            merged.push({ ...item, media_type: "tv" });
+          }
+          return {
+            results: merged,
+            total_pages: Math.max(catRes?.total_pages || 1, tmdbRes?.total_pages ? Math.min(tmdbRes.total_pages, 500) : 500),
+          };
+        });
       }
     } else if (activeTab === "anime") {
       if (selectedLetter) {

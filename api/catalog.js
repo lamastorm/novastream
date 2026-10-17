@@ -346,11 +346,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. ACTION: MOVIES
+    // 2. ACTION: MOVIES (Catalogue complet des 2 lecteurs : SkyStream + VidMoly/TMDB)
     if (action === 'movies') {
       const pNum = parseInt(page, 10) || 1;
-      let targetUrl = `https://www.papadustream.club/films?page=${pNum}`;
+      const genreParam = genre ? `&with_genres=${encodeURIComponent(genre)}` : '';
+      const tmdbDiscoverUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&include_adult=false&page=${pNum}${genreParam}`;
 
+      let targetUrl = `https://www.papadustream.club/films?page=${pNum}`;
       if (genre) {
         const genreSlug = GENRE_MAP[genre] || genre.toLowerCase();
         targetUrl = `https://www.papadustream.club/genre/${genreSlug}?page=${pNum}`;
@@ -358,70 +360,133 @@ export default async function handler(req, res) {
         targetUrl = 'https://www.papadustream.club/cinema';
       }
 
-      const pageRes = await fetchUrl(targetUrl);
-      const cards = parseCardsFromHtml(pageRes.body);
-      const results = await enrichCardsWithTmdb(cards.slice(0, 30));
+      const [tmdbRes, pageRes] = await Promise.all([
+        fetchJson(tmdbDiscoverUrl),
+        pNum <= 30 ? fetchUrl(targetUrl, 3500).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
+      ]);
+
+      const cards = pageRes?.body ? parseCardsFromHtml(pageRes.body) : [];
+      const nativeResults = cards.length > 0 ? await enrichCardsWithTmdb(cards.slice(0, 24)) : [];
+      const tmdbResults = (tmdbRes?.results || [])
+        .filter(m => m.poster_path || m.backdrop_path)
+        .map(m => ({ ...m, media_type: 'movie', is_verified_native: true }));
+
+      // Fusion et déduplication par ID TMDB (100% des films des deux lecteurs)
+      const seen = new Set();
+      const merged = [];
+      for (const item of [...tmdbResults, ...nativeResults]) {
+        const key = String(item.id || item.imdb_id || item.title);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        merged.push(item);
+      }
 
       return res.status(200).json({
         success: true,
         page: pNum,
-        total_pages: 93,
-        results
+        total_pages: Math.max(tmdbRes?.total_pages ? Math.min(tmdbRes.total_pages, 500) : 500, 93),
+        results: merged
       });
     }
 
-    // 3. ACTION: SERIES
+    // 3. ACTION: SERIES (Catalogue complet des 2 lecteurs : SkyStream + VidMoly/TMDB)
     if (action === 'series') {
       const pNum = parseInt(page, 10) || 1;
-      let targetUrl = `https://www.papadustream.club/series?page=${pNum}`;
+      const genreParam = genre ? `&with_genres=${encodeURIComponent(genre)}` : '';
+      const tmdbDiscoverUrl = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&include_adult=false&page=${pNum}${genreParam}`;
 
+      let targetUrl = `https://www.papadustream.club/series?page=${pNum}`;
       if (genre) {
         const genreSlug = GENRE_MAP[genre] || genre.toLowerCase();
         targetUrl = `https://www.papadustream.club/genre/${genreSlug}?page=${pNum}`;
       }
 
-      const pageRes = await fetchUrl(targetUrl);
-      const cards = parseCardsFromHtml(pageRes.body);
-      const results = await enrichCardsWithTmdb(cards.slice(0, 30));
+      const [tmdbRes, pageRes] = await Promise.all([
+        fetchJson(tmdbDiscoverUrl),
+        pNum <= 26 ? fetchUrl(targetUrl, 3500).catch(() => ({ body: '' })) : Promise.resolve({ body: '' })
+      ]);
+
+      const cards = pageRes?.body ? parseCardsFromHtml(pageRes.body) : [];
+      const nativeResults = cards.length > 0 ? await enrichCardsWithTmdb(cards.slice(0, 24)) : [];
+      const tmdbResults = (tmdbRes?.results || [])
+        .filter(s => s.poster_path || s.backdrop_path)
+        .map(s => ({ ...s, media_type: 'tv', is_verified_native: true }));
+
+      const seen = new Set();
+      const merged = [];
+      for (const item of [...tmdbResults, ...nativeResults]) {
+        const key = String(item.id || item.imdb_id || item.name || item.title);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        merged.push(item);
+      }
 
       return res.status(200).json({
         success: true,
         page: pNum,
-        total_pages: 26,
-        results
+        total_pages: Math.max(tmdbRes?.total_pages ? Math.min(tmdbRes.total_pages, 500) : 500, 26),
+        results: merged
       });
     }
 
-    // 4. ACTION: SEARCH
+    // 4. ACTION: SEARCH (Recherche unifiée sur l'intégralité des 2 lecteurs : SkyStream + VidMoly + Anime-Sama)
     if (action === 'search') {
       if (!q || !q.trim()) {
         return res.status(200).json({ success: true, results: [], total_results: 0 });
       }
 
       const queryClean = q.trim();
+      const pNum = parseInt(page, 10) || 1;
       let combinedResults = [];
 
-      // A. Recherche Films & Séries sur Papadustream si catégorie != 'anime'
-      if (category !== 'anime') {
-        const searchRes = await fetchUrl(`https://www.papadustream.club/search?q=${encodeURIComponent(queryClean)}`);
-        let cards = parseCardsFromHtml(searchRes.body);
+      // A. Recherche universelle TMDB (couvre 100% du catalogue SkyStream + VidMoly) + Papadustream en parallèle
+      const tmdbEndpoint = category === 'movie'
+        ? `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(queryClean)}&page=${pNum}&include_adult=false`
+        : category === 'tv'
+          ? `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(queryClean)}&page=${pNum}&include_adult=false`
+          : `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(queryClean)}&page=${pNum}&include_adult=false`;
 
-        if (category === 'movie') {
-          cards = cards.filter(c => c.type === 'movie');
-        } else if (category === 'tv') {
-          cards = cards.filter(c => c.type === 'tv');
-        }
+      const [tmdbSearchRes, papaSearchRes] = await Promise.all([
+        fetchJson(tmdbEndpoint),
+        (category !== 'anime' && pNum === 1)
+          ? fetchUrl(`https://www.papadustream.club/search?q=${encodeURIComponent(queryClean)}`, 3500).catch(() => ({ body: '' }))
+          : Promise.resolve({ body: '' })
+      ]);
 
+      if (papaSearchRes?.body) {
+        let cards = parseCardsFromHtml(papaSearchRes.body);
+        if (category === 'movie') cards = cards.filter(c => c.type === 'movie');
+        else if (category === 'tv') cards = cards.filter(c => c.type === 'tv');
         const enriched = await enrichCardsWithTmdb(cards);
-        // Filtrer strictement pour ne pas afficher des films sans rapport
         const filtered = filterRelevantResults(enriched, queryClean);
         combinedResults.push(...filtered);
       }
 
+      if (tmdbSearchRes?.results) {
+        for (const item of tmdbSearchRes.results) {
+          const mType = item.media_type || (category === 'movie' ? 'movie' : category === 'tv' ? 'tv' : (item.first_air_date ? 'tv' : 'movie'));
+          if (mType !== 'movie' && mType !== 'tv') continue;
+          if (!item.poster_path && !item.backdrop_path) continue;
+          if (category === 'movie' && mType !== 'movie') continue;
+          if (category === 'tv' && mType !== 'tv') continue;
+          if (category === 'anime') {
+            const isAnimeItem = item.original_language === 'ja' && (item.genre_ids || []).includes(16);
+            if (!isAnimeItem) continue;
+          }
+          combinedResults.push({
+            ...item,
+            media_type: mType,
+            title: item.title || item.name,
+            name: item.name || item.title,
+            is_verified_native: true
+          });
+        }
+      }
+
       // B. Recherche Anime sur Anime-Sama si catégorie == 'anime' ou 'all'
-      if (category === 'anime' || category === 'all') {
+      if ((category === 'anime' || category === 'all') && pNum === 1) {
         try {
-          const animeSearchRes = await fetchUrl(`https://anime-sama.to/catalogue/?search=${encodeURIComponent(queryClean)}`, 4000);
+          const animeSearchRes = await fetchUrl(`https://anime-sama.to/catalogue/?search=${encodeURIComponent(queryClean)}`, 3500);
           const animeCards = parseAnimeCards(animeSearchRes.body);
           
           for (const ac of animeCards.slice(0, 10)) {
@@ -445,11 +510,25 @@ export default async function handler(req, res) {
         }
       }
 
-      // Trier par pertinence (les titres qui commencent par la requête en premier)
+      // Déduplication par ID + type
+      const seenSearch = new Set();
+      const dedupedResults = [];
+      for (const item of combinedResults) {
+        const key = `${item.id}-${item.media_type || 'movie'}`;
+        if (seenSearch.has(key)) continue;
+        seenSearch.add(key);
+        dedupedResults.push(item);
+      }
+
+      // Trier par pertinence (les titres exacts ou qui commencent par la requête en premier)
       const cleanLower = queryClean.toLowerCase();
-      combinedResults.sort((a, b) => {
+      dedupedResults.sort((a, b) => {
         const aTitle = (a.title || a.name || '').toLowerCase();
         const bTitle = (b.title || b.name || '').toLowerCase();
+        const aExact = aTitle === cleanLower;
+        const bExact = bTitle === cleanLower;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
         const aStarts = aTitle.startsWith(cleanLower);
         const bStarts = bTitle.startsWith(cleanLower);
         if (aStarts && !bStarts) return -1;
@@ -459,8 +538,10 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
-        results: combinedResults,
-        total_results: combinedResults.length
+        page: pNum,
+        total_pages: tmdbSearchRes?.total_pages || 1,
+        results: dedupedResults,
+        total_results: dedupedResults.length
       });
     }
 
