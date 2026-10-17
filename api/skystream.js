@@ -120,15 +120,22 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
     }
 
     const proxiedStreamUrl = streamUrl.includes('.m3u8')
-      ? `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}`
+      ? `/api/hls-proxy?v=2&url=${encodeURIComponent(streamUrl)}`
       : streamUrl;
+
+    const proxiedSubtitles = (Array.isArray(data.subtitles) ? data.subtitles : []).map((sub) => ({
+      ...sub,
+      url: sub.url && sub.url.startsWith('http')
+        ? `/api/hls-proxy?v=2&url=${encodeURIComponent(sub.url)}`
+        : sub.url,
+    }));
 
     return {
       success: true,
       streamUrl: proxiedStreamUrl,
       rawStreamUrl: streamUrl,
       format: data.format || (streamUrl.includes('.m3u8') ? 'hls' : 'mp4'),
-      subtitles: Array.isArray(data.subtitles) ? data.subtitles : [],
+      subtitles: proxiedSubtitles,
       audioTracks: Array.isArray(data.audioTracks) ? data.audioTracks : [],
       title: match.title || title,
       year: match.year,
@@ -165,7 +172,7 @@ export default async function handler(req) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
     },
   });
 }

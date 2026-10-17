@@ -224,6 +224,7 @@ export default function PlayerModal({
 
   // État spécifique pour le scraper SkyStream (0 Pub • 1080p FHD Direct)
   const [skyStreamUrl, setSkyStreamUrl] = useState(null);
+  const [skyStreamSubtitles, setSkyStreamSubtitles] = useState([]);
   const [isSkyStreamLoading, setIsSkyStreamLoading] = useState(false);
   const [skyStreamError, setSkyStreamError] = useState(null);
 
@@ -504,9 +505,11 @@ export default function PlayerModal({
         if (!isMounted) return;
         if (res && res.success && res.streamUrl) {
           setSkyStreamUrl(res.streamUrl);
+          setSkyStreamSubtitles(Array.isArray(res.subtitles) ? res.subtitles : []);
           setIsSkyStreamLoading(false);
         } else {
           setSkyStreamUrl(null);
+          setSkyStreamSubtitles([]);
           setSkyStreamError(res?.error || "Titre non répertorié sur le catalogue SkyStream.");
           setIsSkyStreamLoading(false);
         }
@@ -514,6 +517,7 @@ export default function PlayerModal({
       .catch((err) => {
         if (!isMounted) return;
         setSkyStreamUrl(null);
+        setSkyStreamSubtitles([]);
         setSkyStreamError(err.message || "Erreur lors de la récupération du flux SkyStream.");
         setIsSkyStreamLoading(false);
       });
@@ -1092,6 +1096,7 @@ export default function PlayerModal({
                 onEnded={handleNextEpisode}
                 videoFilter={videoFilter}
                 preferredLanguage={selectedLanguage}
+                externalSubtitles={skyStreamSubtitles}
                 onVideoRef={(el) => { hlsVideoRef.current = el; }}
               />
             </div>

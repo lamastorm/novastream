@@ -25,6 +25,7 @@ export default function HlsPlayer({
   onVideoRef,
   videoFilter,
   preferredLanguage = "vf",
+  externalSubtitles = [],
 }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -61,6 +62,20 @@ export default function HlsPlayer({
     }
   }, [onVideoRef]);
 
+  // Synchroniser les sous-titres externes (.vtt) s'ils sont fournis
+  useEffect(() => {
+    if (Array.isArray(externalSubtitles) && externalSubtitles.length > 0) {
+      setSubtitleTracks(
+        externalSubtitles.map((s, idx) => ({
+          id: idx,
+          name: s.label || s.lang || `Sous-titre ${idx + 1}`,
+          lang: s.lang || "fr",
+          url: s.url,
+        }))
+      );
+    }
+  }, [externalSubtitles]);
+
   // Hide controls automatically after 3.5 seconds of inactivity
   const handleMouseMove = () => {
     setShowControls(true);
@@ -85,7 +100,7 @@ export default function HlsPlayer({
       ? `${baseOrigin}${streamUrl.replace(/^file:\/\//, '')}`
       : streamUrl;
 
-    if (Hls.isSupported() && resolvedStreamUrl.includes(".m3u8")) {
+    if (Hls.isSupported() && (resolvedStreamUrl.includes(".m3u8") || resolvedStreamUrl.includes("/api/hls-proxy"))) {
       class ElectronHlsLoader extends Hls.DefaultConfig.loader {
         load(context, config, callbacks) {
           if (context.url && (context.url.includes('/api/hls-proxy') || context.url.startsWith('/api/') || context.url.startsWith('file:///api/'))) {
@@ -135,6 +150,10 @@ export default function HlsPlayer({
         });
       });
 
+      hls.on(Hls.Events.FRAG_BUFFERED, () => {
+        setIsBuffering(false);
+      });
+
       hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
         if (hls.audioTracks && hls.audioTracks.length > 0) {
           setAudioTracks([...hls.audioTracks]);
@@ -161,7 +180,7 @@ export default function HlsPlayer({
       });
 
       hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
-        if (hls.subtitleTracks) {
+        if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
           setSubtitleTracks([...hls.subtitleTracks]);
         }
       });
@@ -176,6 +195,13 @@ export default function HlsPlayer({
 
       hls.on(Hls.Events.ERROR, (_, data) => {
         console.warn("HLS event error:", data);
+        // Ignorer les erreurs de parsing de sous-titres externes (.vtt) pour ne jamais couper la vidéo
+        if (
+          data.details === Hls.ErrorDetails.LEVEL_PARSING_ERROR &&
+          (data.url?.includes(".vtt") || data.context?.type === "subtitleTrack")
+        ) {
+          return;
+        }
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -210,6 +236,9 @@ export default function HlsPlayer({
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
       setDuration(videoRef.current.duration || 0);
+      if (videoRef.current.currentTime > 0 && !videoRef.current.paused) {
+        setIsBuffering(false);
+      }
     }
   };
 
@@ -278,12 +307,13 @@ export default function HlsPlayer({
   };
 
   const handleSubtitleChange = (subIndex) => {
-    if (hlsRef.current) {
+    setSelectedSubtitle(subIndex);
+    setShowSettings(false);
+    setActiveTab("menu");
+
+    if (hlsRef.current && hlsRef.current.subtitleTracks?.length > 0) {
       hlsRef.current.subtitleTrack = subIndex;
       hlsRef.current.subtitleDisplay = subIndex >= 0;
-      setSelectedSubtitle(subIndex);
-      setShowSettings(false);
-      setActiveTab("menu");
     }
     if (videoRef.current?.textTracks) {
       for (let i = 0; i < videoRef.current.textTracks.length; i++) {
@@ -319,18 +349,31 @@ export default function HlsPlayer({
       <video
         ref={videoRef}
         poster={poster}
+        crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
         onCanPlay={() => setIsBuffering(false)}
+        onLoadedData={() => setIsBuffering(false)}
         onEnded={onEnded}
         onClick={togglePlay}
         playsInline
         style={videoFilter ? { filter: videoFilter } : undefined}
         className="w-full h-full object-contain cursor-pointer transition-[filter] duration-300"
-      />
+      >
+        {Array.isArray(externalSubtitles) &&
+          externalSubtitles.map((sub, idx) => (
+            <track
+              key={sub.url || idx}
+              kind="subtitles"
+              src={sub.url}
+              srcLang={sub.lang || "fr"}
+              label={sub.label || sub.lang || `Sous-titre ${idx + 1}`}
+            />
+          ))}
+      </video>
 
       {/* Buffering Spinner */}
       {isBuffering && isPlaying && (

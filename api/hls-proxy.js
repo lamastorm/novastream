@@ -25,27 +25,54 @@ function fetchPlaylistText(url) {
 
 export function rewritePlaylist(content, baseUrl) {
   const lines = content.split(/\r?\n/);
-  const rewritten = lines.map(line => {
+  const rewritten = [];
+
+  for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed) return line;
+    if (!trimmed) {
+      rewritten.push(line);
+      continue;
+    }
 
-    // Handle URI attributes for audio and subtitles
+    // 1. Strip #EXT-X-MEDIA:TYPE=SUBTITLES pointing directly to .vtt/.srt files
+    // (Hls.js expects an .m3u8 subtitle playlist URI; raw .vtt causes a fatal levelParsingError)
+    if (trimmed.startsWith('#EXT-X-MEDIA:') && /TYPE=SUBTITLES/i.test(trimmed)) {
+      const uriMatch = trimmed.match(/URI=["']([^"']+)["']/i);
+      if (!uriMatch || /\.(vtt|srt)(\?|$)/i.test(uriMatch[1])) {
+        continue;
+      }
+    }
+
+    // 2. Strip SUBTITLES="..." attribute from #EXT-X-STREAM-INF
+    if (trimmed.startsWith('#EXT-X-STREAM-INF:') && /SUBTITLES=/i.test(trimmed)) {
+      const cleaned = trimmed
+        .replace(/,SUBTITLES="[^"]*"/gi, '')
+        .replace(/SUBTITLES="[^"]*",?/gi, '');
+      rewritten.push(cleaned);
+      continue;
+    }
+
+    // 3. Handle URI attributes for audio and valid m3u8 tracks
     if (trimmed.includes('URI="')) {
-      return trimmed.replace(/URI=["']([^"']+)["']/g, (m, uri) => {
-        const abs = new URL(uri, baseUrl).toString();
-        return `URI="/api/hls-proxy?url=${encodeURIComponent(abs)}"`;
-      });
+      rewritten.push(
+        trimmed.replace(/URI=["']([^"']+)["']/g, (m, uri) => {
+          const abs = new URL(uri, baseUrl).toString();
+          return `URI="/api/hls-proxy?v=2&url=${encodeURIComponent(abs)}"`;
+        })
+      );
+      continue;
     }
 
-    // Pass comments and tags as is
+    // 4. Pass comments and tags as is
     if (trimmed.startsWith('#')) {
-      return line;
+      rewritten.push(line);
+      continue;
     }
 
-    // Both .m3u8 and .ts pass through the proxy so there are ZERO duplicate CORS headers
+    // 5. Both .m3u8 and .ts pass through the proxy so there are ZERO duplicate CORS headers
     const abs = new URL(trimmed, baseUrl).toString();
-    return `/api/hls-proxy?url=${encodeURIComponent(abs)}`;
-  });
+    rewritten.push(`/api/hls-proxy?v=2&url=${encodeURIComponent(abs)}`);
+  }
 
   return rewritten.join('\n');
 }

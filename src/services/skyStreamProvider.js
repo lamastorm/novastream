@@ -68,6 +68,7 @@ export const skyStreamProvider = {
         type: mediaType,
         season: String(season || 1),
         episode: String(episode || 1),
+        v: '2',
       });
       if (year) params.append('year', String(year));
 
