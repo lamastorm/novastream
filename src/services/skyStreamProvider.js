@@ -12,11 +12,24 @@ export const skyStreamProvider = {
   async search(query) {
     if (!query || !query.trim()) return [];
     try {
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query.trim())}`)}`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (Array.isArray(data.items)) return data.items;
+      }
+    } catch (e) {
+      // Fallback direct
+    }
+
+    try {
       const res = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query.trim())}`, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Accept': 'application/json',
-        }
+        },
+        signal: AbortSignal.timeout(6000),
       });
       if (!res.ok) return [];
       const data = await res.json().catch(() => ({}));

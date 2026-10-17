@@ -16,20 +16,38 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
   const query = cleanQuery(title);
 
   try {
-    // 1. Recherche du média sur SkyStream
-    const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!searchRes.ok) {
-      return { success: false, error: `Erreur recherche SkyStream (${searchRes.status})` };
+    // 1. Recherche du média sur SkyStream (avec AllOrigins pour contourner le blocage Cloudflare sur IP datacenter Vercel)
+    let items = [];
+    try {
+      const allOriginsRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`)}`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      if (allOriginsRes.ok) {
+        const searchData = await allOriginsRes.json().catch(() => ({}));
+        if (Array.isArray(searchData.items)) {
+          items = searchData.items;
+        }
+      }
+    } catch (e) {
+      console.warn('[SkyStream API] AllOrigins fallback:', e.message);
     }
 
-    const searchData = await searchRes.json().catch(() => ({}));
-    const items = Array.isArray(searchData.items) ? searchData.items : [];
+    if (items.length === 0) {
+      const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Referer': 'https://skystream.fun/',
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json().catch(() => ({}));
+        if (Array.isArray(searchData.items)) {
+          items = searchData.items;
+        }
+      }
+    }
 
     if (items.length === 0) {
       return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
@@ -72,6 +90,8 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
         'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Referer': `https://skystream.fun/${mediaType === 'tv' ? 'serie' : 'film'}/${match.id}`,
+        'Origin': 'https://skystream.fun',
+        'Accept': 'application/json, text/plain, */*',
       },
       body: JSON.stringify(playPayload),
     });
