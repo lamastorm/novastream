@@ -318,12 +318,17 @@ export const STREAMING_SERVERS = {
 
 export const SKYSTREAM_SERVER = {
   id: "skystream_direct",
-  name: "Serveur 1 (SkyStream • 0 Pub FHD Direct)",
+  name: "Serveur 1 (SkyStream • 0 Pub FHD)",
   flag: "⚡ 🇫🇷",
   badge: "⚡ SkyStream 0 Pub",
   isSkyStream: true,
-  description: "Flux Full HD direct extrait de SkyStream avec audio français, sous-titres officiels et 0 publicité.",
-  getUrl: () => "",
+  description: "Lecteur officiel SkyStream en Full HD 1080p multilingue avec choix des pistes audio, sous-titres officiels et 0 publicité.",
+  getUrl: (type, id, season = 1, episode = 1) => {
+    if (type === "movie") {
+      return `https://skystream.fun/film/${id}?play=1`;
+    }
+    return `https://skystream.fun/serie/${id}?play=1&season=${season}&episode=${episode}`;
+  },
 };
 
 export const ERODIUM_DIRECT_MOVIE_SERVER = {

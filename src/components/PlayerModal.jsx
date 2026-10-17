@@ -1070,15 +1070,7 @@ export default function PlayerModal({
             <span className="text-sm font-semibold">Synchronisation des flux vidéo HD en cours...</span>
           </div>
         ) : (activeServer?.isSkyStream || activeServer?.id === "skystream_direct") ? (
-          isSkyStreamLoading ? (
-            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
-              <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
-              <h3 className="text-base font-bold text-white">Connexion au Lecteur SkyStream...</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Extraction du flux direct 1080p FHD <strong>0 Pub</strong> pour « <strong>{title}</strong> »...
-              </p>
-            </div>
-          ) : skyStreamUrl ? (
+          skyStreamUrl ? (
             <div className="w-full h-full relative">
               <HlsPlayer
                 key={skyStreamUrl}
@@ -1096,27 +1088,16 @@ export default function PlayerModal({
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
-                <ShieldCheck className="w-7 h-7 text-amber-400" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">
-                {skyStreamError || "Titre bientôt disponible en 0 Pub"}
-              </h3>
-              <p className="text-xs text-zinc-300 mb-6 max-w-md leading-relaxed">
-                Ce titre n'a pas encore de flux direct indexé sur SkyStream. Vous pouvez basculer sur un autre lecteur ci-dessous.
-              </p>
-              {availableServers.length > 1 && (
-                <button
-                  onClick={() => {
-                    const fallback = availableServers.find((s) => s.id !== "skystream_direct") || availableServers[1];
-                    if (fallback) setSelectedServer(fallback);
-                  }}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>▶ Regarder sur le Lecteur VidMoly</span>
-                </button>
-              )}
+            <div className="w-full h-full relative">
+              <iframe
+                key={`${selectedServer.id}-${currentMedia.id}-${season}-${episode}-${iframeKey}`}
+                src={currentEmbedUrl}
+                title={title}
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                style={videoFilter ? { filter: videoFilter, transition: "filter 0.3s" } : undefined}
+                className="w-full h-full border-0 absolute inset-0"
+              />
             </div>
           )
         ) : (activeServer?.isNativeStream || activeServer?.id === "erodium_direct") ? (
