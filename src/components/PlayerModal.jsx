@@ -1632,24 +1632,13 @@ export default function PlayerModal({
               </div>
             )}
 
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               {/* Server Selectors for the active language */}
-              <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
+              <div className="flex items-center gap-2 overflow-x-auto w-full pb-1 lg:pb-0 scrollbar-none">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 mr-1 flex-shrink-0">
                   <Server className="w-3.5 h-3.5 text-orange-400" />
-                  <span>Lecteur Certifié 0 Pub :</span>
+                  <span>Lecteurs :</span>
                 </div>
-
-                {availableServers.length > 1 && (
-                  <button
-                    onClick={handleNextServer}
-                    className="text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer"
-                    title="Changer de serveur"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                    <span>⚡ Suivant</span>
-                  </button>
-                )}
 
                 {availableServers.map((server) => {
                   const isSelected = selectedServer.id === server.id;
@@ -1661,27 +1650,21 @@ export default function PlayerModal({
                         setSelectedServer(server);
                         setIframeKey((k) => k + 1);
                       }}
-                      className={`text-xs px-3 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 border flex-shrink-0 cursor-pointer ${
+                      className={`text-xs px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 border flex-shrink-0 cursor-pointer ${
                         isSelected
-                          ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 font-bold border-orange-400 scale-[1.02] ring-1 ring-white/20"
-                          : "bg-zinc-850 hover:bg-zinc-800 text-zinc-300 border-white/5 hover:border-white/15"
+                          ? "bg-erodium-gradient glow-erodium text-white font-bold border-white/20 scale-[1.02]"
+                          : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-white/10 hover:border-purple-500/40"
                       }`}
-                      title={details.description}
                     >
-                      {/* Drapeau national bien visible */}
                       <span className="text-sm">{details.flagDisplay}</span>
-
-                      {/* Nom du serveur */}
                       <span className="font-semibold">
                         {server.name.replace(/Serveur \d+ \((.*?)\)/, "$1")}
                       </span>
-
-                      {/* Badge langue précis */}
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
                           isSelected
-                            ? "bg-white/20 text-white border border-white/30"
-                            : "bg-orange-500/20 text-orange-300 border border-orange-500/30"
+                            ? "bg-black/25 text-white border border-white/25"
+                            : "bg-orange-500/15 text-orange-300 border border-orange-500/30"
                         }`}
                       >
                         {details.badge}
@@ -1690,83 +1673,7 @@ export default function PlayerModal({
                   );
                 })}
               </div>
-
-              {/* Assistance Rapide : Changer de flux ou de langue en 1 clic */}
-              <div className="flex items-center gap-2 flex-wrap text-[11px] text-zinc-300 bg-zinc-900/90 px-3 py-1.5 rounded-xl border border-white/5 w-full lg:w-auto justify-center lg:justify-end">
-                <div className="flex items-center gap-1.5 text-zinc-400">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                  <span className="hidden sm:inline">Vidéo 404 ou bloquée ?</span>
-                </div>
-                {isTV && (
-                  <button
-                    onClick={handleNextEpisode}
-                    className="px-2.5 py-0.5 rounded bg-orange-600/90 hover:bg-orange-500 text-white font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                    title={`Passer immédiatement à l'épisode suivant (${nextEpisodeLabel})`}
-                  >
-                    <SkipForward className="w-3 h-3" />
-                    <span>Épisode suivant ({nextEpisodeLabel})</span>
-                  </button>
-                )}
-                <button
-                  onClick={handleNextServer}
-                  className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 font-semibold transition-colors cursor-pointer"
-                  title="Passer au serveur miroir suivant"
-                >
-                  ⚡ Serveur suivant
-                </button>
-                {selectedLanguage === "vf" ? (
-                  <button
-                    onClick={() => handleLanguageChange("vostfr")}
-                    className="px-2.5 py-0.5 rounded bg-orange-600/80 hover:bg-orange-600 text-white font-semibold transition-colors flex items-center gap-1 cursor-pointer"
-                    title="Passer en VOSTFR sous-titré français"
-                  >
-                    <Languages className="w-3 h-3" />
-                    <span>💬 Tester en VOSTFR</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleLanguageChange("multi")}
-                    className="px-2.5 py-0.5 rounded bg-amber-600/80 hover:bg-amber-600 text-white font-semibold transition-colors flex items-center gap-1 cursor-pointer"
-                    title="Passer sur le serveur multi-langues"
-                  >
-                    <Globe className="w-3 h-3" />
-                    <span>🌐 Tester Multi / 4K</span>
-                  </button>
-                )}
-              </div>
             </div>
-
-            {/* Bandeau explicatif du lecteur actif : Audio, Sous-titres et Drapeau */}
-            {(() => {
-              const activeDetails = getServerDetails(selectedServer, currentMedia, selectedLanguage);
-              return (
-                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-white/5 text-[11px] text-zinc-300">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base">{activeDetails.flagDisplay}</span>
-                    <span className="font-bold text-white">{selectedServer.name} :</span>
-                    <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-semibold border border-orange-500/30">
-                      🔊 {activeDetails.audio}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                      💬 {activeDetails.subs}
-                    </span>
-                    {(selectedServer.badge?.includes("DoH") || selectedServer.badge?.includes("DNS")) && (
-                      <button
-                        onClick={() => setShowDnsModal(true)}
-                        className="px-2 py-0.5 rounded bg-orange-600/90 hover:bg-orange-500 text-white font-bold text-[10px] shadow-sm flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Afficher les étapes simples pour débloquer ce lecteur chez votre FAI"
-                      >
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>Contourner le blocage FAI (DNS)</span>
-                      </button>
-                    )}
-                  </div>
-                  <div className="text-zinc-400 text-[10px] hidden md:flex items-center gap-1">
-                    <span>💡 {activeDetails.description}</span>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         </>
       )}

@@ -64,11 +64,11 @@ export const getServerDetails = (server, media, selectedLanguage) => {
     return {
       flag: "⚡ 🇫🇷",
       flagDisplay: "⚡ 🇫🇷",
-      audio: "Multi-Audio VF 5.1 & VO (SkyStream)",
+      audio: "Multi-Audio VF 5.1 & VO",
       subs: "Sous-titres & Audio au choix",
-      badge: "⚡ SkyStream 0 Pub",
+      badge: "⚡ 1080p 0 Pub",
       subBadge: "1080p FHD Direct",
-      description: "Flux Full HD 1080p direct extrait de SkyStream avec audio français, sous-titres et zéro pub.",
+      description: "Flux Full HD 1080p direct avec audio français, sous-titres et zéro pub.",
     };
   }
 
@@ -318,11 +318,11 @@ export const STREAMING_SERVERS = {
 
 export const SKYSTREAM_SERVER = {
   id: "skystream_direct",
-  name: "Serveur 1 (SkyStream • 0 Pub FHD)",
+  name: "Serveur 1 (Lecteur Principal • 0 Pub FHD)",
   flag: "⚡ 🇫🇷",
-  badge: "⚡ SkyStream 0 Pub",
+  badge: "⚡ 1080p 0 Pub",
   isSkyStream: true,
-  description: "Lecteur officiel SkyStream en Full HD 1080p multilingue avec choix des pistes audio, sous-titres officiels et 0 publicité.",
+  description: "Lecteur principal Full HD 1080p multilingue avec choix des pistes audio, sous-titres officiels et 0 publicité.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
       return `https://skystream.fun/film/${id}?play=1`;

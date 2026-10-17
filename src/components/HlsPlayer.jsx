@@ -21,6 +21,7 @@ import {
   FastForward,
   X,
 } from "lucide-react";
+import { storage } from "../services/storage";
 
 const SKIP_LABELS = {
   intro: "Passer l'intro",
@@ -56,6 +57,8 @@ export default function HlsPlayer({
   const hlsRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const autoNextTriggeredRef = useRef(false);
+  const hasRestoredPositionRef = useRef(false);
+  const lastSavedWallTimeRef = useRef(0);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -65,6 +68,7 @@ export default function HlsPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [resumedFromTime, setResumedFromTime] = useState(null);
 
   // HLS Tracks
   const [qualityLevels, setQualityLevels] = useState([]);
@@ -96,7 +100,9 @@ export default function HlsPlayer({
   useEffect(() => {
     setDismissedSegmentKey(null);
     setDismissedNextBanner(false);
+    setResumedFromTime(null);
     autoNextTriggeredRef.current = false;
+    hasRestoredPositionRef.current = false;
   }, [streamUrl, tmdbId, season, episode]);
 
   // Extract tmdbId / season / episode from streamUrl as fallback if needed
@@ -119,8 +125,9 @@ export default function HlsPlayer({
         tv = true;
       }
     }
-    return { tmdbId: id, season: s || 1, episode: e || 1, isTV: tv };
-  }, [tmdbId, season, episode, isTV, mediaType, streamUrl]);
+    const fallbackId = id || (title ? title.toLowerCase().replace(/[^a-z0-9]+/g, "_") : null);
+    return { tmdbId: fallbackId, season: s || 1, episode: e || 1, isTV: tv };
+  }, [tmdbId, season, episode, isTV, mediaType, streamUrl, title]);
 
   // Fetch skip segments from TheIntroDB if not already provided by backend
   useEffect(() => {
@@ -343,12 +350,24 @@ export default function HlsPlayer({
         }
       }
 
+      const savedPos = resolvedMeta.tmdbId
+        ? storage.getPlaybackPosition(
+            resolvedMeta.tmdbId,
+            resolvedMeta.isTV ? "tv" : "movie",
+            resolvedMeta.season,
+            resolvedMeta.episode
+          )
+        : null;
+      const initialStartSec =
+        savedPos?.currentTime && savedPos.currentTime >= 5 ? savedPos.currentTime : -1;
+
       const hls = new Hls({
         enableWorker: false,
         enableWebVTT: true,
         subtitleDisplay: true,
         maxBufferLength: 60,
         maxMaxBufferLength: 120,
+        startPosition: initialStartSec,
         pLoader: ElectronHlsLoader,
         fLoader: ElectronHlsLoader,
       });
@@ -370,6 +389,18 @@ export default function HlsPlayer({
         // Subtitles
         if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
           setSubtitleTracks([...hls.subtitleTracks]);
+        }
+
+        // Restore exact saved playback position if not already applied
+        if (initialStartSec >= 5 && !hasRestoredPositionRef.current) {
+          hasRestoredPositionRef.current = true;
+          try {
+            if (Math.abs((video.currentTime || 0) - initialStartSec) > 3) {
+              video.currentTime = initialStartSec;
+            }
+            setCurrentTime(initialStartSec);
+            setResumedFromTime(initialStartSec);
+          } catch {}
         }
 
         // Attempt playback
@@ -450,6 +481,16 @@ export default function HlsPlayer({
       });
 
       return () => {
+        if (video && resolvedMeta.tmdbId && video.currentTime > 3) {
+          storage.savePlaybackPosition(
+            resolvedMeta.tmdbId,
+            resolvedMeta.isTV ? "tv" : "movie",
+            resolvedMeta.season,
+            resolvedMeta.episode,
+            video.currentTime,
+            video.duration || 0
+          );
+        }
         hls.destroy();
       };
     } else {
@@ -461,9 +502,76 @@ export default function HlsPlayer({
       video.load();
       video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
-  }, [streamUrl, preferredLanguage]);
+  }, [streamUrl, preferredLanguage, resolvedMeta.tmdbId, resolvedMeta.isTV, resolvedMeta.season, resolvedMeta.episode]);
+
+  // Auto-hide "Reprise à XX:XX" pill after 6 seconds
+  useEffect(() => {
+    if (!resumedFromTime) return;
+    const t = setTimeout(() => setResumedFromTime(null), 6500);
+    return () => clearTimeout(t);
+  }, [resumedFromTime]);
+
+  // Persist position on page unload / tab close
+  useEffect(() => {
+    const saveNow = () => {
+      const v = videoRef.current;
+      if (v && resolvedMeta.tmdbId && v.currentTime > 3) {
+        storage.savePlaybackPosition(
+          resolvedMeta.tmdbId,
+          resolvedMeta.isTV ? "tv" : "movie",
+          resolvedMeta.season,
+          resolvedMeta.episode,
+          v.currentTime,
+          v.duration || 0
+        );
+      }
+    };
+    window.addEventListener("beforeunload", saveNow);
+    return () => {
+      saveNow();
+      window.removeEventListener("beforeunload", saveNow);
+    };
+  }, [resolvedMeta.tmdbId, resolvedMeta.isTV, resolvedMeta.season, resolvedMeta.episode]);
 
   // Video Events
+  const persistCurrentPosition = (force = false) => {
+    const v = videoRef.current;
+    if (!v || !resolvedMeta.tmdbId || v.currentTime < 3) return;
+    const now = Date.now();
+    if (!force && now - lastSavedWallTimeRef.current < 2500) return;
+    lastSavedWallTimeRef.current = now;
+    storage.savePlaybackPosition(
+      resolvedMeta.tmdbId,
+      resolvedMeta.isTV ? "tv" : "movie",
+      resolvedMeta.season,
+      resolvedMeta.episode,
+      v.currentTime,
+      v.duration || 0
+    );
+  };
+
+  const handleLoadedMetadata = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    setDuration(v.duration || 0);
+    if (!hasRestoredPositionRef.current && resolvedMeta.tmdbId) {
+      const savedPos = storage.getPlaybackPosition(
+        resolvedMeta.tmdbId,
+        resolvedMeta.isTV ? "tv" : "movie",
+        resolvedMeta.season,
+        resolvedMeta.episode
+      );
+      if (savedPos?.currentTime >= 5 && (!v.duration || savedPos.currentTime < v.duration - 25)) {
+        hasRestoredPositionRef.current = true;
+        try {
+          v.currentTime = savedPos.currentTime;
+          setCurrentTime(savedPos.currentTime);
+          setResumedFromTime(savedPos.currentTime);
+        } catch {}
+      }
+    }
+  };
+
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
@@ -471,6 +579,7 @@ export default function HlsPlayer({
       if (videoRef.current.currentTime > 0 && !videoRef.current.paused) {
         setIsBuffering(false);
       }
+      persistCurrentPosition(false);
     }
   };
 
@@ -478,6 +587,7 @@ export default function HlsPlayer({
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        persistCurrentPosition(true);
       } else {
         videoRef.current.play();
       }
@@ -490,6 +600,7 @@ export default function HlsPlayer({
     if (videoRef.current) {
       videoRef.current.currentTime = seekTime;
       setCurrentTime(seekTime);
+      persistCurrentPosition(true);
     }
   };
 
@@ -583,15 +694,28 @@ export default function HlsPlayer({
         poster={poster}
         crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
         onDurationChange={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false);
+          persistCurrentPosition(true);
+        }}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
         onCanPlay={() => setIsBuffering(false)}
         onLoadedData={() => { setIsBuffering(false); handleTimeUpdate(); }}
-        onEnded={onEnded}
+        onEnded={() => {
+          if (resolvedMeta.tmdbId) {
+            storage.clearPlaybackPosition(
+              resolvedMeta.tmdbId,
+              resolvedMeta.isTV ? "tv" : "movie",
+              resolvedMeta.season,
+              resolvedMeta.episode
+            );
+          }
+          onEnded?.();
+        }}
         onClick={togglePlay}
         playsInline
         style={videoFilter ? { filter: videoFilter } : undefined}
@@ -623,22 +747,42 @@ export default function HlsPlayer({
       {!isPlaying && (
         <button
           onClick={togglePlay}
-          className="absolute z-20 p-5 sm:p-6 rounded-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all border border-orange-400/40 cursor-pointer shadow-orange-600/40"
+          className="absolute z-20 p-5 sm:p-6 rounded-full bg-erodium-gradient glow-erodium text-white shadow-2xl hover:scale-110 active:scale-95 transition-all border border-white/20 cursor-pointer"
         >
           <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-white ml-0.5" />
         </button>
       )}
 
-      {/* Floating Badge (Top Left) */}
-      <div className="absolute top-4 left-4 z-20 pointer-events-none flex items-center gap-2">
-        <span className="px-2.5 py-1 rounded-lg bg-orange-600/90 text-white font-black text-[10px] tracking-wider uppercase backdrop-blur-md shadow-lg flex items-center gap-1.5 border border-orange-400/30">
+      {/* Floating Badge (Top Left) + Resume Notification */}
+      <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2">
+        <span className="px-2.5 py-1 rounded-lg bg-erodium-gradient text-white font-black text-[10px] tracking-wider uppercase backdrop-blur-md shadow-lg flex items-center gap-1.5 border border-white/20 pointer-events-none">
           <Sparkles className="w-3 h-3 text-amber-200" />
-          <span>Erodium Natif • 0 Pub</span>
+          <span>Erodium • 0 Pub</span>
         </span>
         {isTV && (
-          <span className="px-2.5 py-1 rounded-lg bg-zinc-900/85 text-zinc-200 font-bold text-[10px] tracking-wide backdrop-blur-md border border-white/10">
+          <span className="px-2.5 py-1 rounded-lg bg-zinc-900/85 text-zinc-200 font-bold text-[10px] tracking-wide backdrop-blur-md border border-white/10 pointer-events-none">
             S{season} • Ép. {episode}
           </span>
+        )}
+        {resumedFromTime !== null && resumedFromTime >= 5 && (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-zinc-950/90 border border-orange-500/40 text-xs text-white backdrop-blur-md shadow-xl animate-fade-in">
+            <span className="text-zinc-300">
+              Reprise à <strong className="text-orange-400">{formatTime(resumedFromTime)}</strong>
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (videoRef.current) {
+                  videoRef.current.currentTime = 0;
+                  setCurrentTime(0);
+                }
+                setResumedFromTime(null);
+              }}
+              className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-bold text-orange-300 hover:text-white transition-colors cursor-pointer"
+            >
+              Recommencer
+            </button>
+          </div>
         )}
       </div>
 

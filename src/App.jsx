@@ -1742,7 +1742,10 @@ export default function App() {
       {activePlayer && (
         <ErrorBoundary
           modal
-          onReset={() => setActivePlayer(null)}
+          onReset={() => {
+            setActivePlayer(null);
+            setHistory(storage.getHistory());
+          }}
           resetLabel="Fermer le lecteur"
         >
           <PlayerModal
@@ -1750,7 +1753,10 @@ export default function App() {
             initialSeason={activePlayer.season}
             initialEpisode={activePlayer.episode}
             initialLanguage={activePlayer.language || "vf"}
-            onClose={() => setActivePlayer(null)}
+            onClose={() => {
+              setActivePlayer(null);
+              setHistory(storage.getHistory());
+            }}
           />
         </ErrorBoundary>
       )}

@@ -95,17 +95,32 @@ function MediaCard({
 
       {/* Permanent Resume Pill for History Items */}
       {hasProgress && (
-        <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-md border border-orange-500/45 shadow-lg text-white group-hover:opacity-0 transition-opacity duration-200">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
-            <span className="text-[11px] font-bold text-white truncate">
-              {isSeries ? `S${seasonNum}E${episodeNum}` : "En cours"}
+        <div className="absolute bottom-2 left-2 right-2 z-10 rounded-lg bg-black/90 backdrop-blur-md border border-orange-500/45 shadow-lg text-white group-hover:opacity-0 transition-opacity duration-200 overflow-hidden">
+          <div className="flex items-center justify-between px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
+              <span className="text-[11px] font-bold text-white truncate">
+                {isSeries ? `S${seasonNum}E${episodeNum}` : "En cours"}
+                {item.currentTime > 10
+                  ? ` · ${Math.floor(item.currentTime / 60)}:${String(
+                      Math.floor(item.currentTime % 60)
+                    ).padStart(2, "0")}`
+                  : ""}
+              </span>
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-erodium-gradient text-white flex items-center gap-1 flex-shrink-0">
+              <Play className="w-2.5 h-2.5 fill-white" />
+              Reprendre
             </span>
           </div>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-erodium-gradient text-white flex items-center gap-1 flex-shrink-0">
-            <Play className="w-2.5 h-2.5 fill-white" />
-            Reprendre
-          </span>
+          {Number(item.progress) > 0 && (
+            <div className="w-full h-1 bg-zinc-800">
+              <div
+                className="h-full bg-erodium-gradient"
+                style={{ width: `${Math.min(100, Math.max(4, Number(item.progress)))}%` }}
+              />
+            </div>
+          )}
         </div>
       )}
 
