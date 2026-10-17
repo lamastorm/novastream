@@ -16,20 +16,20 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
   const query = cleanQuery(title);
 
   try {
-    // 1. Recherche du média sur SkyStream (avec AllOrigins pour contourner le blocage Cloudflare sur IP datacenter Vercel)
+    // 1. Recherche du média sur SkyStream (via corsproxy.org pour contourner instantanément le blocage Cloudflare sur IP datacenter Vercel)
     let items = [];
     try {
-      const allOriginsRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`)}`, {
-        signal: AbortSignal.timeout(6000),
+      const proxyRes = await fetch(`https://corsproxy.org/?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`)}`, {
+        signal: AbortSignal.timeout(4000),
       });
-      if (allOriginsRes.ok) {
-        const searchData = await allOriginsRes.json().catch(() => ({}));
-        if (Array.isArray(searchData.items)) {
+      if (proxyRes.ok) {
+        const searchData = await proxyRes.json().catch(() => ({}));
+        if (Array.isArray(searchData.items) && searchData.items.length > 0) {
           items = searchData.items;
         }
       }
     } catch (e) {
-      console.warn('[SkyStream API] AllOrigins fallback:', e.message);
+      console.warn('[SkyStream API] corsproxy.org search error:', e.message);
     }
 
     if (items.length === 0) {

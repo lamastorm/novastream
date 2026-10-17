@@ -12,12 +12,12 @@ export const skyStreamProvider = {
   async search(query) {
     if (!query || !query.trim()) return [];
     try {
-      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query.trim())}`)}`, {
-        signal: AbortSignal.timeout(6000),
+      const res = await fetch(`https://corsproxy.org/?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query.trim())}`)}`, {
+        signal: AbortSignal.timeout(4000),
       });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (Array.isArray(data.items)) return data.items;
+        if (Array.isArray(data.items) && data.items.length > 0) return data.items;
       }
     } catch (e) {
       // Fallback direct
