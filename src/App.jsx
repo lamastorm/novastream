@@ -339,13 +339,34 @@ export default function App() {
     }
 
     try {
+      const cleanQ = query.trim().toLowerCase();
       const data = await catalogProvider.search({ query, category, page });
       setSearchTotalPages(data.total_pages || 1);
 
       let valid = data.results || [];
 
+      // Si le catalogue natif vérifié n'a pas trouvé de titre, fallback automatique sur TMDB universel
+      if (valid.length === 0 && page === 1) {
+        try {
+          const tmdbRes = await tmdbApi.searchMulti(cleanQ, page);
+          const rawTmdb = tmdbRes.results || [];
+          valid = rawTmdb.filter((m) => {
+            if (!m.poster_path && !m.backdrop_path) return false;
+            if (category === "movie") return m.media_type === "movie";
+            if (category === "tv") return m.media_type === "tv";
+            if (category === "anime") {
+              return (
+                m.original_language === "ja" &&
+                (m.genre_ids?.includes(16) || m.genres?.some((g) => g.id === 16))
+              );
+            }
+            return m.media_type === "movie" || m.media_type === "tv";
+          });
+          setSearchTotalPages(tmdbRes.total_pages || 1);
+        } catch {}
+      }
+
       // Smart ranking: Exact title matches and franchise prefixes first
-      const cleanQ = query.trim().toLowerCase();
       valid.sort((a, b) => {
         const aTitle = (a.title || a.name || "").toLowerCase();
         const bTitle = (b.title || b.name || "").toLowerCase();

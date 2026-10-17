@@ -167,15 +167,15 @@ export const LANGUAGE_OPTIONS = [
 
 export const VIDMOLY_VF_SERVER = {
   id: "vidmoly_vf",
-  name: "Serveur 2 (VidMoly • VF Directe)",
+  name: "Lecteur VidMoly",
   flag: "🇫🇷",
-  badge: "🇫🇷 VidMoly VF (DNS)",
-  description: "Lecteur VidMoly direct avec doublage français officiel (Nécessite DNS Sécurisé 1.1.1.1 si bloqué par votre FAI).",
+  badge: "🇫🇷 VidMoly (VF/VOSTFR)",
+  description: "Lecteur officiel VidMoly rapide avec doublage français officiel et choix VF / VOSTFR.",
   getUrl: (type, id, season = 1, episode = 1) => {
     if (type === "movie") {
-      return `https://frembed.surf/embed/movie/${id}?id=${id}`;
+      return `https://frembed.bar/embed/movie/${id}`;
     }
-    return `https://frembed.surf/embed/serie/${id}?id=${id}&sa=${season}&epi=${episode}`;
+    return `https://frembed.bar/embed/serie/${id}?sa=${season}&epi=${episode}`;
   },
 };
 
@@ -281,198 +281,28 @@ export const SMASHY_VF_SERVER = {
 
 export const STREAMING_SERVERS = {
   // ==========================================
-  // --- SERVEURS VF (100% DOUBLAGE FRANÇAIS) ---
+  // --- SERVEURS VF (DOUBLAGE FRANÇAIS) ---
   // ==========================================
   vf: [
     AUTOEMBED_VF_SERVER,
     VIDMOLY_VF_SERVER,
-    VIDMOLY_MIRROR_VF_SERVER,
+    ANYEMBED_VF_SERVER,
     VIDSRC_ME_VF_SERVER,
     VIDSRC_IN_VF_SERVER,
     TWOEMBED_VF_SERVER,
     PLAY123_VF_SERVER,
     SMASHY_VF_SERVER,
   ],
-
-  // ==========================================
-  // --- SERVEURS VOSTFR (SOUS-TITRES FRANÇAIS) ---
-  // ==========================================
   vostfr: [
-    {
-      id: "autoembed_co_vostfr",
-      name: "Serveur 1 (AutoEmbed FHD • ⚡ Sans Pub)",
-      flag: "⚡",
-      badge: "⚡ 0 Pub FHD",
-      description: "Lecteur moderne sans pub (style Domgrav), ultra fluide et rapide.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://autoembed.co/movie/tmdb/${id}`;
-        }
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
-      },
-    },
-    {
-      id: "anyembed_direct_vostfr",
-      name: "Serveur 2 (AnyEmbed FHD • Multi-STFR)",
-      flag: "💬",
-      badge: "1080p CC",
-      description: "Lecteur moderne sans coupure. Cliquez sur CC pour sélectionner les sous-titres.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
-        }
-        return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
-      },
-    },
-    {
-      id: "vidsrc_to_vostfr",
-      name: "Serveur 3 (VidSrc TO • STFR HD)",
-      flag: "💬",
-      badge: "FHD Direct",
-      description: "Lecteur éprouvé avec sous-titres intégrés.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.to/embed/movie/${id}`;
-        }
-        return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
-      },
-    },
-    {
-      id: "frembed_surf_vostfr",
-      name: "Serveur 4 (VidMoly STFR • VF/VOSTFR)",
-      flag: "🇫🇷",
-      badge: "🇫🇷 STFR",
-      description: "Sous-titres français incrustés directement dans la vidéo.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://frembed.surf/api/film.php?id=${id}`;
-        }
-        return `https://frembed.surf/api/serie.php?id=${id}&sa=${season}&epi=${episode}`;
-      },
-    },
-    {
-      id: "vidsrc_pm_vostfr",
-      name: "Serveur 5 (VidSrc PM Miroir)",
-      flag: "💬",
-      badge: "⚡ Miroir",
-      description: "Miroir direct alternatif haute vitesse.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.pm/embed/movie/${id}?sub_lang=fra`;
-        }
-        return `https://vidsrc.pm/embed/tv/${id}/${season}/${episode}?sub_lang=fra`;
-      },
-    },
-    {
-      id: "vidsrc_cc_vostfr",
-      name: "Serveur 6 (VidSrc CC v2)",
-      flag: "💬",
-      badge: "FHD STFR",
-      description: "Deuxième passerelle VidSrc v2 avec vaste couverture des animés.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.cc/v2/embed/movie/${id}`;
-        }
-        return `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
-      },
-    },
-    {
-      id: "vidsrc_in_vostfr",
-      name: "Serveur 7 (VidSrc IN Miroir)",
-      flag: "💬",
-      badge: "1080p CC",
-      description: "Miroir rapide avec paramètre de sous-titres français automatique.",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.in/embed/movie?tmdb=${id}&sub_lang=fra`;
-        }
-        return `https://vidsrc.in/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&sub_lang=fra`;
-      },
-    },
+    AUTOEMBED_VF_SERVER,
+    ANYEMBED_VF_SERVER,
+    VIDMOLY_VF_SERVER,
+    VIDSRC_ME_VF_SERVER,
   ],
-
-  // ==========================================
-  // --- SERVEURS 1080P / MULTI-LANGUES ---
-  // ==========================================
   multi: [
-    {
-      id: "autoembed_multi",
-      name: "Serveur 1 (AutoEmbed Fast 1080p)",
-      flag: "🌐",
-      badge: "🌐 1080p Direct",
-      description: "Flux fluide haute résolution sans mise en mémoire tampon",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://autoembed.co/movie/tmdb/${id}`;
-        }
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
-      },
-    },
-    {
-      id: "anyembed_multi",
-      name: "Serveur 2 (AnyEmbed • Choix 1080p / 4K)",
-      flag: "🌐",
-      badge: "🌐 1080p / 4K",
-      description: "Qualité maximale sans recompression avec pistes audio au choix",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://anyembed.xyz/embed/tmdb-movie-${id}`;
-        }
-        return `https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`;
-      },
-    },
-    {
-      id: "vidsrc_pm_multi",
-      name: "Serveur 3 (VidSrc PM 1080p)",
-      flag: "🌐",
-      badge: "🌐 1080p",
-      description: "Miroir direct 1080p haute vitesse",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.pm/embed/movie/${id}`;
-        }
-        return `https://vidsrc.pm/embed/tv/${id}/${season}/${episode}`;
-      },
-    },
-    {
-      id: "vidsrc_multi",
-      name: "Serveur 4 (VidSrc FHD Multi)",
-      flag: "🌐",
-      badge: "🌐 FHD",
-      description: "Lecteur vidéo éprouvé avec choix de langues et sous-titres",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://vidsrc.me/embed/movie?tmdb=${id}`;
-        }
-        return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`;
-      },
-    },
-    {
-      id: "twoembed_multi",
-      name: "Serveur 5 (2Embed 1080p)",
-      flag: "🌐",
-      badge: "🌐 1080p",
-      description: "Lecteur haute définition rapide",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://www.2embed.cc/embed/${id}`;
-        }
-        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
-      },
-    },
-    {
-      id: "play123_multi",
-      name: "Serveur 6 (123Embed Clean)",
-      flag: "🌐",
-      badge: "🌐 1080p",
-      description: "Miroir alternatif 1080p",
-      getUrl: (type, id, season = 1, episode = 1) => {
-        if (type === "movie") {
-          return `https://play2.123embed.net/movie/${id}`;
-        }
-        return `https://play2.123embed.net/tv/${id}/${season}/${episode}`;
-      },
-    },
+    AUTOEMBED_VF_SERVER,
+    ANYEMBED_VF_SERVER,
+    VIDMOLY_VF_SERVER,
   ],
 };
 
@@ -511,15 +341,29 @@ export const ANIME_SAMA_VF_SERVER = ERODIUM_VF_SERVER;
 export const ANIME_SAMA_VOSTFR_SERVER = ERODIUM_VOSTFR_SERVER;
 
 /**
- * Retourne la liste optimisée des serveurs pour le média spécifié :
- * - Pour les animés : place le Lecteur Erodium en #1 (Anime-Sama VF / VOSTFR), puis VidMoly
- * - Pour les films et séries classiques : place VidMoly en #1 (base) et N'AFFICHE PAS Erodium !
+ * Détecte si le code s'exécute dans l'application de bureau Electron ou sur le site web
+ */
+export const isDesktopApp = () => {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.electronAPI?.isDesktop) || window.location.protocol === "file:";
+};
+
+/**
+ * Retourne la liste des serveurs adaptés :
+ * - SUR LE SITE WEB : UNIQUEMENT le lecteur VidMoly (frembed.bar)
+ * - SUR L'APPLICATION DE BUREAU : conserve tous les lecteurs spéciaux application (Erodium Natif, Anime-Sama, etc.)
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
+  // SUR LE SITE WEB : uniquement le lecteur VidMoly !
+  if (!isDesktopApp()) {
+    return [VIDMOLY_VF_SERVER];
+  }
+
+  // SUR L'APPLICATION DE BUREAU : lecteurs spéciaux pour appli
   const mediaInfo = getMediaLanguageInfo(media);
   const baseServers = STREAMING_SERVERS[lang] || STREAMING_SERVERS.vf;
 
-  // CAS 1 : C'EST UN ANIMÉ -> Erodium (Anime-Sama VF / VOSTFR) en Lecteur #1 !
+  // CAS 1 : ANIMÉS SUR L'APPLI -> Lecteur Erodium Natif (Anime-Sama VF / VOSTFR) en #1
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
       return [
@@ -546,16 +390,13 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     media?.source === "mal" ||
     String(media?.id).startsWith("as_");
 
-  // CAS 2 : SÉRIES TV CLASSIQUES (NON-ANIMÉ)
-  // Erodium Direct est 100% réservé aux films. Pour les séries, serveurs directs TV.
+  // CAS 2 : SÉRIES SUR L'APPLI
   const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
   if (isTV) {
     return filteredBase;
   }
 
-  // CAS 3 : FILMS CLASSIQUES
-  // - Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
-  // - Serveurs miroirs et alternatifs en secours
+  // CAS 3 : FILMS SUR L'APPLI -> Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
   return [
     ERODIUM_DIRECT_MOVIE_SERVER,
     ...filteredBase,

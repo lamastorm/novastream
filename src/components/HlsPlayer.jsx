@@ -77,17 +77,33 @@ export default function HlsPlayer({
 
     setIsBuffering(true);
 
-    if (Hls.isSupported() && streamUrl.includes(".m3u8")) {
+    const resolvedStreamUrl = (streamUrl.startsWith('/api/') || streamUrl.startsWith('file:///api/'))
+      ? `https://erodium.vercel.app${streamUrl.replace(/^file:\/\//, '')}`
+      : streamUrl;
+
+    if (Hls.isSupported() && resolvedStreamUrl.includes(".m3u8")) {
+      class ElectronHlsLoader extends Hls.DefaultConfig.loader {
+        load(context, config, callbacks) {
+          if (context.url && (context.url.includes('/api/hls-proxy') || context.url.startsWith('/api/') || context.url.startsWith('file:///api/'))) {
+            const idx = context.url.indexOf('/api/');
+            context.url = 'https://erodium.vercel.app' + context.url.slice(idx);
+          }
+          super.load(context, config, callbacks);
+        }
+      }
+
       const hls = new Hls({
         enableWorker: true,
         enableWebVTT: true,
         subtitleDisplay: true,
         maxBufferLength: 60,
         maxMaxBufferLength: 120,
+        pLoader: ElectronHlsLoader,
+        fLoader: ElectronHlsLoader,
       });
       hlsRef.current = hls;
 
-      hls.loadSource(streamUrl);
+      hls.loadSource(resolvedStreamUrl);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {

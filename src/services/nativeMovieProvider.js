@@ -1,6 +1,13 @@
 // Service de résolution directe des Films et Séries en flux HLS natif
 // Fournit des flux 1080p Full HD directs sans pub, sans popup et sans iframe
 
+const getApiHost = () => {
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return 'https://erodium.vercel.app';
+  }
+  return '';
+};
+
 const cache = new Map();
 
 export const nativeMovieProvider = {
@@ -37,13 +44,17 @@ export const nativeMovieProvider = {
       if (tmdbId) queryParams.set('tmdbId', String(tmdbId));
       if (imdbId) queryParams.set('imdbId', String(imdbId));
 
-      const res = await fetch(`/api/movie?${queryParams.toString()}`);
+      const host = getApiHost();
+      const res = await fetch(`${host}/api/movie?${queryParams.toString()}`);
       if (!res.ok) {
         throw new Error(`HTTP error ${res.status}`);
       }
 
       const data = await res.json();
       if (data && data.success && data.streamUrl) {
+        if (data.streamUrl.startsWith('/api/')) {
+          data.streamUrl = `${host}${data.streamUrl}`;
+        }
         cache.set(cacheKey, data);
       }
       return data;

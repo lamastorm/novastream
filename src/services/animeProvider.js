@@ -1,6 +1,13 @@
 // Service de résolution directe des Animés en VF & VOSTFR via Anime-Sama
 // Fournit des lecteurs sans pub, sans coupure et avec le vrai doublage audio français officiel (Sibnet, Sendvid, Vidmoly)
 
+const getApiHost = () => {
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return 'https://erodium.vercel.app';
+  }
+  return '';
+};
+
 const cache = new Map();
 
 export const animeProvider = {
@@ -28,13 +35,17 @@ export const animeProvider = {
         lang: lang || 'vf',
       });
 
-      const res = await fetch(`/api/anime?${queryParams.toString()}`);
+      const host = getApiHost();
+      const res = await fetch(`${host}/api/anime?${queryParams.toString()}`);
       if (!res.ok) {
         throw new Error(`HTTP error ${res.status}`);
       }
 
       const data = await res.json();
       if (data && data.success) {
+        if (data.streamUrl && data.streamUrl.startsWith('/api/')) {
+          data.streamUrl = `${host}${data.streamUrl}`;
+        }
         cache.set(cacheKey, data);
       }
       return data;

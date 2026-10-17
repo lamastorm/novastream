@@ -1,5 +1,9 @@
-// Service de gestion du Catalogue Erodium Natif (100% Vérifié & 0 Pub)
-// Garantit qu'aucun média non disponible n'est affiché à l'utilisateur.
+const getApiHost = () => {
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return 'https://erodium.vercel.app';
+  }
+  return '';
+};
 
 const memoryCache = new Map();
 
@@ -14,7 +18,8 @@ export const catalogProvider = {
     }
 
     try {
-      const res = await fetch('/api/catalog?action=home');
+      const host = getApiHost();
+      const res = await fetch(`${host}/api/catalog?action=home`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data && data.success) {
@@ -38,13 +43,14 @@ export const catalogProvider = {
     }
 
     try {
+      const host = getApiHost();
       const params = new URLSearchParams({
         action: 'movies',
         page: String(page),
       });
       if (genre) params.set('genre', String(genre));
 
-      const res = await fetch(`/api/catalog?${params.toString()}`);
+      const res = await fetch(`${host}/api/catalog?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data && data.success) {
@@ -68,13 +74,14 @@ export const catalogProvider = {
     }
 
     try {
+      const host = getApiHost();
       const params = new URLSearchParams({
         action: 'series',
         page: String(page),
       });
       if (genre) params.set('genre', String(genre));
 
-      const res = await fetch(`/api/catalog?${params.toString()}`);
+      const res = await fetch(`${host}/api/catalog?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data && data.success) {
@@ -104,6 +111,7 @@ export const catalogProvider = {
     }
 
     try {
+      const host = getApiHost();
       const params = new URLSearchParams({
         action: 'search',
         q: cleanQ,
@@ -111,7 +119,7 @@ export const catalogProvider = {
         page: String(page),
       });
 
-      const res = await fetch(`/api/catalog?${params.toString()}`);
+      const res = await fetch(`${host}/api/catalog?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data && data.success) {
