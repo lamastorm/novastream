@@ -60,7 +60,17 @@ export const getMediaLanguageInfo = (media) => {
  * Fournit les métadonnées détaillées pour chaque serveur en fonction du média actif
  */
 export const getServerDetails = (server, media, selectedLanguage) => {
-  const mediaInfo = getMediaLanguageInfo(media);
+  if (server?.isSkyStream || server?.id === "skystream_direct") {
+    return {
+      flag: "⚡ 🇫🇷",
+      flagDisplay: "⚡ 🇫🇷",
+      audio: "Multi-Audio VF 5.1 & VO (SkyStream)",
+      subs: "Sous-titres & Audio au choix",
+      badge: "⚡ SkyStream 0 Pub",
+      subBadge: "1080p FHD Direct",
+      description: "Flux Full HD 1080p direct extrait de SkyStream avec audio français, sous-titres et zéro pub.",
+    };
+  }
 
   if (server?.isNativeStream || server?.id === "erodium_direct") {
     return {
@@ -306,9 +316,19 @@ export const STREAMING_SERVERS = {
   ],
 };
 
+export const SKYSTREAM_SERVER = {
+  id: "skystream_direct",
+  name: "Serveur 1 (SkyStream • 0 Pub FHD Direct)",
+  flag: "⚡ 🇫🇷",
+  badge: "⚡ SkyStream 0 Pub",
+  isSkyStream: true,
+  description: "Flux Full HD direct extrait de SkyStream avec audio français, sous-titres officiels et 0 publicité.",
+  getUrl: () => "",
+};
+
 export const ERODIUM_DIRECT_MOVIE_SERVER = {
   id: "erodium_direct",
-  name: "Serveur 1 (Lecteur Erodium Natif • 0 Pub FHD)",
+  name: "Serveur 2 (Lecteur Erodium Natif • 0 Pub FHD)",
   flag: "⚡",
   badge: "⚡ 0 Pub FHD",
   isNativeStream: true,
@@ -351,7 +371,7 @@ export const isDesktopApp = () => {
 /**
  * Retourne la liste des serveurs adaptés :
  * - SUR LE SITE WEB : UNIQUEMENT le lecteur VidMoly (frembed.bar)
- * - SUR L'APPLICATION DE BUREAU : conserve tous les lecteurs spéciaux application (Erodium Natif, Anime-Sama, etc.)
+ * - SUR L'APPLICATION DE BUREAU : conserve tous les lecteurs spéciaux application (SkyStream, Erodium Natif, Anime-Sama, etc.)
  */
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   // SUR LE SITE WEB : uniquement le lecteur VidMoly !
@@ -368,13 +388,13 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     if (lang === "vf") {
       return [
         ERODIUM_VF_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vf" && s.id !== "erodium_direct"),
+        ...baseServers.filter((s) => s.id !== "erodium_vf" && s.id !== "erodium_direct" && s.id !== "skystream_direct"),
       ];
     }
     if (lang === "vostfr") {
       return [
         ERODIUM_VOSTFR_SERVER,
-        ...baseServers.filter((s) => s.id !== "erodium_vostfr" && s.id !== "erodium_direct"),
+        ...baseServers.filter((s) => s.id !== "erodium_vostfr" && s.id !== "erodium_direct" && s.id !== "skystream_direct"),
       ];
     }
     return baseServers;
@@ -390,14 +410,18 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     media?.source === "mal" ||
     String(media?.id).startsWith("as_");
 
-  // CAS 2 : SÉRIES SUR L'APPLI
-  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct");
+  // CAS 2 : SÉRIES SUR L'APPLI -> SkyStream en #1
+  const filteredBase = baseServers.filter((s) => !s.isAnimeSama && s.id !== "erodium_vf" && s.id !== "erodium_direct" && s.id !== "skystream_direct");
   if (isTV) {
-    return filteredBase;
+    return [
+      SKYSTREAM_SERVER,
+      ...filteredBase,
+    ];
   }
 
-  // CAS 3 : FILMS SUR L'APPLI -> Lecteur Erodium Natif (0 Pub • 1080p FHD) en #1
+  // CAS 3 : FILMS SUR L'APPLI -> SkyStream en #1 puis Lecteur Erodium Natif
   return [
+    SKYSTREAM_SERVER,
     ERODIUM_DIRECT_MOVIE_SERVER,
     ...filteredBase,
   ];

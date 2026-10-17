@@ -40,6 +40,7 @@ import { hlsExtractor } from "../services/hlsExtractor";
 import { languageAdvisor } from "../services/languageAdvisor";
 import { animeProvider } from "../services/animeProvider";
 import { nativeMovieProvider } from "../services/nativeMovieProvider";
+import { skyStreamProvider } from "../services/skyStreamProvider";
 import { useMediaLiveViewers, liveCounter } from "../services/liveCounter";
 import HlsPlayer from "./HlsPlayer";
 import EnhancerPanel from "./EnhancerPanel";
@@ -220,6 +221,11 @@ export default function PlayerModal({
   const [nativeMovieStreamUrl, setNativeMovieStreamUrl] = useState(null);
   const [isNativeMovieLoading, setIsNativeMovieLoading] = useState(false);
   const [nativeMovieError, setNativeMovieError] = useState(null);
+
+  // État spécifique pour le scraper SkyStream (0 Pub • 1080p FHD Direct)
+  const [skyStreamUrl, setSkyStreamUrl] = useState(null);
+  const [isSkyStreamLoading, setIsSkyStreamLoading] = useState(false);
+  const [skyStreamError, setSkyStreamError] = useState(null);
 
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
@@ -471,6 +477,62 @@ export default function PlayerModal({
     episode,
   ]);
 
+  // Résolution automatique du flux pour SkyStream (0 Pub • FHD Direct)
+  useEffect(() => {
+    if (!selectedServer?.isSkyStream && selectedServer?.id !== "skystream_direct") return;
+    let isMounted = true;
+    setIsSkyStreamLoading(true);
+    setSkyStreamError(null);
+
+    const mediaTitle = currentMedia.title || currentMedia.name || "";
+    const mType = currentMedia.media_type || (currentMedia.title ? "movie" : "tv");
+    const year = currentMedia.release_date
+      ? currentMedia.release_date.split("-")[0]
+      : currentMedia.first_air_date
+      ? currentMedia.first_air_date.split("-")[0]
+      : null;
+
+    skyStreamProvider
+      .getStream({
+        title: mediaTitle,
+        year,
+        type: mType,
+        season,
+        episode,
+      })
+      .then((res) => {
+        if (!isMounted) return;
+        if (res && res.success && res.streamUrl) {
+          setSkyStreamUrl(res.streamUrl);
+          setIsSkyStreamLoading(false);
+        } else {
+          setSkyStreamUrl(null);
+          setSkyStreamError(res?.error || "Titre non répertorié sur le catalogue SkyStream.");
+          setIsSkyStreamLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setSkyStreamUrl(null);
+        setSkyStreamError(err.message || "Erreur lors de la récupération du flux SkyStream.");
+        setIsSkyStreamLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    selectedServer?.id,
+    selectedServer?.isSkyStream,
+    currentMedia.id,
+    currentMedia.title,
+    currentMedia.name,
+    currentMedia.release_date,
+    currentMedia.first_air_date,
+    season,
+    episode,
+  ]);
+
   // Register in History
   useEffect(() => {
     storage.addToHistory(
@@ -566,6 +628,7 @@ export default function PlayerModal({
 
     setDirectStreamUrl(null);
     setNativeMovieStreamUrl(null);
+    setSkyStreamUrl(null);
     setIframeKey((prev) => prev + 1);
   };
 
@@ -586,6 +649,7 @@ export default function PlayerModal({
 
     setDirectStreamUrl(null);
     setNativeMovieStreamUrl(null);
+    setSkyStreamUrl(null);
     setIframeKey((prev) => prev + 1);
   };
 
@@ -595,6 +659,7 @@ export default function PlayerModal({
     setEpisode(targetEpisode);
     setDirectStreamUrl(null);
     setNativeMovieStreamUrl(null);
+    setSkyStreamUrl(null);
     setIframeKey((prev) => prev + 1);
     setShowEpisodeDrawer(false);
   };
@@ -1004,6 +1069,56 @@ export default function PlayerModal({
             <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             <span className="text-sm font-semibold">Synchronisation des flux vidéo HD en cours...</span>
           </div>
+        ) : (activeServer?.isSkyStream || activeServer?.id === "skystream_direct") ? (
+          isSkyStreamLoading ? (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+              <h3 className="text-base font-bold text-white">Connexion au Lecteur SkyStream...</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Extraction du flux direct 1080p FHD <strong>0 Pub</strong> pour « <strong>{title}</strong> »...
+              </p>
+            </div>
+          ) : skyStreamUrl ? (
+            <div className="w-full h-full relative">
+              <HlsPlayer
+                key={skyStreamUrl}
+                streamUrl={skyStreamUrl}
+                title={title}
+                poster={
+                  currentMedia.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                    : undefined
+                }
+                onEnded={handleNextEpisode}
+                videoFilter={videoFilter}
+                preferredLanguage={selectedLanguage}
+                onVideoRef={(el) => { hlsVideoRef.current = el; }}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
+                <ShieldCheck className="w-7 h-7 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {skyStreamError || "Titre bientôt disponible en 0 Pub"}
+              </h3>
+              <p className="text-xs text-zinc-300 mb-6 max-w-md leading-relaxed">
+                Ce titre n'a pas encore de flux direct indexé sur SkyStream. Vous pouvez basculer sur un autre lecteur ci-dessous.
+              </p>
+              {availableServers.length > 1 && (
+                <button
+                  onClick={() => {
+                    const fallback = availableServers.find((s) => s.id !== "skystream_direct");
+                    if (fallback) setSelectedServer(fallback);
+                  }}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>Changer de lecteur vidéo</span>
+                </button>
+              )}
+            </div>
+          )
         ) : (activeServer?.isNativeStream || activeServer?.id === "erodium_direct") ? (
           isNativeMovieLoading ? (
             <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
