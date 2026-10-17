@@ -3,21 +3,39 @@ export const config = {
 };
 
 export default async function handler(req) {
-  const url = new URL(req.url);
-  const q = url.searchParams.get('q') || 'Game of Thrones';
-
   try {
-    const res = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(q)}`, {
+    const playPayload = {
+      id: "3450",
+      type: "tv",
+      season: 1,
+      episode: 1
+    };
+
+    const playRes = await fetch('https://skystream.fun/api/play', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
+        'Referer': 'https://skystream.fun/serie/3450',
       },
+      body: JSON.stringify(playPayload),
     });
 
-    const status = res.status;
-    const body = await res.text();
+    const playStatus = playRes.status;
+    const playData = await playRes.json();
 
-    return new Response(JSON.stringify({ status, body: body.slice(0, 300) }), {
+    let streamUrl = null;
+    if (playData.fallbackUrl && playData.fallbackUrl.includes('token=')) {
+      const token = new URL(playData.fallbackUrl, 'https://skystream.fun').searchParams.get('token');
+      if (token) {
+        const b64 = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+        const jsonStr = atob(b64);
+        const payload = JSON.parse(jsonStr);
+        streamUrl = payload.u;
+      }
+    }
+
+    return new Response(JSON.stringify({ playStatus, streamUrl, playDataKeys: Object.keys(playData) }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
