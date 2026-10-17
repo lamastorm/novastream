@@ -58,6 +58,8 @@ export default function HlsPlayer({
   const controlsTimeoutRef = useRef(null);
   const autoNextTriggeredRef = useRef(false);
   const hasRestoredPositionRef = useRef(false);
+  const hasAutoSelectedAudioRef = useRef(false);
+  const lastMediaRecoverRef = useRef(0);
   const lastSavedWallTimeRef = useRef(0);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -103,7 +105,8 @@ export default function HlsPlayer({
     setResumedFromTime(null);
     autoNextTriggeredRef.current = false;
     hasRestoredPositionRef.current = false;
-  }, [streamUrl, tmdbId, season, episode]);
+    hasAutoSelectedAudioRef.current = false;
+  }, [streamUrl, preferredLanguage, tmdbId, season, episode]);
 
   // Extract tmdbId / season / episode from streamUrl as fallback if needed
   const resolvedMeta = useMemo(() => {
@@ -362,11 +365,20 @@ export default function HlsPlayer({
         savedPos?.currentTime && savedPos.currentTime >= 5 ? savedPos.currentTime : -1;
 
       const hls = new Hls({
-        enableWorker: false,
+        enableWorker: true,
         enableWebVTT: true,
         subtitleDisplay: true,
         maxBufferLength: 60,
         maxMaxBufferLength: 120,
+        backBufferLength: 60,
+        maxBufferHole: 0.5,
+        highBufferWatchdogPeriod: 2,
+        nudgeOffset: 0.2,
+        nudgeMaxRetry: 5,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingMaxRetry: 4,
+        fragLoadingMaxRetry: 6,
+        fragLoadingRetryDelay: 800,
         startPosition: initialStartSec,
         pLoader: ElectronHlsLoader,
         fLoader: ElectronHlsLoader,
@@ -391,16 +403,11 @@ export default function HlsPlayer({
           setSubtitleTracks([...hls.subtitleTracks]);
         }
 
-        // Restore exact saved playback position if not already applied
+        // Mark saved position as restored (startPosition in Hls config already seeks cleanly)
         if (initialStartSec >= 5 && !hasRestoredPositionRef.current) {
           hasRestoredPositionRef.current = true;
-          try {
-            if (Math.abs((video.currentTime || 0) - initialStartSec) > 3) {
-              video.currentTime = initialStartSec;
-            }
-            setCurrentTime(initialStartSec);
-            setResumedFromTime(initialStartSec);
-          } catch {}
+          setCurrentTime(initialStartSec);
+          setResumedFromTime(initialStartSec);
         }
 
         // Attempt playback
@@ -420,20 +427,25 @@ export default function HlsPlayer({
       hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
         if (hls.audioTracks && hls.audioTracks.length > 0) {
           setAudioTracks([...hls.audioTracks]);
-          const langTarget = preferredLanguage === "vostfr" ? "en" : "fr";
-          let matchIdx = hls.audioTracks.findIndex(
-            (t) =>
-              t.lang?.toLowerCase().startsWith(langTarget) ||
-              t.name?.toLowerCase().includes(langTarget === "fr" ? "french" : "english") ||
-              t.name?.toLowerCase().includes(langTarget === "fr" ? "français" : "anglais")
-          );
-          // Si on cherche du français et qu'il n'y a pas de code 'fr', tester 'fre'/'fra'
-          if (matchIdx < 0 && langTarget === "fr") {
-            matchIdx = hls.audioTracks.findIndex((t) => t.lang === "fra" || t.lang === "fre");
-          }
-          if (matchIdx >= 0 && matchIdx !== hls.audioTrack) {
-            hls.audioTrack = matchIdx;
-            setSelectedAudio(matchIdx);
+          if (!hasAutoSelectedAudioRef.current) {
+            hasAutoSelectedAudioRef.current = true;
+            const langTarget = preferredLanguage === "vostfr" ? "en" : "fr";
+            let matchIdx = hls.audioTracks.findIndex(
+              (t) =>
+                t.lang?.toLowerCase().startsWith(langTarget) ||
+                t.name?.toLowerCase().includes(langTarget === "fr" ? "french" : "english") ||
+                t.name?.toLowerCase().includes(langTarget === "fr" ? "français" : "anglais")
+            );
+            // Si on cherche du français et qu'il n'y a pas de code 'fr', tester 'fre'/'fra'
+            if (matchIdx < 0 && langTarget === "fr") {
+              matchIdx = hls.audioTracks.findIndex((t) => t.lang === "fra" || t.lang === "fre");
+            }
+            if (matchIdx >= 0 && matchIdx !== hls.audioTrack) {
+              hls.audioTrack = matchIdx;
+              setSelectedAudio(matchIdx);
+            } else if (hls.audioTrack >= 0) {
+              setSelectedAudio(hls.audioTrack);
+            }
           }
         }
       });
@@ -457,7 +469,6 @@ export default function HlsPlayer({
       });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
-        console.warn("HLS event error:", data);
         // Ignorer les erreurs de parsing de sous-titres externes (.vtt) pour ne jamais couper la vidéo
         if (
           data.details === Hls.ErrorDetails.LEVEL_PARSING_ERROR &&
@@ -465,14 +476,47 @@ export default function HlsPlayer({
         ) {
           return;
         }
+
+        // Auto-recover from non-fatal buffer stalls or small timestamp holes
+        if (
+          !data.fatal &&
+          (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR ||
+            data.details === Hls.ErrorDetails.BUFFER_SEEK_OVER_HOLE)
+        ) {
+          if (video && video.buffered && video.buffered.length > 0) {
+            const cur = video.currentTime;
+            for (let i = 0; i < video.buffered.length; i++) {
+              const start = video.buffered.start(i);
+              const end = video.buffered.end(i);
+              // Jump over a small gap (< 3s) to the next buffered range
+              if (start > cur && start - cur < 3 && end > start + 0.2) {
+                try {
+                  video.currentTime = start + 0.05;
+                } catch {}
+                break;
+              }
+            }
+          }
+          return;
+        }
+
         if (data.fatal) {
+          console.warn("HLS fatal error:", data.type, data.details);
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               hls.startLoad();
               break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
+            case Hls.ErrorTypes.MEDIA_ERROR: {
+              const now = Date.now();
+              if (now - lastMediaRecoverRef.current > 3000) {
+                lastMediaRecoverRef.current = now;
+                hls.recoverMediaError();
+              } else {
+                hls.swapAudioCodec();
+                hls.recoverMediaError();
+              }
               break;
+            }
             default:
               hls.destroy();
               break;
@@ -492,6 +536,9 @@ export default function HlsPlayer({
           );
         }
         hls.destroy();
+        if (hlsRef.current === hls) {
+          hlsRef.current = null;
+        }
       };
     } else {
       if (hlsRef.current) {
@@ -554,7 +601,8 @@ export default function HlsPlayer({
     const v = videoRef.current;
     if (!v) return;
     setDuration(v.duration || 0);
-    if (!hasRestoredPositionRef.current && resolvedMeta.tmdbId) {
+    // Only seek manually in loadedmetadata for native <video> streams (HLS.js uses startPosition)
+    if (!hlsRef.current && !hasRestoredPositionRef.current && resolvedMeta.tmdbId) {
       const savedPos = storage.getPlaybackPosition(
         resolvedMeta.tmdbId,
         resolvedMeta.isTV ? "tv" : "movie",
