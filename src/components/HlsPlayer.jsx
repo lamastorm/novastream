@@ -99,24 +99,49 @@ export default function HlsPlayer({
     autoNextTriggeredRef.current = false;
   }, [streamUrl, tmdbId, season, episode]);
 
+  // Extract tmdbId / season / episode from streamUrl as fallback if needed
+  const resolvedMeta = useMemo(() => {
+    let id = tmdbId;
+    let s = season;
+    let e = episode;
+    let tv = isTV || mediaType === "tv" || mediaType === "anime";
+    if (streamUrl) {
+      const decoded = decodeURIComponent(streamUrl);
+      const idMatch = decoded.match(/\/(tv|movie)\/(\d+)/i);
+      if (idMatch) {
+        if (!id) id = idMatch[2];
+        if (idMatch[1].toLowerCase() === "tv") tv = true;
+      }
+      const seMatch = decoded.match(/\/S(\d+)\/E(\d+)\//i);
+      if (seMatch) {
+        if (!s) s = Number(seMatch[1]);
+        if (!e) e = Number(seMatch[2]);
+        tv = true;
+      }
+    }
+    return { tmdbId: id, season: s || 1, episode: e || 1, isTV: tv };
+  }, [tmdbId, season, episode, isTV, mediaType, streamUrl]);
+
   // Fetch skip segments from TheIntroDB if not already provided by backend
   useEffect(() => {
     if (Array.isArray(skipSegments) && skipSegments.length > 0) {
       setFetchedSegments(skipSegments);
       return;
     }
-    if (!tmdbId) {
+    if (!resolvedMeta.tmdbId) {
       setFetchedSegments([]);
       return;
     }
 
-    const typeNorm = isTV || mediaType === "tv" || mediaType === "anime" ? "tv" : "movie";
-    const cacheKey = `introdb_v3_${typeNorm}_${tmdbId}_${typeNorm === "tv" ? `${season}_${episode}` : "movie"}`;
+    const typeNorm = resolvedMeta.isTV ? "tv" : "movie";
+    const cacheKey = `introdb_v3_${typeNorm}_${resolvedMeta.tmdbId}_${
+      typeNorm === "tv" ? `${resolvedMeta.season}_${resolvedMeta.episode}` : "movie"
+    }`;
     try {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           setFetchedSegments(parsed);
           return;
         }
@@ -124,10 +149,10 @@ export default function HlsPlayer({
     } catch {}
 
     let cancelled = false;
-    const params = new URLSearchParams({ tmdb_id: String(tmdbId) });
+    const params = new URLSearchParams({ tmdb_id: String(resolvedMeta.tmdbId) });
     if (typeNorm === "tv") {
-      params.set("season", String(season || 1));
-      params.set("episode", String(episode || 1));
+      params.set("season", String(resolvedMeta.season));
+      params.set("episode", String(resolvedMeta.episode));
     }
 
     fetch(`https://api.theintrodb.org/v3/media?${params.toString()}`)
@@ -147,7 +172,9 @@ export default function HlsPlayer({
         }
         setFetchedSegments(segments);
         try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(segments));
+          if (segments.length > 0) {
+            sessionStorage.setItem(cacheKey, JSON.stringify(segments));
+          }
         } catch {}
       })
       .catch(() => {});
@@ -155,7 +182,7 @@ export default function HlsPlayer({
     return () => {
       cancelled = true;
     };
-  }, [skipSegments, tmdbId, mediaType, isTV, season, episode]);
+  }, [skipSegments, resolvedMeta.tmdbId, resolvedMeta.isTV, resolvedMeta.season, resolvedMeta.episode]);
 
   const effectiveSegments = useMemo(() => {
     return Array.isArray(skipSegments) && skipSegments.length > 0 ? skipSegments : fetchedSegments;
@@ -163,13 +190,18 @@ export default function HlsPlayer({
 
   // Determine currently active skip segment (intro / recap / credits / preview)
   const activeSkipSegment = useMemo(() => {
-    if (!effectiveSegments.length || duration <= 0) return null;
+    if (!effectiveSegments.length) return null;
     const currentMs = currentTime * 1000;
     for (const seg of effectiveSegments) {
       const startMs = seg.startMs ?? 0;
       const endMs = seg.endMs ?? null;
       const inStart = currentMs >= startMs;
-      const inEnd = endMs !== null ? currentMs < endMs - 500 : currentMs < duration * 1000 - 1500;
+      const inEnd =
+        endMs !== null
+          ? currentMs < endMs - 500
+          : duration > 0
+          ? currentMs < duration * 1000 - 1500
+          : true;
       if (inStart && inEnd) {
         const key = `${seg.type}_${startMs}_${endMs}`;
         if (dismissedSegmentKey === key) return null;
@@ -182,12 +214,20 @@ export default function HlsPlayer({
   // Execute skip action
   const handleSkipSegment = (seg = activeSkipSegment) => {
     if (!seg || !videoRef.current) return;
+    const isEndCredits =
+      (seg.type === "credits" || seg.type === "outro") &&
+      (seg.endMs === null || (duration > 0 && seg.endMs / 1000 >= duration - 15));
+
+    if (isEndCredits && resolvedMeta.isTV && onNextEpisode) {
+      onNextEpisode();
+      return;
+    }
+
     if (seg.endMs !== null && seg.endMs !== undefined) {
-      const targetSec = Math.min(seg.endMs / 1000, Math.max(0, duration - 0.5));
+      const maxTime = duration > 0 ? Math.max(0, duration - 0.5) : seg.endMs / 1000;
+      const targetSec = Math.min(seg.endMs / 1000, maxTime);
       videoRef.current.currentTime = targetSec;
       setCurrentTime(targetSec);
-    } else if ((seg.type === "credits" || seg.type === "outro") && isTV && onNextEpisode) {
-      onNextEpisode();
     } else if (duration > 1) {
       const targetSec = Math.max(0, duration - 1);
       videoRef.current.currentTime = targetSec;
@@ -207,16 +247,20 @@ export default function HlsPlayer({
     }
   }, [autoSkipIntro, activeSkipSegment]);
 
-  // Next Episode countdown calculation (like SkyStream: last 60s of episode, auto-triggers at 20s left)
+  // Next Episode countdown calculation (last 60s of episode or during end credits)
   const remainingSeconds = duration > 120 ? Math.max(0, Math.ceil(duration - currentTime)) : null;
+  const isDuringEndCredits =
+    activeSkipSegment?.type === "credits" &&
+    (activeSkipSegment?.endMs === null ||
+      (duration > 0 && activeSkipSegment.endMs / 1000 >= duration - 15));
+
   const showNextEpisodeCard =
-    isTV &&
+    resolvedMeta.isTV &&
     Boolean(onNextEpisode) &&
     !dismissedNextBanner &&
     duration > 120 &&
     remainingSeconds !== null &&
-    ((remainingSeconds <= 60 && remainingSeconds > 0) ||
-      (activeSkipSegment?.type === "credits" && activeSkipSegment?.endMs === null));
+    ((remainingSeconds <= 60 && remainingSeconds > 0) || isDuringEndCredits);
 
   const autoNextCountdown =
     remainingSeconds !== null ? Math.max(0, remainingSeconds - 20) : null;
@@ -539,12 +583,14 @@ export default function HlsPlayer({
         poster={poster}
         crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleTimeUpdate}
+        onDurationChange={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
         onCanPlay={() => setIsBuffering(false)}
-        onLoadedData={() => setIsBuffering(false)}
+        onLoadedData={() => { setIsBuffering(false); handleTimeUpdate(); }}
         onEnded={onEnded}
         onClick={togglePlay}
         playsInline
