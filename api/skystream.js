@@ -1,4 +1,6 @@
-import { applySecurity } from '../lib/security.js';
+export const config = {
+  runtime: 'edge',
+};
 
 function cleanQuery(str) {
   if (!str) return '';
@@ -9,68 +11,31 @@ function cleanQuery(str) {
 
 export async function resolveSkyStream({ title, year = null, type = 'movie', season = 1, episode = 1 }) {
   if (!title) {
-    return { success: false, error: 'Titre manquant' };
+    return { success: false, error: 'Paramètre title manquant' };
   }
 
   const mediaType = (type === 'tv' || type === 'series') ? 'tv' : 'movie';
   const query = cleanQuery(title);
 
   try {
-    // 1. Recherche du média sur SkyStream (via corsproxy.org pour contourner instantanément le blocage Cloudflare sur IP datacenter Vercel)
-    let items = [];
-    let proxyError = null;
-    let proxyStatus = null;
-    try {
-      const proxyRes = await fetch(`https://corsproxy.org/?url=${encodeURIComponent(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`)}`, {
-        signal: AbortSignal.timeout(4000),
-      });
-      proxyStatus = proxyRes.status;
-      if (proxyRes.ok) {
-        const searchData = await proxyRes.json().catch((err) => { proxyError = 'json_parse: ' + err.message; return {}; });
-        if (Array.isArray(searchData.items) && searchData.items.length > 0) {
-          items = searchData.items;
-        } else {
-          proxyError = 'no_items: ' + JSON.stringify(searchData);
-        }
-      } else {
-        proxyError = 'not_ok: ' + proxyRes.status;
-      }
-    } catch (e) {
-      proxyError = e.message;
+    // 1. Recherche du média sur SkyStream via Edge Runtime (bypasse Cloudflare sans 403)
+    const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Referer': 'https://skystream.fun/',
+      },
+    });
+
+    if (!searchRes.ok) {
+      return { success: false, error: `Erreur recherche SkyStream (${searchRes.status})` };
     }
 
-    let directStatus = null;
-    let directError = null;
-    if (items.length === 0) {
-      try {
-        const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Referer': 'https://skystream.fun/',
-          },
-          signal: AbortSignal.timeout(4000),
-        });
-        directStatus = searchRes.status;
-        if (searchRes.ok) {
-          const searchData = await searchRes.json().catch(() => ({}));
-          if (Array.isArray(searchData.items)) {
-            items = searchData.items;
-          }
-        } else {
-          directError = 'status ' + searchRes.status;
-        }
-      } catch (e) {
-        directError = e.message;
-      }
-    }
+    const searchData = await searchRes.json().catch(() => ({}));
+    const items = Array.isArray(searchData.items) ? searchData.items : [];
 
     if (items.length === 0) {
-      return { 
-        success: false, 
-        error: `Titre « ${title} » introuvable sur SkyStream`,
-        debug: { query, proxyStatus, proxyError, directStatus, directError }
-      };
+      return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
     }
 
     // Filtrer par type (film ou série)
@@ -110,15 +75,13 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
         'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Referer': `https://skystream.fun/${mediaType === 'tv' ? 'serie' : 'film'}/${match.id}`,
-        'Origin': 'https://skystream.fun',
-        'Accept': 'application/json, text/plain, */*',
       },
       body: JSON.stringify(playPayload),
     });
 
     if (!playRes.ok) {
       const errData = await playRes.json().catch(() => ({}));
-      return { success: false, error: errData.error || `Erreur de lecture SkyStream (${playRes.status})` };
+      return { success: false, error: errData.error || `Erreur lecture SkyStream (${playRes.status})` };
     }
 
     const data = await playRes.json();
@@ -130,14 +93,16 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
         const token = new URL(data.fallbackUrl, 'https://skystream.fun').searchParams.get('token');
         if (token) {
           const b64 = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
-          const jsonStr = Buffer.from(b64, 'base64').toString('utf8');
+          const jsonStr = typeof atob !== 'undefined'
+            ? atob(b64)
+            : Buffer.from(b64, 'base64').toString('utf8');
           const payload = JSON.parse(jsonStr);
           if (payload && payload.u && payload.u.startsWith('http')) {
             streamUrl = payload.u;
           }
         }
       } catch (e) {
-        console.warn('[SkyStream API] Erreur décodage jeton fallback:', e.message);
+        console.warn('[SkyStream Edge API] Erreur décodage jeton fallback:', e.message);
       }
     }
 
@@ -169,33 +134,33 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
   }
 }
 
-// Vercel Serverless Function Handler
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
   }
 
-  if (!applySecurity(req, res)) {
-    return;
-  }
+  const url = new URL(req.url);
+  const title = url.searchParams.get('title') || '';
+  const year = url.searchParams.get('year');
+  const type = url.searchParams.get('type') || 'movie';
+  const season = parseInt(url.searchParams.get('season'), 10) || 1;
+  const episode = parseInt(url.searchParams.get('episode'), 10) || 1;
 
-  const { title, year, type = 'movie', season = 1, episode = 1 } = req.query || {};
+  const result = await resolveSkyStream({ title, year, type, season, episode });
 
-  if (!title) {
-    return res.status(400).json({ success: false, error: 'Paramètre title manquant' });
-  }
-
-  const result = await resolveSkyStream({
-    title,
-    year,
-    type,
-    season: parseInt(season, 10) || 1,
-    episode: parseInt(episode, 10) || 1,
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+    },
   });
-
-  return res.status(200).json(result);
 }
