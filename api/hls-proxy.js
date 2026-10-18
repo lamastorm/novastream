@@ -162,12 +162,29 @@ export default async function handler(req, nodeRes) {
       /\.(ts|aac|m4s|mp4|cmfv|cmfa)(\?|$)/i.test(decodedUrl) ||
       (decodedUrl.includes('seg-') && !decodedUrl.includes('.m3u8'));
 
-    // 1. Binary video/audio segments (.ts, .aac, .m4s, .mp4) -> Zero-copy Edge stream
+    // 1. Binary video/audio segments (.ts, .aac, .m4s, .mp4)
+    // Tenter d'abord de servir depuis le cache SSD NVMe d'Oracle Cloud (1 Gbps)
     if (isBinaryChunk) {
-      const upstreamRes = await fetch(decodedUrl, {
-        headers: upstreamHeaders,
-        redirect: 'follow',
-      });
+      let upstreamRes = null;
+      try {
+        const oracleRes = await fetch(
+          `http://141.145.199.149/erodium-stream/hls?url=${encodeURIComponent(decodedUrl)}`,
+          {
+            headers: upstreamHeaders,
+            signal: AbortSignal.timeout(4500),
+          }
+        );
+        if (oracleRes.ok) {
+          upstreamRes = oracleRes;
+        }
+      } catch {}
+
+      if (!upstreamRes) {
+        upstreamRes = await fetch(decodedUrl, {
+          headers: upstreamHeaders,
+          redirect: 'follow',
+        });
+      }
 
       let contentType = 'video/mp2t';
       if (decodedUrl.includes('.aac')) contentType = 'audio/aac';

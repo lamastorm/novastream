@@ -78,6 +78,7 @@ async function fetchSkipSegments({ tmdbId, type, season, episode }) {
 const searchCache = new Map();
 const streamCache = new Map();
 const STREAM_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const ORACLE_BASE = 'http://141.145.199.149/erodium-stream';
 
 export async function resolveSkyStream({ title, year = null, type = 'movie', season = 1, episode = 1, tmdbId = null }) {
   if (!title) {
@@ -92,6 +93,32 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
   const cachedStream = streamCache.get(fullStreamKey);
   if (cachedStream && Date.now() - cachedStream.ts < STREAM_CACHE_TTL) {
     return cachedStream.data;
+  }
+
+  // 1. Tenter la résolution ultra-rapide via le serveur Oracle Cloud (cache NVMe + préchargeur)
+  try {
+    const oParams = new URLSearchParams({
+      title,
+      type: mediaType,
+      season: String(season || 1),
+      episode: String(episode || 1),
+    });
+    if (year) oParams.append('year', String(year));
+    if (tmdbId) oParams.append('tmdbId', String(tmdbId));
+
+    const oRes = await fetch(`${ORACLE_BASE}/resolve?${oParams.toString()}`, {
+      signal: AbortSignal.timeout(3500),
+    });
+    if (oRes.ok) {
+      const oData = await oRes.json();
+      if (oData && oData.success && oData.streamUrl) {
+        if (streamCache.size > 500) streamCache.clear();
+        streamCache.set(fullStreamKey, { ts: Date.now(), data: oData });
+        return oData;
+      }
+    }
+  } catch (err) {
+    // Fallback transparent direct
   }
 
   try {
