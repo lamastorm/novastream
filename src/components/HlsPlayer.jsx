@@ -67,6 +67,7 @@ export default function HlsPlayer({
   const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bufferedEnd, setBufferedEnd] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [playbackRate, setPlaybackRate] = useState(1);
@@ -103,6 +104,7 @@ export default function HlsPlayer({
     setDismissedSegmentKey(null);
     setDismissedNextBanner(false);
     setResumedFromTime(null);
+    setBufferedEnd(0);
     autoNextTriggeredRef.current = false;
     hasRestoredPositionRef.current = false;
     hasAutoSelectedAudioRef.current = false;
@@ -368,13 +370,21 @@ export default function HlsPlayer({
         enableWorker: true,
         enableWebVTT: true,
         subtitleDisplay: true,
-        maxBufferLength: 60,
-        maxMaxBufferLength: 120,
-        backBufferLength: 60,
+        // Preload aggressively while watching AND while paused (up to 15-30 min / 400 MB ahead)
+        maxBufferLength: 900,
+        maxMaxBufferLength: 1800,
+        maxBufferSize: 400 * 1000 * 1000,
+        backBufferLength: 90,
+        startFragPrefetch: true,
         maxBufferHole: 0.5,
         highBufferWatchdogPeriod: 2,
         nudgeOffset: 0.2,
         nudgeMaxRetry: 5,
+        // Prevent sudden ABR quality drops and resolution-switch stutters
+        capLevelToPlayerSize: false,
+        abrEwmaDefaultEstimate: 10000000,
+        abrBandWidthFactor: 0.98,
+        abrBandWidthUpFactor: 0.5,
         manifestLoadingMaxRetry: 4,
         levelLoadingMaxRetry: 4,
         fragLoadingMaxRetry: 6,
@@ -397,6 +407,24 @@ export default function HlsPlayer({
           bitrate: Math.round(l.bitrate / 1000),
         }));
         setQualityLevels(levels);
+
+        // Lock to highest Full HD / HD quality (e.g. 1080p) by default so quality never drops or stutters mid-stream
+        if (levels.length > 0) {
+          let bestIdx = 0;
+          for (let i = 1; i < levels.length; i++) {
+            const cur = levels[i];
+            const best = levels[bestIdx];
+            if (
+              (cur.height || 0) > (best.height || 0) ||
+              ((cur.height || 0) === (best.height || 0) && (cur.bitrate || 0) > (best.bitrate || 0))
+            ) {
+              bestIdx = i;
+            }
+          }
+          hls.currentLevel = bestIdx;
+          hls.loadLevel = bestIdx;
+          setSelectedQuality(bestIdx);
+        }
 
         // Subtitles
         if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
@@ -422,6 +450,21 @@ export default function HlsPlayer({
 
       hls.on(Hls.Events.FRAG_BUFFERED, () => {
         setIsBuffering(false);
+        if (video && video.buffered && video.buffered.length > 0) {
+          const cur = video.currentTime || 0;
+          let end = 0;
+          for (let i = 0; i < video.buffered.length; i++) {
+            const bStart = video.buffered.start(i);
+            const bEnd = video.buffered.end(i);
+            if (bStart <= cur + 2 && bEnd >= cur) {
+              end = Math.max(end, bEnd);
+            }
+          }
+          if (!end) {
+            end = video.buffered.end(video.buffered.length - 1);
+          }
+          setBufferedEnd(end);
+        }
       });
 
       hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
@@ -465,7 +508,11 @@ export default function HlsPlayer({
       });
 
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
-        setSelectedQuality(data.level);
+        if (hls.autoLevelEnabled) {
+          setSelectedQuality(-1);
+        } else {
+          setSelectedQuality(data.level);
+        }
       });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
@@ -597,6 +644,24 @@ export default function HlsPlayer({
     );
   };
 
+  const updateBufferedProgress = () => {
+    const v = videoRef.current;
+    if (!v || !v.buffered || v.buffered.length === 0) return;
+    const cur = v.currentTime || 0;
+    let end = 0;
+    for (let i = 0; i < v.buffered.length; i++) {
+      const bStart = v.buffered.start(i);
+      const bEnd = v.buffered.end(i);
+      if (bStart <= cur + 2 && bEnd >= cur) {
+        end = Math.max(end, bEnd);
+      }
+    }
+    if (!end) {
+      end = v.buffered.end(v.buffered.length - 1);
+    }
+    setBufferedEnd(end);
+  };
+
   const handleLoadedMetadata = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -627,6 +692,7 @@ export default function HlsPlayer({
       if (videoRef.current.currentTime > 0 && !videoRef.current.paused) {
         setIsBuffering(false);
       }
+      updateBufferedProgress();
       persistCurrentPosition(false);
     }
   };
@@ -635,6 +701,12 @@ export default function HlsPlayer({
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        // Keep HLS downloading segments in the background even while paused
+        if (hlsRef.current) {
+          try {
+            hlsRef.current.startLoad();
+          } catch {}
+        }
         persistCurrentPosition(true);
       } else {
         videoRef.current.play();
@@ -741,12 +813,19 @@ export default function HlsPlayer({
         ref={videoRef}
         poster={poster}
         crossOrigin="anonymous"
+        preload="auto"
         onTimeUpdate={handleTimeUpdate}
+        onProgress={updateBufferedProgress}
         onLoadedMetadata={handleLoadedMetadata}
         onDurationChange={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => {
           setIsPlaying(false);
+          if (hlsRef.current) {
+            try {
+              hlsRef.current.startLoad();
+            } catch {}
+          }
           persistCurrentPosition(true);
         }}
         onWaiting={() => setIsBuffering(true)}
@@ -801,15 +880,28 @@ export default function HlsPlayer({
         </button>
       )}
 
-      {/* Floating Badge (Top Left) + Resume Notification */}
+      {/* Floating Badge (Top Left) + Quality & Buffer Status + Resume Notification */}
       <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2">
         <span className="px-2.5 py-1 rounded-lg bg-erodium-gradient text-white font-black text-[10px] tracking-wider uppercase backdrop-blur-md shadow-lg flex items-center gap-1.5 border border-white/20 pointer-events-none">
           <Sparkles className="w-3 h-3 text-amber-200" />
           <span>Erodium • 0 Pub</span>
         </span>
+        {qualityLevels.length > 0 && (
+          <span className="px-2 py-1 rounded-lg bg-zinc-900/85 text-amber-300 font-extrabold text-[10px] tracking-wide backdrop-blur-md border border-amber-500/30 pointer-events-none">
+            {selectedQuality >= 0 && qualityLevels[selectedQuality]?.height
+              ? `${qualityLevels[selectedQuality].height}p HD`
+              : "Auto HD"}
+          </span>
+        )}
         {isTV && (
           <span className="px-2.5 py-1 rounded-lg bg-zinc-900/85 text-zinc-200 font-bold text-[10px] tracking-wide backdrop-blur-md border border-white/10 pointer-events-none">
             S{season} • Ép. {episode}
+          </span>
+        )}
+        {bufferedEnd - currentTime >= 5 && (showControls || !isPlaying) && (
+          <span className="px-2.5 py-1 rounded-lg bg-zinc-900/85 text-emerald-300 font-bold text-[10px] tracking-wide backdrop-blur-md border border-emerald-500/25 flex items-center gap-1.5 pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>+{formatTime(Math.max(0, bufferedEnd - currentTime))} préchargé</span>
           </span>
         )}
         {resumedFromTime !== null && resumedFromTime >= 5 && (
@@ -917,8 +1009,26 @@ export default function HlsPlayer({
           showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
-        {/* Progress Bar (Seekbar) with Intro/Credits Segment Markers */}
-        <div className="relative flex items-center w-full">
+        {/* Progress Bar (Seekbar) with Live Buffered Preload Bar & Intro/Credits Markers */}
+        <div className="relative flex items-center w-full h-3 group/seek">
+          {/* Base Track */}
+          <div className="absolute inset-x-0 h-1.5 group-hover/seek:h-2.5 bg-zinc-800/90 rounded-full overflow-hidden transition-all pointer-events-none">
+            {/* Buffered (Preloaded) Bar */}
+            {duration > 0 && bufferedEnd > 0 && (
+              <div
+                style={{ width: `${Math.min(100, (bufferedEnd / duration) * 100)}%` }}
+                className="absolute inset-y-0 left-0 bg-white/30 transition-[width] duration-300 rounded-full"
+              />
+            )}
+            {/* Played Bar */}
+            {duration > 0 && (
+              <div
+                style={{ width: `${Math.min(100, (currentTime / duration) * 100)}%` }}
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 via-amber-500 to-fuchsia-500 rounded-full"
+              />
+            )}
+          </div>
+
           {duration > 0 &&
             effectiveSegments.map((seg, idx) => {
               const startSec = Math.max(0, (seg.startMs ?? 0) / 1000);
@@ -931,7 +1041,7 @@ export default function HlsPlayer({
                   key={`${seg.type}_${idx}`}
                   title={SKIP_LABELS[seg.type] || seg.type}
                   style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                  className="absolute h-1.5 rounded-full bg-amber-400/75 pointer-events-none z-10"
+                  className="absolute h-1.5 group-hover/seek:h-2.5 rounded-full bg-amber-300/85 pointer-events-none z-10 transition-all"
                 />
               );
             })}
@@ -939,9 +1049,10 @@ export default function HlsPlayer({
             type="range"
             min={0}
             max={duration || 100}
+            step="0.1"
             value={currentTime}
             onChange={handleSeek}
-            className="relative w-full h-1.5 bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-orange-500 hover:h-2.5 transition-all"
+            className="relative z-20 w-full h-3 bg-transparent rounded-lg appearance-none cursor-pointer accent-orange-500"
           />
         </div>
 

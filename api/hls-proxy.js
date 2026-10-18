@@ -2,8 +2,20 @@ import https from 'https';
 import http from 'http';
 import { applyHlsSecurity } from '../lib/security.js';
 
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 64 });
-const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 64 });
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 128,
+  maxFreeSockets: 32,
+  timeout: 15000,
+});
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 128,
+  maxFreeSockets: 32,
+  timeout: 15000,
+});
 
 function getRefererForUrl(url) {
   if (url.includes('finepulfe.xyz') || url.includes('skystream')) {
@@ -29,6 +41,7 @@ function fetchPlaylistText(url, redirectsLeft = 5) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': '*/*',
+        'Connection': 'keep-alive',
         'Referer': getRefererForUrl(url)
       }
     }, res => {
@@ -53,7 +66,10 @@ function streamBinaryWithRedirects(url, reqHeaders, res, contentType, redirectsL
   const clientReq = client.get(url, {
     agent: getAgent(url),
     timeout: 15000,
-    headers: reqHeaders
+    headers: {
+      ...reqHeaders,
+      'Connection': 'keep-alive',
+    }
   }, (clientRes) => {
     if ([301, 302, 303, 307, 308].includes(clientRes.statusCode) && clientRes.headers.location && redirectsLeft > 0) {
       clientRes.resume();
@@ -64,7 +80,9 @@ function streamBinaryWithRedirects(url, reqHeaders, res, contentType, redirectsL
     const outHeaders = {
       'Content-Type': contentType,
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+      'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800, immutable',
+      'CDN-Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      'Vercel-CDN-Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
       'Accept-Ranges': 'bytes'
     };
     if (clientRes.headers['content-length']) {
