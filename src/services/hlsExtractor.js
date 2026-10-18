@@ -7,7 +7,11 @@ export const hlsExtractor = {
   // Résout un flux direct pour un film ou une série
   resolveDirectStream: async (media, season = 1, episode = 1) => {
     try {
-      const token = (localStorage.getItem("novastream_debrid_token") || "").trim();
+      const token = (
+        localStorage.getItem("erodium_debrid_token") ||
+        localStorage.getItem("novastream_debrid_token") ||
+        ""
+      ).trim();
       
       // 1. Vérifier si un token Debrid est configuré
       if (!token) {

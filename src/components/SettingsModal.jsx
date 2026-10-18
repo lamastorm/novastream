@@ -22,6 +22,13 @@ export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
   );
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  const [debridToken, setDebridToken] = useState(
+    localStorage.getItem("erodium_debrid_token") ||
+    localStorage.getItem("novastream_debrid_token") ||
+    ""
+  );
+  const [savedDebridSuccess, setSavedDebridSuccess] = useState(false);
+
   const handleSaveKey = (e) => {
     e.preventDefault();
     setCustomApiKey(apiKey);
@@ -32,6 +39,22 @@ export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
       setSavedSuccess(false);
       window.location.reload();
     }, 1000);
+  };
+
+  const handleSaveDebrid = (e) => {
+    e.preventDefault();
+    localStorage.setItem("erodium_debrid_token", debridToken.trim());
+    localStorage.setItem("novastream_debrid_token", debridToken.trim());
+    setSavedDebridSuccess(true);
+    setTimeout(() => {
+      setSavedDebridSuccess(false);
+    }, 1500);
+  };
+
+  const handleClearDebrid = () => {
+    setDebridToken("");
+    localStorage.removeItem("erodium_debrid_token");
+    localStorage.removeItem("novastream_debrid_token");
   };
 
   const [isTvMode, setIsTvMode] = useState(() => deviceAdvisor.getTvMode());
@@ -126,6 +149,68 @@ export default function SettingsModal({ onClose, onDataCleared, onOpenDmca }) {
             <span>Obtenir une clé gratuite sur themoviedb.org</span>
             <ExternalLink className="w-3 h-3" />
           </a>
+        </div>
+
+        {/* Real-Debrid / AllDebrid Section */}
+        <div className="space-y-2 pt-4 border-t border-white/5">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs uppercase font-bold text-amber-400">
+              ⚡ Débridage Direct 4K / 1080p (Real-Debrid)
+            </label>
+            {debridToken && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                Connecté
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            Permet de débrider instantanément n'importe quel film ou série en flux direct ultra-rapide (1080p/4K sans pub, sans iframe, multipistes audio VF/VOSTFR).
+          </p>
+
+          <form onSubmit={handleSaveDebrid} className="flex gap-2">
+            <input
+              type="password"
+              placeholder="Collez votre clé API Real-Debrid ici..."
+              value={debridToken}
+              onChange={(e) => setDebridToken(e.target.value)}
+              className="flex-1 bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-md shadow-amber-600/30"
+            >
+              {savedDebridSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Enregistré</span>
+                </>
+              ) : (
+                <span>Sauvegarder</span>
+              )}
+            </button>
+            {debridToken && (
+              <button
+                type="button"
+                onClick={handleClearDebrid}
+                title="Supprimer la clé"
+                className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-rose-400 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </form>
+
+          <div className="flex items-center gap-3 text-[11px]">
+            <a
+              href="https://real-debrid.com/apitoken"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-amber-400 hover:underline"
+            >
+              <span>Obtenir ma clé API sur real-debrid.com/apitoken</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
 
 
