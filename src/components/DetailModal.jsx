@@ -20,6 +20,7 @@ import {
 import { tmdbApi, IMAGE_BASE_URL } from "../api/tmdb";
 import { languageAdvisor } from "../services/languageAdvisor";
 import { storage } from "../services/storage";
+import { skyStreamProvider } from "../services/skyStreamProvider";
 
 const safeGetYear = (dateStr) => {
   if (!dateStr) return "";
@@ -305,6 +306,21 @@ export default function DetailModal({
     onPlay(targetMedia, seasonNum, episodeNum, isNoVF ? "vostfr" : selectedLang);
   };
 
+  // Prefetch the target episode stream & .m3u8 playlist as soon as the Series/Movie page opens
+  useEffect(() => {
+    if (!title || isAnimeSamaSource) return;
+    const targetSeason = isTV ? (hasHistoryResume ? resumeSeason : selectedSeason || 1) : 1;
+    const targetEpisode = isTV ? (hasHistoryResume ? resumeEpisode : 1) : 1;
+    skyStreamProvider.prefetchStream({
+      title,
+      year,
+      type: isTV ? "tv" : "movie",
+      season: targetSeason,
+      episode: targetEpisode,
+      tmdbId: details?.id || activeMedia?.id,
+    });
+  }, [title, year, isTV, hasHistoryResume, resumeSeason, resumeEpisode, selectedSeason, details?.id, activeMedia?.id, isAnimeSamaSource]);
+
   const handleShare = () => {
     try {
       navigator.clipboard.writeText(window.location.href);
@@ -542,6 +558,18 @@ export default function DetailModal({
                     return (
                       <div
                         key={ep.id || ep.episode_number}
+                        onMouseEnter={() => {
+                          if (!isAnimeSamaSource && title) {
+                            skyStreamProvider.prefetchStream({
+                              title,
+                              year,
+                              type: "tv",
+                              season: selectedSeason,
+                              episode: ep.episode_number,
+                              tmdbId: details?.id || activeMedia?.id,
+                            });
+                          }
+                        }}
                         onClick={() => launchPlay(selectedSeason, ep.episode_number)}
                         className={`group rounded-xl overflow-hidden bg-[#0d0d11] transition-all duration-300 cursor-pointer hover:scale-[1.025] flex flex-col ${
                           isHighlighted

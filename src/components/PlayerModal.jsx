@@ -510,6 +510,21 @@ export default function PlayerModal({
           setSkyStreamSubtitles(Array.isArray(res.subtitles) ? res.subtitles : []);
           setSkyStreamSkipSegments(Array.isArray(res.skipSegments) ? res.skipSegments : []);
           setIsSkyStreamLoading(false);
+
+          // Précharger automatiquement l'épisode suivant (N+1) en tâche de fond après 4s
+          if (mType === "tv") {
+            setTimeout(() => {
+              if (!isMounted) return;
+              skyStreamProvider.prefetchStream({
+                title: mediaTitle,
+                year,
+                type: "tv",
+                season,
+                episode: (parseInt(episode, 10) || 1) + 1,
+                tmdbId: currentMedia.id,
+              });
+            }, 4000);
+          }
         } else {
           setSkyStreamUrl(null);
           setSkyStreamSubtitles([]);

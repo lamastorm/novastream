@@ -1,21 +1,8 @@
-import https from 'https';
-import http from 'http';
-import { applyHlsSecurity } from '../lib/security.js';
+export const config = {
+  runtime: 'edge',
+};
 
-const httpsAgent = new https.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 30000,
-  maxSockets: 128,
-  maxFreeSockets: 32,
-  timeout: 15000,
-});
-const httpAgent = new http.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 30000,
-  maxSockets: 128,
-  maxFreeSockets: 32,
-  timeout: 15000,
-});
+const BLOCKED_UA = /python-requests|aiohttp|scrapy|sqlmap|nikto|wpscan|go-http-client|postmanruntime|insomnia|curl\/|wget\/|libwww-perl|masscan|zgrab/i;
 
 function getRefererForUrl(url) {
   if (url.includes('finepulfe.xyz') || url.includes('skystream')) {
@@ -24,86 +11,22 @@ function getRefererForUrl(url) {
   return 'https://papadustream.club/';
 }
 
-function getClient(url) {
-  return url.startsWith('http://') ? http : https;
-}
-
-function getAgent(url) {
-  return url.startsWith('http://') ? httpAgent : httpsAgent;
-}
-
-function fetchPlaylistText(url, redirectsLeft = 5) {
-  return new Promise((resolve, reject) => {
-    const client = getClient(url);
-    const req = client.get(url, {
-      agent: getAgent(url),
-      timeout: 12000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': '*/*',
-        'Connection': 'keep-alive',
-        'Referer': getRefererForUrl(url)
-      }
-    }, res => {
-      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
-        res.resume();
-        const nextUrl = new URL(res.headers.location, url).toString();
-        return fetchPlaylistText(nextUrl, redirectsLeft - 1).then(resolve).catch(reject);
-      }
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => resolve({ status: res.statusCode, body: d, finalUrl: url }));
-    });
-    req.on('timeout', () => {
-      req.destroy(new Error('Timeout fetching playlist'));
-    });
-    req.on('error', reject);
-  });
-}
-
-function streamBinaryWithRedirects(url, reqHeaders, res, contentType, redirectsLeft = 5) {
-  const client = getClient(url);
-  const clientReq = client.get(url, {
-    agent: getAgent(url),
-    timeout: 15000,
-    headers: {
-      ...reqHeaders,
-      'Connection': 'keep-alive',
-    }
-  }, (clientRes) => {
-    if ([301, 302, 303, 307, 308].includes(clientRes.statusCode) && clientRes.headers.location && redirectsLeft > 0) {
-      clientRes.resume();
-      const nextUrl = new URL(clientRes.headers.location, url).toString();
-      return streamBinaryWithRedirects(nextUrl, reqHeaders, res, contentType, redirectsLeft - 1);
-    }
-
-    const outHeaders = {
-      'Content-Type': contentType,
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800, immutable',
-      'CDN-Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
-      'Vercel-CDN-Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
-      'Accept-Ranges': 'bytes'
-    };
-    if (clientRes.headers['content-length']) {
-      outHeaders['Content-Length'] = clientRes.headers['content-length'];
-    }
-    if (clientRes.headers['content-range']) {
-      outHeaders['Content-Range'] = clientRes.headers['content-range'];
-    }
-
-    res.writeHead(clientRes.statusCode || 200, outHeaders);
-    clientRes.pipe(res);
-  });
-
-  clientReq.on('timeout', () => {
-    clientReq.destroy();
-    if (!res.headersSent) res.status(504).send('Gateway Timeout');
-  });
-
-  clientReq.on('error', (e) => {
-    if (!res.headersSent) res.status(502).send(e.message);
-  });
+function isSafeTargetUrl(targetUrl) {
+  if (!targetUrl || (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://'))) {
+    return false;
+  }
+  const lower = targetUrl.toLowerCase();
+  if (
+    lower.includes('localhost') ||
+    lower.includes('127.0.0.1') ||
+    lower.includes('192.168.') ||
+    lower.includes('10.') ||
+    lower.includes('169.254.') ||
+    lower.includes('metadata.google')
+  ) {
+    return false;
+  }
+  return true;
 }
 
 export function rewritePlaylist(content, baseUrl) {
@@ -151,7 +74,7 @@ export function rewritePlaylist(content, baseUrl) {
       continue;
     }
 
-    // 5. Both .m3u8 and .ts pass through the proxy so there are ZERO duplicate CORS headers
+    // 5. Both .m3u8 and .ts pass through the Edge proxy
     const abs = new URL(trimmed, baseUrl).toString();
     rewritten.push(`/api/hls-proxy?v=2&url=${encodeURIComponent(abs)}`);
   }
@@ -159,73 +82,162 @@ export function rewritePlaylist(content, baseUrl) {
   return rewritten.join('\n');
 }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', '*');
+function sendCompatResponse(nodeRes, status, headers, body) {
+  if (!nodeRes) {
+    return new Response(body, { status, headers });
+  }
+  for (const [k, v] of Object.entries(headers)) {
+    if (v !== undefined && v !== null) nodeRes.setHeader(k, v);
+  }
+  nodeRes.statusCode = status;
+  if (body && typeof body.getReader === 'function') {
+    const reader = body.getReader();
+    const pump = () =>
+      reader.read().then(({ done, value }) => {
+        if (done) {
+          nodeRes.end();
+          return;
+        }
+        nodeRes.write(Buffer.from(value));
+        return pump();
+      }).catch(() => nodeRes.end());
+    return pump();
+  }
+  nodeRes.end(body || '');
+}
+
+export default async function handler(req, nodeRes) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    'Access-Control-Allow-Headers': '*',
+    'X-Content-Type-Options': 'nosniff',
+  };
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return sendCompatResponse(nodeRes, 200, corsHeaders, null);
   }
 
-  const { url } = req.query || {};
-  if (!url) {
-    return res.status(400).send('Paramètre url requis');
+  const getHeader = (name) =>
+    typeof req.headers?.get === 'function'
+      ? req.headers.get(name)
+      : req.headers?.[name.toLowerCase()];
+
+  const ua = getHeader('user-agent') || '';
+  if (BLOCKED_UA.test(ua)) {
+    return sendCompatResponse(nodeRes, 403, corsHeaders, 'Accès refusé.');
+  }
+
+  let rawUrlParam = null;
+  if (req.query && req.query.url) {
+    rawUrlParam = req.query.url;
+  } else if (req.url) {
+    const parsed = new URL(req.url, 'https://erodium.vercel.app');
+    rawUrlParam = parsed.searchParams.get('url');
+  }
+
+  if (!rawUrlParam) {
+    return sendCompatResponse(nodeRes, 400, corsHeaders, 'Paramètre url requis');
   }
 
   try {
-    const decodedUrl = decodeURIComponent(url);
-
-    if (!applyHlsSecurity(req, res, decodedUrl)) {
-      return;
+    const decodedUrl = decodeURIComponent(rawUrlParam);
+    if (!isSafeTargetUrl(decodedUrl)) {
+      return sendCompatResponse(nodeRes, 400, corsHeaders, 'URL invalide');
     }
 
-    // 1. If it's a binary media chunk (.ts, .aac, .m4s, .mp4)
+    const upstreamHeaders = {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Referer': getRefererForUrl(decodedUrl),
+    };
+
+    const rangeHeader = getHeader('range');
+    if (rangeHeader) {
+      upstreamHeaders['Range'] = rangeHeader;
+    }
+
     const isBinaryChunk =
       /\.(ts|aac|m4s|mp4|cmfv|cmfa)(\?|$)/i.test(decodedUrl) ||
       (decodedUrl.includes('seg-') && !decodedUrl.includes('.m3u8'));
 
+    // 1. Binary video/audio segments (.ts, .aac, .m4s, .mp4) -> Zero-copy Edge stream
     if (isBinaryChunk) {
-      const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': '*/*',
-        'Referer': getRefererForUrl(decodedUrl)
-      };
-      if (req.headers['range']) {
-        headers['Range'] = req.headers['range'];
-      }
+      const upstreamRes = await fetch(decodedUrl, {
+        headers: upstreamHeaders,
+        redirect: 'follow',
+      });
 
       let contentType = 'video/mp2t';
       if (decodedUrl.includes('.aac')) contentType = 'audio/aac';
       if (decodedUrl.includes('.m4s') || decodedUrl.includes('.mp4')) contentType = 'video/mp4';
 
-      streamBinaryWithRedirects(decodedUrl, headers, res, contentType, 5);
-      return;
+      const outHeaders = {
+        ...corsHeaders,
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800, immutable',
+        'CDN-Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        'Vercel-CDN-Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        'Accept-Ranges': 'bytes',
+      };
+
+      const cl = upstreamRes.headers.get('content-length');
+      if (cl) outHeaders['Content-Length'] = cl;
+      const cr = upstreamRes.headers.get('content-range');
+      if (cr) outHeaders['Content-Range'] = cr;
+
+      return sendCompatResponse(nodeRes, upstreamRes.status || 200, outHeaders, upstreamRes.body);
     }
 
-    // 1b. If it's a VTT subtitle file
+    // 2. VTT / SRT Subtitles
     if (decodedUrl.includes('.vtt') || decodedUrl.includes('.srt')) {
-      const result = await fetchPlaylistText(decodedUrl);
-      if (result.status !== 200) {
-        return res.status(result.status).send('Erreur récupération sous-titres');
+      const upstreamRes = await fetch(decodedUrl, {
+        headers: upstreamHeaders,
+        redirect: 'follow',
+      });
+      if (!upstreamRes.ok) {
+        return sendCompatResponse(nodeRes, upstreamRes.status, corsHeaders, 'Erreur récupération sous-titres');
       }
-      res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      return res.status(200).send(result.body);
+      const text = await upstreamRes.text();
+      return sendCompatResponse(
+        nodeRes,
+        200,
+        {
+          ...corsHeaders,
+          'Content-Type': 'text/vtt; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+        },
+        text
+      );
     }
 
-    // 2. If it's a playlist (.m3u8)
-    const result = await fetchPlaylistText(decodedUrl);
-    if (result.status !== 200) {
-      return res.status(result.status).send('Erreur récupération playlist');
+    // 3. HLS Playlists (.m3u8)
+    const upstreamRes = await fetch(decodedUrl, {
+      headers: upstreamHeaders,
+      redirect: 'follow',
+    });
+
+    if (!upstreamRes.ok) {
+      return sendCompatResponse(nodeRes, upstreamRes.status, corsHeaders, 'Erreur récupération playlist');
     }
 
-    const modified = rewritePlaylist(result.body, result.finalUrl || decodedUrl);
-    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-    res.setHeader('Cache-Control', 'public, max-age=1800');
-    return res.status(200).send(modified);
+    const bodyText = await upstreamRes.text();
+    const finalBaseUrl = upstreamRes.url || decodedUrl;
+    const modified = rewritePlaylist(bodyText, finalBaseUrl);
+
+    return sendCompatResponse(
+      nodeRes,
+      200,
+      {
+        ...corsHeaders,
+        'Content-Type': 'application/vnd.apple.mpegurl',
+        'Cache-Control': 'public, max-age=1800, s-maxage=1800, stale-while-revalidate=86400',
+        'CDN-Cache-Control': 'public, max-age=1800, stale-while-revalidate=86400',
+      },
+      modified
+    );
   } catch (err) {
-    if (!res.headersSent) return res.status(500).send(err.message);
+    return sendCompatResponse(nodeRes, 500, corsHeaders, err.message || 'Erreur proxy HLS');
   }
 }

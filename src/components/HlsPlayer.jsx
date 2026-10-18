@@ -380,9 +380,10 @@ export default function HlsPlayer({
         highBufferWatchdogPeriod: 2,
         nudgeOffset: 0.2,
         nudgeMaxRetry: 5,
-        // Prevent sudden ABR quality drops and resolution-switch stutters
+        // Prevent sudden ABR quality drops and resolution-switch stutters, and start directly in 1080p without a test fragment
+        testBandwidth: false,
         capLevelToPlayerSize: false,
-        abrEwmaDefaultEstimate: 10000000,
+        abrEwmaDefaultEstimate: 25000000,
         abrBandWidthFactor: 0.98,
         abrBandWidthUpFactor: 0.5,
         manifestLoadingMaxRetry: 4,
@@ -408,7 +409,7 @@ export default function HlsPlayer({
         }));
         setQualityLevels(levels);
 
-        // Lock to highest Full HD / HD quality (e.g. 1080p) by default so quality never drops or stutters mid-stream
+        // Lock to highest Full HD / HD quality (e.g. 1080p) without aborting the initial playlist fetch
         if (levels.length > 0) {
           let bestIdx = 0;
           for (let i = 1; i < levels.length; i++) {
@@ -421,7 +422,6 @@ export default function HlsPlayer({
               bestIdx = i;
             }
           }
-          hls.currentLevel = bestIdx;
           hls.loadLevel = bestIdx;
           setSelectedQuality(bestIdx);
         }

@@ -2,6 +2,8 @@
 // Fournit des flux HLS (.m3u8) et MP4 directs haute fidélité 1080p FHD sans publicité et sans iframe
 
 const cache = new Map();
+const inFlight = new Map();
+const prefetchedPlaylists = new Set();
 
 export const skyStreamProvider = {
   /**
@@ -43,11 +45,6 @@ export const skyStreamProvider = {
   /**
    * Résout le flux direct 1080p FHD pour un film ou une série
    * @param {Object} params
-   * @param {string} params.title Titre du film ou de la série
-   * @param {number|string} [params.year] Année de sortie (optionnel, pour cibler le bon film)
-   * @param {string} [params.type] 'movie' ou 'tv'
-   * @param {number} [params.season] Numéro de saison
-   * @param {number} [params.episode] Numéro d'épisode
    */
   async getStream({ title, year = null, type = 'movie', season = 1, episode = 1, tmdbId = null }) {
     if (!title) {
@@ -61,14 +58,44 @@ export const skyStreamProvider = {
       return cache.get(cacheKey);
     }
 
-    // 1. Tenter la résolution via l'API interne /api/skystream (compatible Web, sans blocage CORS)
+    if (inFlight.has(cacheKey)) {
+      return inFlight.get(cacheKey);
+    }
+
+    const promise = this._resolveStreamInternal({ title, year, mediaType, season, episode, tmdbId, cacheKey })
+      .finally(() => {
+        inFlight.delete(cacheKey);
+      });
+
+    inFlight.set(cacheKey, promise);
+    return promise;
+  },
+
+  /**
+   * Précharge en arrière-plan le flux d'un épisode (et réchauffe sa playlist .m3u8)
+   * pour un lancement instantané (0 latence) au clic sur Lecture ou Épisode suivant.
+   */
+  prefetchStream(params) {
+    if (!params || !params.title) return;
+    this.getStream(params)
+      .then((res) => {
+        if (res && res.success && res.streamUrl && !prefetchedPlaylists.has(res.streamUrl)) {
+          prefetchedPlaylists.add(res.streamUrl);
+          fetch(res.streamUrl).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  },
+
+  async _resolveStreamInternal({ title, year, mediaType, season, episode, tmdbId, cacheKey }) {
+    // 1. Tenter la résolution via l'API interne /api/skystream (Edge Runtime)
     try {
       const params = new URLSearchParams({
         title,
         type: mediaType,
         season: String(season || 1),
         episode: String(episode || 1),
-        v: '3',
+        v: '4',
       });
       if (year) params.append('year', String(year));
       if (tmdbId) params.append('tmdbId', String(tmdbId));
@@ -92,7 +119,6 @@ export const skyStreamProvider = {
         return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
       }
 
-      // Filtrer par type (film ou série)
       const matchingType = items.filter(i => {
         if (mediaType === 'tv') {
           return i.kind === 'tv' || i.kind === 'anime';
@@ -102,7 +128,6 @@ export const skyStreamProvider = {
 
       const candidates = matchingType.length > 0 ? matchingType : items;
 
-      // Meilleur match par année si renseignée
       let match = null;
       if (year) {
         const yNum = parseInt(year, 10);
@@ -112,7 +137,6 @@ export const skyStreamProvider = {
         match = candidates[0];
       }
 
-      // 2. Appel de l'API /api/play
       const playPayload = {
         id: String(match.id),
         type: mediaType,
@@ -141,7 +165,6 @@ export const skyStreamProvider = {
       const data = await playRes.json();
       let streamUrl = null;
 
-      // Priorité 1 : Extraction du flux direct m3u8 depuis le jeton de secours (CDN débridé sans proxy)
       if (data.fallbackUrl && data.fallbackUrl.includes('token=')) {
         try {
           const token = data.fallbackUrl.split('token=')[1];
@@ -158,7 +181,6 @@ export const skyStreamProvider = {
         }
       }
 
-      // Priorité 2 : Flux principal fourni
       if (!streamUrl && data.url) {
         if (data.url.startsWith('http')) {
           streamUrl = data.url;
@@ -195,5 +217,7 @@ export const skyStreamProvider = {
 
   clearCache() {
     cache.clear();
+    inFlight.clear();
+    prefetchedPlaylists.clear();
   }
 };

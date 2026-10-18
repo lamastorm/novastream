@@ -75,6 +75,10 @@ async function fetchSkipSegments({ tmdbId, type, season, episode }) {
   return [];
 }
 
+const searchCache = new Map();
+const streamCache = new Map();
+const STREAM_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export async function resolveSkyStream({ title, year = null, type = 'movie', season = 1, episode = 1, tmdbId = null }) {
   if (!title) {
     return { success: false, error: 'Paramètre title manquant' };
@@ -82,46 +86,61 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
 
   const mediaType = (type === 'tv' || type === 'series') ? 'tv' : 'movie';
   const query = cleanQuery(title);
+  const searchKey = `${query.toLowerCase()}_${mediaType}_${year || ''}`;
+  const fullStreamKey = `${searchKey}_s${season}_e${episode}`;
+
+  const cachedStream = streamCache.get(fullStreamKey);
+  if (cachedStream && Date.now() - cachedStream.ts < STREAM_CACHE_TTL) {
+    return cachedStream.data;
+  }
 
   try {
-    // 1. Recherche du média sur SkyStream via Edge Runtime (bypasse Cloudflare sans 403)
-    const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Referer': 'https://skystream.fun/',
-      },
-    });
+    let match = searchCache.get(searchKey);
 
-    if (!searchRes.ok) {
-      return { success: false, error: `Erreur recherche SkyStream (${searchRes.status})` };
-    }
-
-    const searchData = await searchRes.json().catch(() => ({}));
-    const items = Array.isArray(searchData.items) ? searchData.items : [];
-
-    if (items.length === 0) {
-      return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
-    }
-
-    // Filtrer par type (film ou série)
-    const matchingType = items.filter((i) => {
-      if (mediaType === 'tv') {
-        return i.kind === 'tv' || i.kind === 'anime';
-      }
-      return i.kind === 'movie';
-    });
-
-    const candidates = matchingType.length > 0 ? matchingType : items;
-
-    // Meilleur match par année si disponible
-    let match = null;
-    if (year) {
-      const yNum = parseInt(year, 10);
-      match = candidates.find((i) => Math.abs(parseInt(i.year, 10) - yNum) <= 1);
-    }
     if (!match) {
-      match = candidates[0];
+      // 1. Recherche du média sur SkyStream via Edge Runtime (bypasse Cloudflare sans 403)
+      const searchRes = await fetch(`https://skystream.fun/api/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Referer': 'https://skystream.fun/',
+        },
+      });
+
+      if (!searchRes.ok) {
+        return { success: false, error: `Erreur recherche SkyStream (${searchRes.status})` };
+      }
+
+      const searchData = await searchRes.json().catch(() => ({}));
+      const items = Array.isArray(searchData.items) ? searchData.items : [];
+
+      if (items.length === 0) {
+        return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
+      }
+
+      // Filtrer par type (film ou série)
+      const matchingType = items.filter((i) => {
+        if (mediaType === 'tv') {
+          return i.kind === 'tv' || i.kind === 'anime';
+        }
+        return i.kind === 'movie';
+      });
+
+      const candidates = matchingType.length > 0 ? matchingType : items;
+
+      // Meilleur match par année si disponible
+      if (year) {
+        const yNum = parseInt(year, 10);
+        match = candidates.find((i) => Math.abs(parseInt(i.year, 10) - yNum) <= 1);
+      }
+      if (!match) {
+        match = candidates[0];
+      }
+
+      if (match) {
+        if (searchCache.size > 500) searchCache.clear();
+        searchCache.set(searchKey, match);
+      }
     }
 
     // 2. Appel de l'API /api/play
@@ -196,12 +215,17 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       if (m) resolvedTmdbId = Number(m[1]);
     }
 
-    const skipSegments = await fetchSkipSegments({
-      tmdbId: resolvedTmdbId,
-      type: mediaType,
-      season,
-      episode,
-    });
+    // Ne jamais bloquer le démarrage de l'épisode plus de 300ms pour les segments d'intro
+    // (HlsPlayer.jsx les récupère déjà en tâche de fond côté client)
+    const skipSegments = await Promise.race([
+      fetchSkipSegments({
+        tmdbId: resolvedTmdbId,
+        type: mediaType,
+        season,
+        episode,
+      }),
+      new Promise((resolve) => setTimeout(() => resolve([]), 300)),
+    ]);
 
     const proxiedStreamUrl = streamUrl.includes('.m3u8')
       ? `/api/hls-proxy?v=2&url=${encodeURIComponent(streamUrl)}`
@@ -214,7 +238,7 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
         : sub.url,
     }));
 
-    return {
+    const resultPayload = {
       success: true,
       streamUrl: proxiedStreamUrl,
       rawStreamUrl: streamUrl,
@@ -227,6 +251,11 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       year: match.year,
       provider: 'skystream',
     };
+
+    if (streamCache.size > 500) streamCache.clear();
+    streamCache.set(fullStreamKey, { ts: Date.now(), data: resultPayload });
+
+    return resultPayload;
   } catch (err) {
     return { success: false, error: err.message };
   }
