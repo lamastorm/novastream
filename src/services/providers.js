@@ -393,10 +393,12 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
   }
 
-  // CAS 2 : FILMS & SÉRIES -> SkyStream 0 Pub en #1 + VidMoly en #2
+  // CAS 2 : FILMS & SÉRIES -> SkyStream 0 Pub en #1 + VidMoly en #2 + AutoEmbed en #3 + AnyEmbed en #4
   return [
     SKYSTREAM_SERVER,
     VIDMOLY_VF_SERVER,
+    AUTOEMBED_VF_SERVER,
+    ANYEMBED_VF_SERVER,
   ];
 };
 

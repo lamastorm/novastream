@@ -537,8 +537,20 @@ export default function PlayerModal({
           setSkyStreamUrl(null);
           setSkyStreamSubtitles([]);
           setSkyStreamSkipSegments([]);
-          setSkyStreamError(res?.error || "Titre non répertorié sur le catalogue SkyStream.");
+          const is502 = String(res?.error || "").includes("502");
+          setSkyStreamError(
+            is502
+              ? "Le serveur SkyStream est momentanément indisponible (erreur 502). Bascule automatique vers le lecteur de secours..."
+              : (res?.error || "Titre non répertorié sur le catalogue SkyStream. Bascule automatique vers le lecteur de secours...")
+          );
           setIsSkyStreamLoading(false);
+          // Bascule automatique fluide vers VidMoly ou le serveur de secours suivant
+          const fallback = availableServers.find((s) => s.id !== "skystream_direct") || availableServers[1];
+          if (fallback) {
+            setTimeout(() => {
+              if (isMounted) setSelectedServer(fallback);
+            }, 1800);
+          }
         }
       })
       .catch((err) => {
@@ -546,8 +558,14 @@ export default function PlayerModal({
         setSkyStreamUrl(null);
         setSkyStreamSubtitles([]);
         setSkyStreamSkipSegments([]);
-        setSkyStreamError(err.message || "Erreur lors de la récupération du flux SkyStream.");
+        setSkyStreamError(err.message || "Erreur de connexion SkyStream. Bascule vers le lecteur de secours...");
         setIsSkyStreamLoading(false);
+        const fallback = availableServers.find((s) => s.id !== "skystream_direct") || availableServers[1];
+        if (fallback) {
+          setTimeout(() => {
+            if (isMounted) setSelectedServer(fallback);
+          }, 1800);
+        }
       });
 
     return () => {
@@ -1148,7 +1166,9 @@ export default function PlayerModal({
                 {skyStreamError || "Titre bientôt disponible en 0 Pub"}
               </h3>
               <p className="text-xs text-zinc-300 mb-6 max-w-md leading-relaxed">
-                Ce titre n'a pas encore de flux direct encodé. Vous pouvez le visionner immédiatement sur le Lecteur VidMoly.
+                {skyStreamError?.includes("502")
+                  ? "Les serveurs de SkyStream subissent actuellement une panne temporaire (502 Bad Gateway chez l'hébergeur). Redirection automatique vers le lecteur de secours..."
+                  : "Ce flux direct n'est pas disponible pour le moment. Redirection automatique vers le lecteur de secours..."}
               </p>
               {availableServers.length > 1 && (
                 <button
@@ -1158,7 +1178,7 @@ export default function PlayerModal({
                   }}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <span>▶ Regarder sur le Lecteur VidMoly</span>
+                  <span>▶ Basculer immédiatement sur le lecteur de secours</span>
                 </button>
               )}
             </div>
