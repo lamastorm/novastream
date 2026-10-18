@@ -486,8 +486,16 @@ export default function PlayerModal({
     setIsSkyStreamLoading(true);
     setSkyStreamError(null);
 
-    const mediaTitle = currentMedia.title || currentMedia.name || "";
-    const mType = currentMedia.media_type || (currentMedia.title ? "movie" : "tv");
+    const isTvShow =
+      currentMedia.media_type === "tv" ||
+      Boolean(currentMedia.name && !currentMedia.title) ||
+      Boolean(currentMedia.number_of_seasons) ||
+      isKnownTV ||
+      (season && Number(season) > 0 && episode && Number(episode) > 0 && !isExplicitMovie);
+    const mType = isTvShow ? "tv" : (currentMedia.media_type || "movie");
+    const mediaTitle = isTvShow
+      ? currentMedia.name || currentMedia.title || ""
+      : currentMedia.title || currentMedia.name || "";
     const year = currentMedia.release_date
       ? currentMedia.release_date.split("-")[0]
       : currentMedia.first_air_date
