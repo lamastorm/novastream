@@ -58,6 +58,7 @@ export default function HlsPlayer({
   const controlsTimeoutRef = useRef(null);
   const autoNextTriggeredRef = useRef(false);
   const hasRestoredPositionRef = useRef(false);
+  const initialStartSecRef = useRef(-1);
   const hasAutoSelectedAudioRef = useRef(false);
   const lastMediaRecoverRef = useRef(0);
   const lastSavedWallTimeRef = useRef(0);
@@ -408,6 +409,7 @@ export default function HlsPlayer({
         : null;
       const initialStartSec =
         savedPos?.currentTime && savedPos.currentTime >= 5 ? savedPos.currentTime : -1;
+      initialStartSecRef.current = initialStartSec;
 
       const hls = new Hls({
         enableWorker: true,
@@ -476,9 +478,12 @@ export default function HlsPlayer({
           setSubtitleTracks([...hls.subtitleTracks]);
         }
 
-        // Mark saved position as restored (startPosition in Hls config already seeks cleanly)
+        // Mark saved position as restored and seek native video element
         if (initialStartSec >= 5 && !hasRestoredPositionRef.current) {
           hasRestoredPositionRef.current = true;
+          try {
+            video.currentTime = initialStartSec;
+          } catch {}
           setCurrentTime(initialStartSec);
           setResumedFromTime(initialStartSec);
         }
@@ -764,6 +769,8 @@ export default function HlsPlayer({
   const persistCurrentPosition = (force = false) => {
     const v = videoRef.current;
     if (!v || !resolvedMeta.tmdbId || v.currentTime < 3) return;
+    // CRITICAL: If a saved position >= 5 exists and has NOT yet been restored, do NOT overwrite it!
+    if (initialStartSecRef.current >= 5 && !hasRestoredPositionRef.current) return;
     const now = Date.now();
     if (!force && now - lastSavedWallTimeRef.current < 2500) return;
     lastSavedWallTimeRef.current = now;
@@ -799,8 +806,8 @@ export default function HlsPlayer({
     const v = videoRef.current;
     if (!v) return;
     setDuration(v.duration || 0);
-    // Only seek manually in loadedmetadata for native <video> streams (HLS.js uses startPosition)
-    if (!hlsRef.current && !hasRestoredPositionRef.current && resolvedMeta.tmdbId) {
+    // Restore saved playback position reliably whether stream is HLS or native
+    if (!hasRestoredPositionRef.current && resolvedMeta.tmdbId) {
       const savedPos = storage.getPlaybackPosition(
         resolvedMeta.tmdbId,
         resolvedMeta.isTV ? "tv" : "movie",
