@@ -43,8 +43,19 @@ export default async function handler(req) {
       });
     }
 
+    const errBody = await oRes.text().catch(() => '');
     return new Response(
-      JSON.stringify({ success: false, error: `Erreur serveur Oracle (${oRes.status})` }),
+      JSON.stringify({
+        success: false,
+        error: `Erreur serveur Oracle (${oRes.status})`,
+        debug: {
+          status: oRes.status,
+          statusText: oRes.statusText,
+          url: `${ORACLE_BASE}/vidmoly-resolve?${oParams.toString()}`,
+          headers: Object.fromEntries(oRes.headers.entries()),
+          bodyPreview: errBody.slice(0, 500)
+        }
+      }),
       {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
