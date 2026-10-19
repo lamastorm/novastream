@@ -234,6 +234,11 @@ export default function PlayerModal({
   const [isVidmolyLoading, setIsVidmolyLoading] = useState(false);
   const [vidmolyError, setVidmolyError] = useState(null);
 
+  // État spécifique pour le Résolveur Pamdor (0 Pub • HLS Direct VF)
+  const [pamdorDirectStream, setPamdorDirectStream] = useState(null);
+  const [isPamdorLoading, setIsPamdorLoading] = useState(false);
+  const [pamdorError, setPamdorError] = useState(null);
+
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
@@ -639,6 +644,54 @@ export default function PlayerModal({
       isMounted = false;
     };
   }, [selectedServer?.id, currentMedia.id, season, episode]);
+
+  // Résolution directe pour Pamdor (0 Pub • HLS Direct VF)
+  useEffect(() => {
+    if (!selectedServer?.isPamdorDirect && selectedServer?.id !== "pamdor_vf") {
+      setPamdorDirectStream(null);
+      setIsPamdorLoading(false);
+      setPamdorError(null);
+      return;
+    }
+
+    let isMounted = true;
+    setIsPamdorLoading(true);
+    setPamdorError(null);
+
+    const title = currentMedia.title || currentMedia.name;
+    const year = currentMedia.release_date
+      ? currentMedia.release_date.split("-")[0]
+      : (currentMedia.first_air_date ? currentMedia.first_air_date.split("-")[0] : "");
+
+    const params = new URLSearchParams({
+      title: String(title),
+      year: String(year),
+    });
+
+    fetch(`/api/pamdor-resolve?${params.toString()}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (!isMounted) return;
+        setIsPamdorLoading(false);
+        if (res && res.success && res.streamUrl) {
+          setPamdorDirectStream(res.streamUrl);
+          setPamdorError(null);
+        } else {
+          setPamdorDirectStream(null);
+          setPamdorError(res?.error || "Film introuvable sur Pamdor.");
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setIsPamdorLoading(false);
+        setPamdorDirectStream(null);
+        setPamdorError(err?.message || "Erreur de connexion au serveur Pamdor");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedServer?.id, currentMedia.id, currentMedia.title, currentMedia.name]);
 
   // Register in History
   useEffect(() => {
@@ -1376,6 +1429,74 @@ export default function PlayerModal({
                     setIframeKey((k) => k + 1);
                   }}
                   className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                >
+                  🔄 Réessayer
+                </button>
+                <button
+                  onClick={() => {
+                    const sky = availableServers.find((s) => s.id === "skystream_direct");
+                    if (sky) setSelectedServer(sky);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs border border-white/10 transition-all cursor-pointer"
+                >
+                  ⚡ Lecteur Principal (SkyStream)
+                </button>
+              </div>
+            </div>
+          )
+        ) : (activeServer?.isPamdorDirect || activeServer?.id === "pamdor_vf") ? (
+          isPamdorLoading ? (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+              <h3 className="text-base font-bold text-white">Connexion au flux Pamdor 0 Pub...</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Recherche et extraction directe du flux VF haute vitesse sur le réseau Cloudflare Pamdor.
+              </p>
+            </div>
+          ) : pamdorDirectStream ? (
+            <div className="w-full h-full relative">
+              <HlsPlayer
+                key={pamdorDirectStream}
+                streamUrl={pamdorDirectStream}
+                title={title}
+                poster={
+                  currentMedia.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                    : undefined
+                }
+                onEnded={handleNextEpisode}
+                videoFilter={videoFilter}
+                preferredLanguage={selectedLanguage}
+                tmdbId={currentMedia.id}
+                mediaType={mediaType}
+                season={season}
+                episode={episode}
+                isTV={isTV}
+                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                onNextEpisode={isTV ? handleNextEpisode : null}
+                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                autoNext={autoNext}
+                onVideoRef={(el) => { hlsVideoRef.current = el; }}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-lg shadow-amber-500/20">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Film indisponible sur le catalogue Pamdor</h3>
+              <p className="text-xs text-zinc-300 max-w-md leading-relaxed mb-3">
+                {pamdorError || "Ce titre n'a pas été trouvé dans le catalogue Pamdor."}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setIsPamdorLoading(true);
+                    setPamdorError(null);
+                    setIframeKey((k) => k + 1);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                 >
                   🔄 Réessayer
                 </button>

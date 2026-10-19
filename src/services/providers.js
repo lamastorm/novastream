@@ -119,6 +119,18 @@ export const getServerDetails = (server, media, selectedLanguage) => {
     };
   }
 
+  if (server?.isPamdorDirect || server?.id === "pamdor_vf") {
+    return {
+      flag: "⚡ 🇫🇷",
+      flagDisplay: "⚡ 🇫🇷",
+      audio: "Doublage Français Direct (VF)",
+      subs: "Non requis",
+      badge: "⚡ Pamdor 0 Pub",
+      subBadge: "VF 100% Direct",
+      description: "Flux Full HD direct issu du réseau Pamdor / Miwav sans aucune publicité ni redirection.",
+    };
+  }
+
   if (server?.id === "frembed_click") {
     return {
       flag: "🇫🇷",
@@ -182,6 +194,16 @@ export const VIDMOLY_VF_SERVER = {
   badge: "⚡ 1080p 0 Pub",
   isVidmolyDirect: true,
   description: "Lecteur VidMoly 100% débridé sans aucune publicité, sans redirection ni pop-up (Qualité Full HD 1080p).",
+  getUrl: () => "",
+};
+
+export const PAMDO_VF_SERVER = {
+  id: "pamdor_vf",
+  name: "Serveur 3 (Pamdor • Miwav 0 Pub VF)",
+  flag: "⚡ 🇫🇷",
+  badge: "⚡ 1080p 0 Pub",
+  isPamdorDirect: true,
+  description: "Lecteur Pamdor / Miwav 100% direct en VF : zéro publicité, zéro pop-up et qualité Full HD instantanée.",
   getUrl: () => "",
 };
 
@@ -389,10 +411,24 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
   }
 
-  // CAS 2 : FILMS & SÉRIES -> Uniquement SkyStream 0 Pub (#1) + VidMoly (#2)
+  // CAS 2 : SÉRIES (TV) -> SkyStream 0 Pub (#1) + VidMoly (#2)
+  const isTv =
+    media?.media_type === "tv" ||
+    Boolean(media?.name && !media?.title) ||
+    Boolean(media?.number_of_seasons);
+
+  if (isTv) {
+    return [
+      SKYSTREAM_SERVER,
+      VIDMOLY_VF_SERVER,
+    ];
+  }
+
+  // CAS 3 : FILMS -> SkyStream (#1) + VidMoly (#2) + Pamdor (#3)
   return [
     SKYSTREAM_SERVER,
     VIDMOLY_VF_SERVER,
+    PAMDO_VF_SERVER,
   ];
 };
 
