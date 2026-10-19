@@ -175,6 +175,12 @@ export function rewritePlaylist(content, baseUrl) {
       continue;
     }
 
+    // Si déjà réécrit par Oracle ou un proxy précédent, conserver tel quel
+    if (trimmed.includes('/api/hls-proxy')) {
+      rewritten.push(line);
+      continue;
+    }
+
     if (trimmed.startsWith('#EXT-X-MEDIA:') && /TYPE=SUBTITLES/i.test(trimmed)) {
       const uriMatch = trimmed.match(/URI=["']([^"']+)["']/i);
       if (!uriMatch || /\.(vtt|srt)(\?|$)/i.test(uriMatch[1])) {
