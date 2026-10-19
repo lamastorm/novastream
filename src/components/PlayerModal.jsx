@@ -229,6 +229,10 @@ export default function PlayerModal({
   const [isSkyStreamLoading, setIsSkyStreamLoading] = useState(false);
   const [skyStreamError, setSkyStreamError] = useState(null);
 
+  // État spécifique pour le Débrideur Stealth Oracle VidMoly (0 Pub HLS Natif)
+  const [vidmolyDirectStream, setVidmolyDirectStream] = useState(null);
+  const [isVidmolyLoading, setIsVidmolyLoading] = useState(false);
+
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
@@ -582,6 +586,53 @@ export default function PlayerModal({
     season,
     episode,
   ]);
+
+  // Débridage furtif automatique pour VidMoly via le serveur Oracle (0 Pub • 1080p HLS)
+  useEffect(() => {
+    if (selectedServer?.id !== "vidmoly_vf") {
+      setVidmolyDirectStream(null);
+      setIsVidmolyLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsVidmolyLoading(true);
+
+    const isTv =
+      currentMedia.media_type === "tv" ||
+      Boolean(currentMedia.name && !currentMedia.title) ||
+      Boolean(currentMedia.number_of_seasons) ||
+      isKnownTV ||
+      (season && Number(season) > 0 && episode && Number(episode) > 0 && !isExplicitMovie);
+
+    const params = new URLSearchParams({
+      tmdbId: String(currentMedia.id),
+      type: isTv ? "tv" : "movie",
+      season: String(season || 1),
+      episode: String(episode || 1),
+    });
+
+    fetch(`/api/vidmoly-resolve?${params.toString()}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (!isMounted) return;
+        setIsVidmolyLoading(false);
+        if (res && res.success && res.streamUrl) {
+          setVidmolyDirectStream(res.streamUrl);
+        } else {
+          setVidmolyDirectStream(null);
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setIsVidmolyLoading(false);
+        setVidmolyDirectStream(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedServer?.id, currentMedia.id, season, episode]);
 
   // Register in History
   useEffect(() => {
@@ -1265,6 +1316,41 @@ export default function PlayerModal({
             >
               ⚡ Basculer sur un autre lecteur
             </button>
+          </div>
+        ) : (selectedServer?.id === "vidmoly_vf" && isVidmolyLoading) ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+            <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+            <h3 className="text-base font-bold text-white">Débridage 0 Pub en cours sur le serveur Oracle...</h3>
+            <p className="text-xs text-zinc-400">
+              Extraction du flux direct Full HD pour supprimer 100% des popups et publicités sur TV & consoles.
+            </p>
+          </div>
+        ) : (selectedServer?.id === "vidmoly_vf" && vidmolyDirectStream) ? (
+          <div className="w-full h-full relative">
+            <HlsPlayer
+              key={vidmolyDirectStream}
+              streamUrl={vidmolyDirectStream}
+              title={title}
+              poster={
+                currentMedia.backdrop_path
+                  ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                  : undefined
+              }
+              onEnded={handleNextEpisode}
+              videoFilter={videoFilter}
+              preferredLanguage={selectedLanguage}
+              tmdbId={currentMedia.id}
+              mediaType={mediaType}
+              season={season}
+              episode={episode}
+              isTV={isTV}
+              nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+              onNextEpisode={isTV ? handleNextEpisode : null}
+              onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+              onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+              autoNext={autoNext}
+              onVideoRef={(el) => { hlsVideoRef.current = el; }}
+            />
           </div>
         ) : (
           <div className="w-full h-full relative">
