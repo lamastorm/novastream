@@ -84,9 +84,20 @@ export function rewritePlaylist(content, baseUrl) {
 
 function sendCompatResponse(nodeRes, status, headers, body) {
   if (!nodeRes) {
-    return new Response(body, { status, headers });
+    const cleanHeaders = new Headers();
+    if (headers) {
+      for (const [k, v] of Object.entries(headers)) {
+        if (v !== undefined && v !== null && k.toLowerCase() !== 'transfer-encoding') {
+          try {
+            cleanHeaders.set(k, String(v));
+          } catch {}
+        }
+      }
+    }
+    const finalBody = (status === 204 || status === 304) ? null : body;
+    return new Response(finalBody, { status: Number(status) || 200, headers: cleanHeaders });
   }
-  for (const [k, v] of Object.entries(headers)) {
+  for (const [k, v] of Object.entries(headers || {})) {
     if (v !== undefined && v !== null) nodeRes.setHeader(k, v);
   }
   nodeRes.statusCode = status;
@@ -168,7 +179,7 @@ export default async function handler(req, nodeRes) {
       let upstreamRes = null;
       try {
         const oracleRes = await fetch(
-          `http://141.145.199.149/erodium-stream/hls?url=${encodeURIComponent(decodedUrl)}`,
+          `http://141-145-199-149.sslip.io/erodium-stream/hls?url=${encodeURIComponent(decodedUrl)}`,
           {
             headers: upstreamHeaders,
             signal: AbortSignal.timeout(4500),
@@ -209,10 +220,24 @@ export default async function handler(req, nodeRes) {
 
     // 2. VTT / SRT Subtitles
     if (decodedUrl.includes('.vtt') || decodedUrl.includes('.srt')) {
-      const upstreamRes = await fetch(decodedUrl, {
-        headers: upstreamHeaders,
-        redirect: 'follow',
-      });
+      let upstreamRes = null;
+      try {
+        const oracleRes = await fetch(
+          `http://141-145-199-149.sslip.io/erodium-stream/hls?url=${encodeURIComponent(decodedUrl)}`,
+          {
+            headers: upstreamHeaders,
+            signal: AbortSignal.timeout(4500),
+          }
+        );
+        if (oracleRes.ok) upstreamRes = oracleRes;
+      } catch {}
+
+      if (!upstreamRes) {
+        upstreamRes = await fetch(decodedUrl, {
+          headers: upstreamHeaders,
+          redirect: 'follow',
+        });
+      }
       if (!upstreamRes.ok) {
         return sendCompatResponse(nodeRes, upstreamRes.status, corsHeaders, 'Erreur récupération sous-titres');
       }
@@ -230,10 +255,26 @@ export default async function handler(req, nodeRes) {
     }
 
     // 3. HLS Playlists (.m3u8)
-    const upstreamRes = await fetch(decodedUrl, {
-      headers: upstreamHeaders,
-      redirect: 'follow',
-    });
+    let upstreamRes = null;
+    try {
+      const oracleRes = await fetch(
+        `http://141-145-199-149.sslip.io/erodium-stream/hls?url=${encodeURIComponent(decodedUrl)}`,
+        {
+          headers: upstreamHeaders,
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+      if (oracleRes.ok) {
+        upstreamRes = oracleRes;
+      }
+    } catch {}
+
+    if (!upstreamRes) {
+      upstreamRes = await fetch(decodedUrl, {
+        headers: upstreamHeaders,
+        redirect: 'follow',
+      });
+    }
 
     if (!upstreamRes.ok) {
       return sendCompatResponse(nodeRes, upstreamRes.status, corsHeaders, 'Erreur récupération playlist');
