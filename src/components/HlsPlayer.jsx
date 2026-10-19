@@ -419,9 +419,10 @@ export default function HlsPlayer({
         maxBufferSize: 120 * 1000 * 1000,
         backBufferLength: 20,
         startFragPrefetch: true,
-        maxBufferHole: 0.3,
+        maxBufferHole: 0.8,
+        maxFragLookUpTolerance: 0.25,
         highBufferWatchdogPeriod: 1,
-        nudgeOffset: 0.1,
+        nudgeOffset: 0.15,
         nudgeMaxRetry: 10,
         lowLatencyMode: false,
         // Prevent sudden ABR quality drops and resolution-switch stutters, and start directly in 1080p without a test fragment
