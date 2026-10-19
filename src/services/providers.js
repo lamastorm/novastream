@@ -107,15 +107,15 @@ export const getServerDetails = (server, media, selectedLanguage) => {
     };
   }
 
-  if (server?.id === "vidmoly_vf" || server?.id === "frembed_surf_vf") {
+  if (server?.isVidmolyDirect || server?.id === "vidmoly_vf" || server?.id === "frembed_surf_vf") {
     return {
-      flag: "🇫🇷",
-      flagDisplay: "🇫🇷",
+      flag: "⚡ 🇫🇷",
+      flagDisplay: "⚡ 🇫🇷",
       audio: "Vrai Doublage Français (VidMoly VF)",
       subs: "Non requis",
-      badge: "🇫🇷 VidMoly VF",
-      subBadge: "VF Directe",
-      description: "Lecteur VidMoly haute vitesse avec doublage français direct sans coupure.",
+      badge: "⚡ VidMoly 0 Pub",
+      subBadge: "VF Débridée",
+      description: "Lecteur VidMoly débridé en tâche de fond : zéro publicité, zéro pop-up et fluidité maximale.",
     };
   }
 
@@ -177,16 +177,12 @@ export const LANGUAGE_OPTIONS = [
 
 export const VIDMOLY_VF_SERVER = {
   id: "vidmoly_vf",
-  name: "Lecteur VidMoly",
-  flag: "🇫🇷",
-  badge: "🇫🇷 VidMoly (VF/VOSTFR)",
-  description: "Lecteur officiel VidMoly rapide avec doublage français officiel et choix VF / VOSTFR.",
-  getUrl: (type, id, season = 1, episode = 1) => {
-    if (type === "movie") {
-      return `https://frembed.bar/embed/movie/${id}`;
-    }
-    return `https://frembed.bar/embed/serie/${id}?sa=${season}&epi=${episode}`;
-  },
+  name: "Serveur 2 (VidMoly Débridé • 0 Pub FHD)",
+  flag: "⚡ 🇫🇷",
+  badge: "⚡ 1080p 0 Pub",
+  isVidmolyDirect: true,
+  description: "Lecteur VidMoly 100% débridé sans aucune publicité, sans redirection ni pop-up (Qualité Full HD 1080p).",
+  getUrl: () => "",
 };
 
 export const ANYEMBED_VF_SERVER = {

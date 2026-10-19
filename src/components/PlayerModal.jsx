@@ -229,6 +229,11 @@ export default function PlayerModal({
   const [isSkyStreamLoading, setIsSkyStreamLoading] = useState(false);
   const [skyStreamError, setSkyStreamError] = useState(null);
 
+  // État spécifique pour le Débrideur Stealth Oracle VidMoly (0 Pub HLS Natif)
+  const [vidmolyDirectStream, setVidmolyDirectStream] = useState(null);
+  const [isVidmolyLoading, setIsVidmolyLoading] = useState(false);
+  const [vidmolyError, setVidmolyError] = useState(null);
+
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
@@ -583,7 +588,57 @@ export default function PlayerModal({
     episode,
   ]);
 
+  // Débridage furtif automatique pour VidMoly via le serveur Oracle (0 Pub • 1080p HLS)
+  useEffect(() => {
+    if (!selectedServer?.isVidmolyDirect && selectedServer?.id !== "vidmoly_vf") {
+      setVidmolyDirectStream(null);
+      setIsVidmolyLoading(false);
+      setVidmolyError(null);
+      return;
+    }
 
+    let isMounted = true;
+    setIsVidmolyLoading(true);
+    setVidmolyError(null);
+
+    const isTv =
+      currentMedia.media_type === "tv" ||
+      Boolean(currentMedia.name && !currentMedia.title) ||
+      Boolean(currentMedia.number_of_seasons) ||
+      isKnownTV ||
+      (season && Number(season) > 0 && episode && Number(episode) > 0 && !isExplicitMovie);
+
+    const params = new URLSearchParams({
+      tmdbId: String(currentMedia.id),
+      type: isTv ? "tv" : "movie",
+      season: String(season || 1),
+      episode: String(episode || 1),
+    });
+
+    fetch(`/api/vidmoly-resolve?${params.toString()}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (!isMounted) return;
+        setIsVidmolyLoading(false);
+        if (res && res.success && res.streamUrl) {
+          setVidmolyDirectStream(res.streamUrl);
+          setVidmolyError(null);
+        } else {
+          setVidmolyDirectStream(null);
+          setVidmolyError(res?.error || "Extraction du flux VidMoly impossible pour ce titre.");
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setIsVidmolyLoading(false);
+        setVidmolyDirectStream(null);
+        setVidmolyError(err?.message || "Erreur de connexion au serveur de débridage");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedServer?.id, currentMedia.id, season, episode]);
 
   // Register in History
   useEffect(() => {
@@ -1268,6 +1323,74 @@ export default function PlayerModal({
               ⚡ Basculer sur un autre lecteur
             </button>
           </div>
+        ) : (activeServer?.isVidmolyDirect || activeServer?.id === "vidmoly_vf") ? (
+          isVidmolyLoading ? (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+              <h3 className="text-base font-bold text-white">Débridage VidMoly 0 Pub en cours...</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Extraction du flux direct Full HD pour supprimer 100% des publicités et pop-ups sur TV & consoles.
+              </p>
+            </div>
+          ) : vidmolyDirectStream ? (
+            <div className="w-full h-full relative">
+              <HlsPlayer
+                key={vidmolyDirectStream}
+                streamUrl={vidmolyDirectStream}
+                title={title}
+                poster={
+                  currentMedia.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                    : undefined
+                }
+                onEnded={handleNextEpisode}
+                videoFilter={videoFilter}
+                preferredLanguage={selectedLanguage}
+                tmdbId={currentMedia.id}
+                mediaType={mediaType}
+                season={season}
+                episode={episode}
+                isTV={isTV}
+                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                onNextEpisode={isTV ? handleNextEpisode : null}
+                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                autoNext={autoNext}
+                onVideoRef={(el) => { hlsVideoRef.current = el; }}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-lg shadow-amber-500/20">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Flux VidMoly 0 Pub momentanément indisponible</h3>
+              <p className="text-xs text-zinc-300 max-w-md leading-relaxed mb-3">
+                {vidmolyError || "Le serveur de débridage n'a pas pu extraire ce titre sans publicité."}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setIsVidmolyLoading(true);
+                    setVidmolyError(null);
+                    setIframeKey((k) => k + 1);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                >
+                  🔄 Réessayer
+                </button>
+                <button
+                  onClick={() => {
+                    const sky = availableServers.find((s) => s.id === "skystream_direct");
+                    if (sky) setSelectedServer(sky);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs border border-white/10 transition-all cursor-pointer"
+                >
+                  ⚡ Lecteur Principal (SkyStream)
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           <div className="w-full h-full relative">
             <iframe
@@ -1276,7 +1399,7 @@ export default function PlayerModal({
               title={title}
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              sandbox={adBlocker.getSandboxString(activeServer, strictPopupMode) || "allow-scripts allow-same-origin allow-forms allow-presentation"}
+              sandbox={adBlocker.getSandboxString(activeServer, strictPopupMode)}
               style={videoFilter ? { filter: videoFilter, transition: "filter 0.3s" } : undefined}
               className="w-full h-full border-0 absolute inset-0"
             />
