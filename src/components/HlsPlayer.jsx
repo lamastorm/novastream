@@ -370,16 +370,17 @@ export default function HlsPlayer({
         enableWorker: true,
         enableWebVTT: true,
         subtitleDisplay: true,
-        // Preload aggressively while watching AND while paused (up to 15-30 min / 400 MB ahead)
-        maxBufferLength: 900,
-        maxMaxBufferLength: 1800,
-        maxBufferSize: 400 * 1000 * 1000,
-        backBufferLength: 90,
+        // Continuous sliding-window buffer that fits within all browser MSE quotas
+        maxBufferLength: 120,
+        maxMaxBufferLength: 300,
+        maxBufferSize: 120 * 1000 * 1000,
+        backBufferLength: 20,
         startFragPrefetch: true,
-        maxBufferHole: 0.5,
-        highBufferWatchdogPeriod: 2,
-        nudgeOffset: 0.2,
-        nudgeMaxRetry: 5,
+        maxBufferHole: 0.3,
+        highBufferWatchdogPeriod: 1,
+        nudgeOffset: 0.1,
+        nudgeMaxRetry: 10,
+        lowLatencyMode: false,
         // Prevent sudden ABR quality drops and resolution-switch stutters, and start directly in 1080p without a test fragment
         testBandwidth: false,
         capLevelToPlayerSize: false,
@@ -524,26 +525,51 @@ export default function HlsPlayer({
           return;
         }
 
-        // Auto-recover from non-fatal buffer stalls or small timestamp holes
+        // Auto-recover from non-fatal buffer stalls, gap stalls, or buffer full
         if (
           !data.fatal &&
           (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR ||
-            data.details === Hls.ErrorDetails.BUFFER_SEEK_OVER_HOLE)
+            data.details === Hls.ErrorDetails.BUFFER_SEEK_OVER_HOLE ||
+            data.details === Hls.ErrorDetails.BUFFER_NUDGE_ON_STALL)
         ) {
-          if (video && video.buffered && video.buffered.length > 0) {
+          try {
+            hls.startLoad();
+          } catch {}
+
+          if (video && !video.paused) {
             const cur = video.currentTime;
-            for (let i = 0; i < video.buffered.length; i++) {
-              const start = video.buffered.start(i);
-              const end = video.buffered.end(i);
-              // Jump over a small gap (< 3s) to the next buffered range
-              if (start > cur && start - cur < 3 && end > start + 0.2) {
-                try {
-                  video.currentTime = start + 0.05;
-                } catch {}
-                break;
+            let jumped = false;
+            if (video.buffered && video.buffered.length > 0) {
+              for (let i = 0; i < video.buffered.length; i++) {
+                const start = video.buffered.start(i);
+                const end = video.buffered.end(i);
+                // Jump over a small gap (< 3s) to the next buffered range
+                if (start > cur && start - cur < 3 && end > start + 0.1) {
+                  try {
+                    video.currentTime = start + 0.05;
+                    jumped = true;
+                  } catch {}
+                  break;
+                }
               }
             }
+            if (!jumped) {
+              // Micro-nudge forward to unfreeze decoder on timestamp hole
+              try {
+                video.currentTime = cur + 0.1;
+              } catch {}
+            }
           }
+          return;
+        }
+
+        if (!data.fatal && data.details === Hls.ErrorDetails.BUFFER_FULL_ERROR) {
+          try {
+            const cur = video ? video.currentTime : 0;
+            if (cur > 25) {
+              hls.trigger(Hls.Events.BUFFER_FLUSHING, { startOffset: 0, endOffset: cur - 15, type: 'video' });
+            }
+          } catch {}
           return;
         }
 
@@ -604,6 +630,69 @@ export default function HlsPlayer({
     const t = setTimeout(() => setResumedFromTime(null), 6500);
     return () => clearTimeout(t);
   }, [resumedFromTime]);
+
+  // Active Anti-Stall Watchdog: automatically unfreezes the stream if video stops progressing
+  useEffect(() => {
+    let lastTime = 0;
+    let stallCount = 0;
+
+    const interval = setInterval(() => {
+      const v = videoRef.current;
+      if (!v || v.paused || v.ended || v.seeking) {
+        stallCount = 0;
+        return;
+      }
+
+      const cur = v.currentTime;
+      // If time hasn't advanced for > 1s while in playing state
+      if (Math.abs(cur - lastTime) < 0.15 && cur > 0) {
+        stallCount++;
+
+        // Step 1: Force HLS loader to wake up and fetch fragments
+        if (hlsRef.current) {
+          try {
+            hlsRef.current.startLoad();
+          } catch {}
+        }
+
+        // Step 2: If stalled for >= 2 checks (2s), auto-nudge over micro-gap or decoder freeze
+        if (stallCount >= 2) {
+          let jumped = false;
+          if (v.buffered && v.buffered.length > 0) {
+            for (let i = 0; i < v.buffered.length; i++) {
+              const start = v.buffered.start(i);
+              const end = v.buffered.end(i);
+              if (start > cur && start - cur < 2.5 && end > start + 0.1) {
+                try {
+                  v.currentTime = start + 0.05;
+                  jumped = true;
+                } catch {}
+                break;
+              }
+            }
+          }
+          if (!jumped) {
+            try {
+              // Micro-nudge of 0.1s to release the decoder lock
+              v.currentTime = cur + 0.1;
+            } catch {}
+          }
+        }
+
+        // Step 3: If still stalled after 5s, attempt a media error recovery
+        if (stallCount >= 5 && hlsRef.current) {
+          try {
+            hlsRef.current.recoverMediaError();
+          } catch {}
+        }
+      } else {
+        lastTime = cur;
+        stallCount = 0;
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Persist position on page unload / tab close
   useEffect(() => {
@@ -828,7 +917,22 @@ export default function HlsPlayer({
           }
           persistCurrentPosition(true);
         }}
-        onWaiting={() => setIsBuffering(true)}
+        onWaiting={() => {
+          setIsBuffering(true);
+          if (hlsRef.current) {
+            try {
+              hlsRef.current.startLoad();
+            } catch {}
+          }
+        }}
+        onStalled={() => {
+          setIsBuffering(true);
+          if (hlsRef.current) {
+            try {
+              hlsRef.current.startLoad();
+            } catch {}
+          }
+        }}
         onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
         onCanPlay={() => setIsBuffering(false)}
         onLoadedData={() => { setIsBuffering(false); handleTimeUpdate(); }}
