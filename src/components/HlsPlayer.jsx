@@ -172,14 +172,29 @@ export default function HlsPlayer({
       .then((data) => {
         if (cancelled || !data) return;
         const segments = [];
-        for (const segType of ["intro", "recap", "credits", "preview"]) {
+        for (const segType of ["intro", "recap", "credits"]) {
           const list = Array.isArray(data[segType]) ? data[segType] : [];
           for (const item of list) {
             const startMs = item?.start_ms ?? 0;
             const endMs = item?.end_ms ?? null;
-            if (endMs === null || endMs > startMs) {
-              segments.push({ type: segType, startMs, endMs });
+            if (endMs !== null && endMs <= startMs) continue;
+
+            // Validation: Intros can only exist in the first 10 minutes of an episode
+            if (segType === "intro") {
+              if (startMs > 10 * 60 * 1000) continue;
+              if (endMs !== null && endMs - startMs > 240 * 1000) continue;
             }
+
+            // Validation: Recaps can only exist in the first 4 minutes
+            if (segType === "recap") {
+              if (startMs > 4 * 60 * 1000) continue;
+              if (endMs !== null && endMs - startMs > 180 * 1000) continue;
+            }
+
+            // Credits must be in the latter half of media
+            if (segType === "credits" && startMs < 5 * 60 * 1000) continue;
+
+            segments.push({ type: segType, startMs, endMs });
           }
         }
         setFetchedSegments(segments);
@@ -197,10 +212,21 @@ export default function HlsPlayer({
   }, [skipSegments, resolvedMeta.tmdbId, resolvedMeta.isTV, resolvedMeta.season, resolvedMeta.episode]);
 
   const effectiveSegments = useMemo(() => {
-    return Array.isArray(skipSegments) && skipSegments.length > 0 ? skipSegments : fetchedSegments;
+    const raw = Array.isArray(skipSegments) && skipSegments.length > 0 ? skipSegments : fetchedSegments;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((seg) => {
+      const startMs = seg.startMs ?? 0;
+      const endMs = seg.endMs ?? null;
+      if (endMs !== null && endMs <= startMs) return false;
+      if (seg.type === "intro" && startMs > 10 * 60 * 1000) return false;
+      if (seg.type === "recap" && startMs > 4 * 60 * 1000) return false;
+      if (seg.type === "credits" && startMs < 5 * 60 * 1000) return false;
+      if (seg.type === "preview") return false;
+      return true;
+    });
   }, [skipSegments, fetchedSegments]);
 
-  // Determine currently active skip segment (intro / recap / credits / preview)
+  // Determine currently active skip segment (intro / recap / credits)
   const activeSkipSegment = useMemo(() => {
     if (!effectiveSegments.length) return null;
     const currentMs = currentTime * 1000;
@@ -223,9 +249,11 @@ export default function HlsPlayer({
     return null;
   }, [effectiveSegments, currentTime, duration, dismissedSegmentKey]);
 
-  // Execute skip action
+  // Execute skip action without freezing the player
   const handleSkipSegment = (seg = activeSkipSegment) => {
-    if (!seg || !videoRef.current) return;
+    const v = videoRef.current;
+    if (!seg || !v) return;
+
     const isEndCredits =
       (seg.type === "credits" || seg.type === "outro") &&
       (seg.endMs === null || (duration > 0 && seg.endMs / 1000 >= duration - 15));
@@ -238,11 +266,26 @@ export default function HlsPlayer({
     if (seg.endMs !== null && seg.endMs !== undefined) {
       const maxTime = duration > 0 ? Math.max(0, duration - 0.5) : seg.endMs / 1000;
       const targetSec = Math.min(seg.endMs / 1000, maxTime);
-      videoRef.current.currentTime = targetSec;
+
+      setIsBuffering(true);
+      v.currentTime = targetSec;
       setCurrentTime(targetSec);
+
+      if (hlsRef.current) {
+        try {
+          hlsRef.current.startLoad(targetSec);
+        } catch {}
+      }
+
+      // Resume playback after jump
+      setTimeout(() => {
+        if (v && !v.ended) {
+          v.play().catch(() => {});
+        }
+      }, 120);
     } else if (duration > 1) {
       const targetSec = Math.max(0, duration - 1);
-      videoRef.current.currentTime = targetSec;
+      v.currentTime = targetSec;
       setCurrentTime(targetSec);
     }
   };
