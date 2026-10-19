@@ -7,14 +7,16 @@ export const deviceAdvisor = {
   isTV: () => {
     if (typeof window === "undefined" || !navigator.userAgent) return false;
     const ua = navigator.userAgent.toLowerCase();
+    const search = typeof window.location !== "undefined" ? window.location.search : "";
     return (
       /xbox|playstation|smart-tv|smarttv|googletv|appletv|hbbtv|pov_tv|netcast.tv|viera|bravia|tizen|webos|crkey|aft|firetv|roku|shield/i.test(ua) ||
-      localStorage.getItem("erodium_tv_mode") === "true"
+      localStorage.getItem("erodium_tv_mode") === "true" ||
+      /[?&](tv|console)=1/i.test(search)
     );
   },
 
   /**
-   * Détecte spécifiquement Xbox
+   * Détecte spécifiquement Xbox (Xbox 360, Xbox One, Xbox Series)
    */
   isXbox: () => {
     if (typeof window === "undefined" || !navigator.userAgent) return false;

@@ -256,4 +256,48 @@ html.tv-mode a:focus-visible {
   z-index: 50 !important;
 }
 
+/* =========================================================================
+   Console / TV Performance Engine (Xbox 360, Xbox One, Xbox Series, TVs)
+   Évite les écrans noirs, les crashs de composition GPU et les saccades
+   ========================================================================= */
+html.tv-mode *,
+html.tv-mode *::before,
+html.tv-mode *::after {
+  /* Supprime backdrop-filter qui force une recomposition plein écran GPU par trame */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Remplacer le glassmorphism transparent par des fonds sombres mats et performants */
+html.tv-mode .glass {
+  background: rgba(10, 8, 18, 0.98) !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+html.tv-mode .glass-card {
+  background: #0d0b14 !important;
+  box-shadow: none !important;
+  will-change: auto !important;
+}
+
+/* Stopper les animations infinies qui consomment 60fps de calcul GPU sur console */
+html.tv-mode .bg-erodium-gradient,
+html.tv-mode .text-erodium-gradient,
+html.tv-mode .glow-erodium,
+html.tv-mode .animate-float-orb {
+  animation: none !important;
+}
+
+html.tv-mode .bg-erodium-gradient {
+  background: linear-gradient(125deg, #f97316, #8b5cf6) !important;
+}
+
+/* Accélération matérielle isolée sur le lecteur vidéo sans forcer de filtres lourds */
+html.tv-mode video {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  filter: none !important;
+}
+
+
 

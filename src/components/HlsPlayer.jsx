@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { storage } from "../services/storage";
+import { deviceAdvisor } from "../services/deviceAdvisor";
 
 const SKIP_LABELS = {
   intro: "Passer l'intro",
@@ -411,15 +412,18 @@ export default function HlsPlayer({
         savedPos?.currentTime && savedPos.currentTime >= 5 ? savedPos.currentTime : -1;
       initialStartSecRef.current = initialStartSec;
 
+      const isTvDevice = deviceAdvisor.isTV();
+
       const hls = new Hls({
         enableWorker: true,
         enableWebVTT: true,
         subtitleDisplay: true,
         // Continuous sliding-window buffer that fits within all browser MSE quotas
-        maxBufferLength: 120,
-        maxMaxBufferLength: 300,
-        maxBufferSize: 120 * 1000 * 1000,
-        backBufferLength: 20,
+        // Mode Console & TV (Xbox, PS5, Smart TV) : buffer allégé pour éviter l'épuisement VRAM et les écrans noirs
+        maxBufferLength: isTvDevice ? 45 : 120,
+        maxMaxBufferLength: isTvDevice ? 80 : 300,
+        maxBufferSize: isTvDevice ? 30 * 1000 * 1000 : 120 * 1000 * 1000,
+        backBufferLength: isTvDevice ? 10 : 20,
         startFragPrefetch: true,
         maxBufferHole: 0.8,
         maxFragLookUpTolerance: 0.25,
@@ -1000,7 +1004,7 @@ export default function HlsPlayer({
         }}
         onClick={togglePlay}
         playsInline
-        style={videoFilter ? { filter: videoFilter } : undefined}
+        style={videoFilter && !deviceAdvisor.isTV() ? { filter: videoFilter } : undefined}
         className="w-full h-full object-contain cursor-pointer transition-[filter] duration-300"
       >
         {Array.isArray(externalSubtitles) &&
