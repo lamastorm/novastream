@@ -78,7 +78,7 @@ async function fetchSkipSegments({ tmdbId, type, season, episode }) {
 const searchCache = new Map();
 const streamCache = new Map();
 const STREAM_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
-const ORACLE_BASE = 'http://141.145.199.149/erodium-stream';
+const ORACLE_BASE = 'http://141-145-199-149.sslip.io/erodium-stream';
 
 export async function resolveSkyStream({ title, year = null, type = 'movie', season = 1, episode = 1, tmdbId = null }) {
   if (!title) {

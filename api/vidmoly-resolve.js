@@ -2,7 +2,7 @@ export const config = {
   runtime: 'edge',
 };
 
-const ORACLE_BASE = 'http://141.145.199.149/erodium-stream';
+const ORACLE_BASE = 'http://141-145-199-149.sslip.io/erodium-stream';
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url, 'https://erodium.vercel.app');
