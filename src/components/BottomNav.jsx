@@ -17,7 +17,7 @@ export default function BottomNav({
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#080312]/95 backdrop-blur-2xl border-t border-purple-500/30 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.9)] transition-all select-none"
+      className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-black border-t border-white/10 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none"
       role="navigation"
       aria-label="Navigation Mobile"
     >

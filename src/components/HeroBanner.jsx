@@ -232,9 +232,9 @@ export default function HeroBanner({
         key={currentItem.id || currentIndex}
         className="relative z-20 h-full px-6 sm:px-12 flex flex-col justify-end pb-12 sm:pb-14 max-w-2xl animate-fade-in"
       >
-        {/* Animated Orange & Violet Category Badge */}
+        {/* Simple Badge Catégorie */}
         <div className="mb-3">
-          <span className="inline-block bg-erodium-gradient glow-erodium text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-md">
+          <span className="inline-block bg-orange-500 text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded">
             {isTV ? "SÉRIE" : "FILM"}
           </span>
         </div>
@@ -262,69 +262,22 @@ export default function HeroBanner({
           {overview}
         </p>
 
-        {/* Action Buttons (Image 4 style : Capsule Néon "Lecture" + Capsule Contour Néon "Plus d'infos") */}
-        <div className="flex flex-wrap items-center gap-3.5">
+        {/* Action Buttons : Simples, nets, ultra-fluides */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => onPlay(currentItem)}
-            className="erodium-btn-play flex items-center gap-3 px-7 py-3 sm:py-3.5 text-white font-extrabold text-sm sm:text-base active:scale-95 cursor-pointer"
+            className="flex items-center gap-2.5 px-6 py-2.5 sm:py-3 bg-white hover:bg-zinc-200 text-black font-extrabold text-sm sm:text-base rounded-lg transition-colors cursor-pointer"
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="w-5 h-5 flex-shrink-0"
-              style={{
-                filter:
-                  "drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px rgba(255, 42, 133, 0.9))",
-              }}
-            >
-              <polygon
-                points="6 3 20 12 6 21 6 3"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="2.6"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="tracking-wide drop-shadow-sm">Lecture</span>
+            <Play className="w-5 h-5 fill-black text-black" />
+            <span>Lecture</span>
           </button>
 
           <button
             onClick={() => onMoreInfo(currentItem)}
-            className="erodium-btn-info flex items-center gap-3 px-6 py-3 sm:py-3.5 text-white font-extrabold text-sm sm:text-base active:scale-95 cursor-pointer"
+            className="flex items-center gap-2.5 px-6 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm sm:text-base rounded-lg border border-white/15 transition-colors cursor-pointer"
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="w-5 h-5 flex-shrink-0"
-              style={{
-                filter: "drop-shadow(0 0 8px rgba(255, 80, 120, 0.55))",
-              }}
-            >
-              <defs>
-                <linearGradient id="erodium-info-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ff9e00" />
-                  <stop offset="60%" stopColor="#ff2a85" />
-                  <stop offset="100%" stopColor="#b5179e" />
-                </linearGradient>
-              </defs>
-              <circle
-                cx="12"
-                cy="12"
-                r="9.5"
-                fill="none"
-                stroke="url(#erodium-info-grad)"
-                strokeWidth="2.3"
-              />
-              <line
-                x1="12"
-                y1="11"
-                x2="12"
-                y2="16.5"
-                stroke="url(#erodium-info-grad)"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy="7.5" r="1.3" fill="url(#erodium-info-grad)" />
-            </svg>
-            <span className="tracking-wide">Plus d'infos</span>
+            <Info className="w-5 h-5 text-white" />
+            <span>Plus d'infos</span>
           </button>
         </div>
       </div>

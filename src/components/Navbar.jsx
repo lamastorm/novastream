@@ -36,27 +36,27 @@ export default function Navbar({
 
   return (
     <>
-      {/* TRANSPARENT UNIFIED HEADER OVER THE FULL-SCREEN ERODIUM BACKGROUND */}
-      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 select-none">
-        <div className="relative w-full min-h-[260px] sm:min-h-[320px] md:min-h-[370px] flex flex-col justify-between">
-          {/* TOP BAR OVERLAY (Live Badge + Surprise Left | Search + Support + Settings Right) */}
-          <div className="relative z-20 flex items-center justify-between gap-2 pt-1">
+      {/* HEADER SIMPLIFIÉ SUR FOND NOIR ÉPURÉ */}
+      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-4 select-none bg-black">
+        <div className="relative w-full flex flex-col gap-4">
+          {/* TOP BAR (Spectateurs + Surprise à gauche | Recherche + Soutenir + Paramètres à droite) */}
+          <div className="flex items-center justify-between gap-2 pt-1">
             {/* Top-Left: Live Viewers & Surprise */}
             <div className="flex items-center gap-2">
               <div
                 title="Spectateurs connectés sur Erodium"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/45 backdrop-blur-md border border-white/15 text-[11px] font-bold text-white shadow-lg"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-[11px] font-bold text-white"
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 <span className="text-emerald-300">{liveViewers.toLocaleString("fr-FR")}</span>
-                <span className="hidden sm:inline text-zinc-300">en ligne</span>
+                <span className="hidden sm:inline text-zinc-400">en ligne</span>
               </div>
 
               {onRandomSurprise && (
                 <button
                   onClick={onRandomSurprise}
                   title="Titre aléatoire"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-orange-500/35 hover:border-orange-400 text-[11px] font-bold text-orange-200 hover:text-white transition-colors cursor-pointer"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] font-bold text-orange-400 hover:text-white transition-colors cursor-pointer"
                 >
                   <Dice5 className="w-3.5 h-3.5 text-orange-400" />
                   <span>Surprise</span>
@@ -72,7 +72,7 @@ export default function Navbar({
 
               <button
                 onClick={onOpenSearch}
-                className="md:hidden flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-purple-500/40 text-zinc-200 hover:text-white text-xs cursor-pointer shadow-lg"
+                className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-zinc-200 hover:text-white text-xs cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5 text-orange-400" />
                 <span className="truncate max-w-[95px]">{searchQuery || "Rechercher..."}</span>
@@ -81,7 +81,7 @@ export default function Navbar({
               <button
                 onClick={onOpenDonate}
                 title="Soutenir les serveurs Erodium"
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/50 hover:bg-erodium-gradient backdrop-blur-md border border-purple-500/40 text-white text-xs font-bold transition-all duration-300 hover:scale-105 cursor-pointer flex-shrink-0 shadow-lg"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white text-xs font-bold transition-colors cursor-pointer flex-shrink-0"
               >
                 <Heart className="w-3.5 h-3.5 fill-orange-400 text-orange-400" />
                 <span>Soutenir</span>
@@ -90,78 +90,63 @@ export default function Navbar({
               <button
                 onClick={onOpenSettings}
                 title="Paramètres"
-                className="p-2 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/15 hover:border-purple-500/50 text-zinc-200 hover:text-white transition-all duration-300 hover:scale-105 cursor-pointer flex-shrink-0 shadow-lg"
+                className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-200 hover:text-white transition-colors cursor-pointer flex-shrink-0"
               >
                 <Settings className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* CENTER CLICKABLE HITBOX OVER THE "ERODIUM" LOGO IN THE UNIFIED BACKGROUND */}
+          {/* LOGO ERODIUM PROPRE & ÉPURÉ */}
           <div
             onClick={() => {
               setActiveTab("home");
               setSearchQuery("");
             }}
             title="Retour à l'accueil Erodium"
-            className="absolute inset-x-1/4 top-[12%] bottom-[38%] z-10 cursor-pointer"
-          />
+            className="flex flex-col items-center justify-center py-2 cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-2.5">
+              <ErodiumIconBadge type="home" variant="badge" size="lg" />
+              <span className="text-3xl sm:text-4xl md:text-5xl font-black italic tracking-tighter uppercase">
+                <span className="text-white">ERO</span>
+                <span className="text-orange-500">DIUM</span>
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-zinc-400 font-medium tracking-widest uppercase mt-1">
+              Votre univers de streaming
+            </p>
+          </div>
 
-          {/* FLOATING TRANSPARENT NAVIGATION LOGOS BELOW "VOTRE UNIVERS DE STREAMING" */}
-          <div className="relative z-20 flex justify-center pt-[135px] sm:pt-[180px] md:pt-[220px]">
+          {/* BARRE D'ONGLETS SIMPLE & NETTE */}
+          <div className="flex justify-center pb-2">
             <nav
               aria-label="Navigation principale"
-              className="flex items-center justify-center gap-1 sm:gap-3 px-2 py-1 overflow-x-auto max-w-full scrollbar-none"
+              className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 overflow-x-auto max-w-full scrollbar-none"
             >
-              {bannerTabs.map((tab, idx) => {
+              {bannerTabs.map((tab) => {
                 const isActive = activeTab === tab.id && !searchQuery;
                 return (
-                  <React.Fragment key={tab.id}>
-                    {idx > 0 && (
-                      <span
-                        className="h-9 sm:h-11 w-[1.5px] mx-1 sm:mx-3 flex-shrink-0 rounded-full opacity-70"
-                        style={{
-                          background:
-                            "linear-gradient(180deg, rgba(255,158,0,0.15) 0%, #ff7b00 30%, #ff2a85 65%, rgba(131,56,236,0.2) 100%)",
-                        }}
-                      />
-                    )}
-                    <button
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setSearchQuery("");
-                      }}
-                      className={`group relative flex flex-col items-center justify-center gap-1.5 px-3 sm:px-5 py-1.5 rounded-2xl transition-all duration-300 cursor-pointer flex-shrink-0 ${
-                        isActive
-                          ? "scale-110 -translate-y-0.5"
-                          : "opacity-85 hover:opacity-100 hover:-translate-y-0.5"
-                      }`}
-                    >
-                      <ErodiumIconBadge
-                        type={tab.id}
-                        variant="badge"
-                        size="md"
-                        active={isActive}
-                      />
-                      <span
-                        className={`text-[10px] sm:text-xs font-black tracking-[0.18em] uppercase transition-all ${
-                          isActive
-                            ? "text-erodium-gradient drop-shadow-[0_0_10px_rgba(255,123,0,0.6)]"
-                            : "text-zinc-200 group-hover:text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
-                        }`}
-                      >
-                        {tab.label}
-                      </span>
-                      {/* Fine barre néon sous l'onglet actif */}
-                      <span
-                        className={`h-[2.5px] rounded-full transition-all duration-300 ${
-                          isActive
-                            ? "w-8 bg-gradient-to-r from-[#ff9e00] via-[#ff2a85] to-[#9d4edd] shadow-[0_0_12px_rgba(255,42,133,0.9)]"
-                            : "w-0 bg-transparent group-hover:w-4 group-hover:bg-white/30"
-                        }`}
-                      />
-                    </button>
-                  </React.Fragment>
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setSearchQuery("");
+                    }}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold uppercase transition-colors cursor-pointer flex-shrink-0 ${
+                      isActive
+                        ? "bg-white text-black font-extrabold"
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                    }`}
+                  >
+                    <ErodiumIconBadge
+                      type={tab.id}
+                      variant="badge"
+                      size="sm"
+                      active={isActive}
+                    />
+                    <span>{tab.label}</span>
+                  </button>
                 );
               })}
             </nav>
@@ -178,7 +163,7 @@ export default function Navbar({
         }`}
       >
         <div
-          className={`max-w-5xl mx-auto h-13 sm:h-14 px-4 sm:px-5 rounded-full bg-[#0a0516]/95 backdrop-blur-2xl border border-purple-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_25px_rgba(139,92,246,0.25)] flex items-center justify-between gap-3 ${
+          className={`max-w-5xl mx-auto h-13 sm:h-14 px-4 sm:px-5 rounded-full bg-black/95 border border-white/10 flex items-center justify-between gap-3 ${
             isScrolled ? "pointer-events-auto" : "pointer-events-none"
           }`}
         >
@@ -193,52 +178,34 @@ export default function Navbar({
             <ErodiumIconBadge type="home" variant="badge" size="sm" />
             <span className="text-base sm:text-lg font-black italic tracking-tight uppercase">
               <span className="text-white">ERO</span>
-              <span className="text-erodium-gradient">DIUM</span>
+              <span className="text-orange-500">DIUM</span>
             </span>
           </div>
 
           <nav className="hidden md:flex items-center gap-1">
-            {bannerTabs.map((tab, idx) => {
+            {bannerTabs.map((tab) => {
               const isActive = activeTab === tab.id && !searchQuery;
               return (
-                <React.Fragment key={tab.id}>
-                  {idx > 0 && (
-                    <span
-                      className="h-5 w-[1px] mx-1 rounded-full opacity-60"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #ff8800 0%, #ff2a85 50%, #8338ec 100%)",
-                      }}
-                    />
-                  )}
-                  <button
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setSearchQuery("");
-                    }}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
-                      isActive
-                        ? "text-white shadow-[0_0_18px_rgba(255,100,50,0.5)]"
-                        : "text-zinc-300 hover:text-white hover:bg-white/5"
-                    }`}
-                    style={
-                      isActive
-                        ? {
-                            background:
-                              "linear-gradient(90deg, #ff7b00 0%, #ff3b6b 55%, #ec38bc 100%)",
-                          }
-                        : undefined
-                    }
-                  >
-                    <ErodiumIconBadge
-                      type={tab.id}
-                      variant="inline"
-                      size="sm"
-                      active={isActive}
-                    />
-                    <span>{tab.label}</span>
-                  </button>
-                </React.Fragment>
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSearchQuery("");
+                  }}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer ${
+                    isActive
+                      ? "bg-white text-black font-extrabold"
+                      : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                  }`}
+                >
+                  <ErodiumIconBadge
+                    type={tab.id}
+                    variant="inline"
+                    size="sm"
+                    active={isActive}
+                  />
+                  <span>{tab.label}</span>
+                </button>
               );
             })}
           </nav>

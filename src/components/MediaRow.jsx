@@ -30,16 +30,16 @@ function MediaRow({
 
   return (
     <section className="media-row-container mb-10 relative group/row select-none">
-      {/* Row Header (Image 4 style : Barre verticale néon + Titre en dégradé Orange/Rose/Violet) */}
-      <div className="flex items-end justify-between mb-4 px-1">
-        <div className="flex items-stretch gap-3">
-          <span className="erodium-section-bar flex-shrink-0 my-0.5" />
+      {/* Titre de section sobre et lisible */}
+      <div className="flex items-end justify-between mb-3 px-1">
+        <div className="flex items-stretch gap-2.5">
+          <span className="w-1 rounded-full bg-orange-500 flex-shrink-0 my-0.5" />
           <div>
-            <h3 className="text-xl sm:text-2xl font-black tracking-tight text-erodium-gradient leading-tight">
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white leading-tight">
               {cleanTitle}
             </h3>
             {subtitle && (
-              <p className="text-xs sm:text-[13px] text-purple-200/70 font-medium mt-0.5">
+              <p className="text-xs text-zinc-400 font-medium mt-0.5">
                 {subtitle}
               </p>
             )}

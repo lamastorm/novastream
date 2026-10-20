@@ -713,20 +713,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-transparent text-[#f4f4f5] flex flex-col relative overflow-x-hidden">
-      {/* Single Unified Full-Screen Erodium Artwork (100% clear & vivid) */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none bg-cover bg-top bg-no-repeat"
-        style={{ backgroundImage: 'url("/erodium-bg.png")' }}
-      />
-
-      {/* Subtle Ambient Floating Orange & Violet Glow Orbs */}
-      <div className="fixed -top-32 -left-32 w-[420px] h-[420px] rounded-full bg-orange-500/10 blur-[130px] pointer-events-none animate-float-orb z-0" />
-      <div
-        className="fixed top-1/3 -right-40 w-[460px] h-[460px] rounded-full bg-purple-600/10 blur-[140px] pointer-events-none animate-float-orb z-0"
-        style={{ animationDelay: "-5s" }}
-      />
-
+    <div className="min-h-screen bg-black text-[#f4f4f5] flex flex-col relative overflow-x-hidden">
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}

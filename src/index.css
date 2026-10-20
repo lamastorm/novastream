@@ -33,50 +33,54 @@
   animation: none !important;
 }
 
-/* Bouton "Lecture" officiel : Rapide, net, sans ombres floues lourdes */
+/* Bouton "Lecture" : Simple, net, fond blanc texte noir */
 .erodium-btn-play {
-  position: relative;
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background:
-    linear-gradient(95deg, #ff8800 0%, #ff2a85 52%, #7209b7 100%) padding-box,
-    linear-gradient(90deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
   box-shadow: none !important;
-  transition: opacity 0.15s ease;
+  transition: background-color 0.15s ease !important;
 }
 
 .erodium-btn-play:hover {
-  opacity: 0.92;
+  background: #e4e4e7 !important;
+  color: #000000 !important;
   transform: none !important;
   box-shadow: none !important;
 }
 
-/* Bouton "Plus d'infos" officiel : Rapide et net */
+/* Bouton "Plus d'infos" : Sobre et sombre */
 .erodium-btn-info {
-  position: relative;
-  border-radius: 9999px;
-  border: 2px solid rgba(168, 85, 247, 0.4);
-  background: #0f0a1c;
+  background: #27272a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
   box-shadow: none !important;
-  transition: opacity 0.15s ease;
+  transition: background-color 0.15s ease !important;
 }
 
 .erodium-btn-info:hover {
-  opacity: 0.92;
+  background: #3f3f46 !important;
+  color: #ffffff !important;
   transform: none !important;
   box-shadow: none !important;
 }
 
-/* Touches A-Z : Simples et réactives */
+/* Touches A-Z : Simples et nettes */
 .erodium-letter-btn {
-  border: 1.5px solid rgba(168, 85, 247, 0.3);
-  background: #0f0a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: #18181b !important;
+  color: #d4d4d8 !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
 .erodium-letter-btn:hover {
-  border-color: #ff2a85;
-  background: #1c0e30;
+  background: #27272a !important;
+  color: #ffffff !important;
   transform: none !important;
   box-shadow: none !important;
 }
@@ -85,14 +89,19 @@
 .erodium-section-bar {
   width: 4px;
   border-radius: 9999px;
-  background: linear-gradient(180deg, #ffb703 0%, #ff2a85 52%, #9d4edd 100%);
+  background: #f97316 !important;
   box-shadow: none !important;
 }
 
 
 @layer base {
+  html {
+    background-color: #000000 !important;
+  }
+
   body {
-    @apply bg-[#050508] text-[#f4f4f5] font-sans antialiased overflow-x-hidden;
+    @apply bg-black text-[#f4f4f5] font-sans antialiased overflow-x-hidden;
+    background-color: #000000 !important;
     margin: 0;
     padding: 0;
   }
@@ -107,42 +116,41 @@
     max-width: 100%;
     border: none;
     text-align: left;
-    background-color: #05030a;
+    background-color: #000000 !important;
   }
 }
 
-/* Custom modern scrollbar - Thème Orange & Violet */
+/* Custom modern scrollbar - Thème sobre */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #050508;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #f97316, #8b5cf6);
+  background: #27272a;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #fb923c, #a78bfa);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.8);
+  background: #3f3f46;
 }
 
 /* Surfaces sombres & légères sans flou GPU pour tout le monde */
 .glass {
-  background: #0d0c15 !important;
-  border: 1px solid rgba(168, 85, 247, 0.25) !important;
+  background: #09090b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Glass-card: Carte noir mat épurée avec contour réactif */
 .glass-card {
-  background: #09090f !important;
+  background: #09090b !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
 }
 
 .glass-card:hover {
-  border-color: rgba(168, 85, 247, 0.7) !important;
+  border-color: #f97316 !important;
   box-shadow: none !important;
 }
 
