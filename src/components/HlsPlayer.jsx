@@ -665,6 +665,11 @@ export default function HlsPlayer({
         if (hlsRef.current === hls) {
           hlsRef.current = null;
         }
+        try {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        } catch {}
       };
     } else {
       if (hlsRef.current) {
@@ -674,6 +679,13 @@ export default function HlsPlayer({
       video.src = streamUrl;
       video.load();
       video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      return () => {
+        try {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        } catch {}
+      };
     }
   }, [streamUrl, preferredLanguage, resolvedMeta.tmdbId, resolvedMeta.isTV, resolvedMeta.season, resolvedMeta.episode]);
 
