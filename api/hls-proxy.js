@@ -89,14 +89,10 @@ function fetchUpstreamDirect(url, redirectsLeft = 5) {
 }
 
 function streamBinaryWithRedirects(url, reqHeaders, res, contentType, redirectsLeft = 5) {
-  // Pour les flux vidéo directs MP4 (fichier entier), streamer directement avec gestion des plages d'octets (Range)
-  if (url.includes('/api/custom-stream') || url.includes('.mp4')) {
-    return pipeDirectUpstream(url, reqHeaders, res, contentType, redirectsLeft);
-  }
-
   const oracleUrl = `http://141-145-199-149.sslip.io/erodium-stream/hls?url=${encodeURIComponent(url)}`;
   
-  const oReq = http.get(oracleUrl, { agent: httpAgent, timeout: 3500 }, (oRes) => {
+  const oHeaders = { ...reqHeaders };
+  const oReq = http.get(oracleUrl, { agent: httpAgent, headers: oHeaders, timeout: 12000 }, (oRes) => {
     if (oRes.statusCode === 200 || oRes.statusCode === 206) {
       const outHeaders = {
         'Content-Type': contentType,
