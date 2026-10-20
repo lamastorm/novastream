@@ -52,11 +52,13 @@ export default function HlsPlayer({
   onPrevEpisode = null,
   onOpenEpisodes = null,
   autoNext = true,
+  onError = null,
 }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
+  const bufferTimeoutRef = useRef(null);
   const autoNextTriggeredRef = useRef(false);
   const hasRestoredPositionRef = useRef(false);
   const initialStartSecRef = useRef(-1);
@@ -110,7 +112,22 @@ export default function HlsPlayer({
     autoNextTriggeredRef.current = false;
     hasRestoredPositionRef.current = false;
     hasAutoSelectedAudioRef.current = false;
-  }, [streamUrl, preferredLanguage, tmdbId, season, episode]);
+
+    // Watchdog anti-blocage : si le flux ne démarre pas après 14 secondes de chargement
+    if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+    bufferTimeoutRef.current = setTimeout(() => {
+      const v = videoRef.current;
+      if (v && v.paused && (v.currentTime || 0) === 0 && !v.ended) {
+        console.warn("[HlsPlayer] Dépassement délai de chargement initial (14s)");
+        setIsBuffering(false);
+        onError?.("Le flux vidéo met trop de temps à répondre");
+      }
+    }, 14000);
+
+    return () => {
+      if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+    };
+  }, [streamUrl, preferredLanguage, tmdbId, season, episode, onError]);
 
   // Extract tmdbId / season / episode from streamUrl as fallback if needed
   const resolvedMeta = useMemo(() => {
@@ -412,18 +429,17 @@ export default function HlsPlayer({
         savedPos?.currentTime && savedPos.currentTime >= 5 ? savedPos.currentTime : -1;
       initialStartSecRef.current = initialStartSec;
 
-      const isTvDevice = deviceAdvisor.isTV();
+      const isTvDevice = deviceAdvisor.isTV() || deviceAdvisor.isXbox();
 
       const hls = new Hls({
-        enableWorker: true,
+        enableWorker: !isTvDevice,
         enableWebVTT: true,
         subtitleDisplay: true,
-        // Continuous sliding-window buffer that fits within all browser MSE quotas
-        // Buffer HLS fluide et stable : 60 Mo pour zéro saccade et préchargement continu
-        maxBufferLength: 90,
-        maxMaxBufferLength: 180,
-        maxBufferSize: 60 * 1000 * 1000,
-        backBufferLength: 20,
+        // Continuous sliding-window buffer tuned for TV / Console & Web
+        maxBufferLength: isTvDevice ? 30 : 60,
+        maxMaxBufferLength: isTvDevice ? 50 : 120,
+        maxBufferSize: isTvDevice ? 15 * 1000 * 1000 : 45 * 1000 * 1000,
+        backBufferLength: isTvDevice ? 10 : 20,
         startFragPrefetch: true,
         maxBufferHole: 0.8,
         maxFragLookUpTolerance: 0.25,
@@ -431,16 +447,15 @@ export default function HlsPlayer({
         nudgeOffset: 0.15,
         nudgeMaxRetry: 10,
         lowLatencyMode: false,
-        // Prevent sudden ABR quality drops and resolution-switch stutters, and start directly in 1080p without a test fragment
         testBandwidth: false,
         capLevelToPlayerSize: false,
-        abrEwmaDefaultEstimate: 25000000,
-        abrBandWidthFactor: 0.98,
+        abrEwmaDefaultEstimate: 20000000,
+        abrBandWidthFactor: 0.95,
         abrBandWidthUpFactor: 0.5,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingMaxRetry: 4,
-        fragLoadingMaxRetry: 6,
-        fragLoadingRetryDelay: 800,
+        manifestLoadingMaxRetry: 3,
+        levelLoadingMaxRetry: 3,
+        fragLoadingMaxRetry: 4,
+        fragLoadingRetryDelay: 600,
         startPosition: initialStartSec,
         pLoader: ElectronHlsLoader,
         fLoader: ElectronHlsLoader,
@@ -630,7 +645,14 @@ export default function HlsPlayer({
           console.warn("HLS fatal error:", data.type, data.details);
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
+              // Tenter 1 reconnexion réseau avant d'abandonner
+              if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT) {
+                hls.destroy();
+                setIsBuffering(false);
+                onError?.("Flux inaccessible chez l'hébergeur (Erreur réseau)");
+              } else {
+                hls.startLoad();
+              }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR: {
               const now = Date.now();
@@ -645,6 +667,8 @@ export default function HlsPlayer({
             }
             default:
               hls.destroy();
+              setIsBuffering(false);
+              onError?.(`Erreur fatale du flux HLS (${data.details || 'inconnue'})`);
               break;
           }
         }
@@ -962,7 +986,27 @@ export default function HlsPlayer({
         onProgress={updateBufferedProgress}
         onLoadedMetadata={handleLoadedMetadata}
         onDurationChange={handleTimeUpdate}
-        onPlay={() => setIsPlaying(true)}
+        onPlay={() => {
+          setIsPlaying(true);
+          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+        }}
+        onError={() => {
+          console.warn("HTML5 Video error:", videoRef.current?.error);
+          setIsBuffering(false);
+          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+          const errCode = videoRef.current?.error?.code;
+          const msg = errCode === 4 ? "Format ou flux vidéo inaccessible (Erreur 403/404)" : "Erreur de lecture du lecteur vidéo";
+          onError?.(msg);
+        }}
+        onCanPlay={() => {
+          setIsBuffering(false);
+          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+        }}
+        onLoadedData={() => {
+          setIsBuffering(false);
+          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+          handleTimeUpdate();
+        }}
         onPause={() => {
           setIsPlaying(false);
           if (hlsRef.current) {

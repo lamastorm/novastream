@@ -18,8 +18,11 @@ const httpAgent = new http.Agent({
 });
 
 function getRefererForUrl(url) {
-  if (url.includes('finepulfe.xyz') || url.includes('skystream')) {
+  if (url.includes('finepulfe.xyz') || url.includes('skystream') || url.includes('b-cdn.net') || url.includes('bunnycdn')) {
     return 'https://skystream.fun/';
+  }
+  if (url.includes('cloudwindow-route') || url.includes('voe.sx') || url.includes('frembed') || url.includes('vidmoly')) {
+    return 'https://voe.sx/';
   }
   return 'https://papadustream.club/';
 }
@@ -86,6 +89,11 @@ function fetchUpstreamDirect(url, redirectsLeft = 5) {
 }
 
 function streamBinaryWithRedirects(url, reqHeaders, res, contentType, redirectsLeft = 5) {
+  // Pour les flux vidéo directs MP4 (fichier entier), streamer directement avec gestion des plages d'octets (Range)
+  if (url.includes('/api/custom-stream') || url.includes('.mp4')) {
+    return pipeDirectUpstream(url, reqHeaders, res, contentType, redirectsLeft);
+  }
+
   const oracleUrl = `http://141-145-199-149.sslip.io/erodium-stream/hls?url=${encodeURIComponent(url)}`;
   
   const oReq = http.get(oracleUrl, { agent: httpAgent, timeout: 3500 }, (oRes) => {
@@ -241,6 +249,7 @@ export default async function handler(req, res) {
 
     const isBinaryChunk =
       /\.(ts|aac|m4s|mp4|cmfv|cmfa)(\?|$)/i.test(decodedUrl) ||
+      decodedUrl.includes('/api/custom-stream') ||
       (decodedUrl.includes('seg-') && !decodedUrl.includes('.m3u8'));
 
     if (isBinaryChunk) {
@@ -255,7 +264,7 @@ export default async function handler(req, res) {
 
       let contentType = 'video/mp2t';
       if (decodedUrl.includes('.aac')) contentType = 'audio/aac';
-      if (decodedUrl.includes('.m4s') || decodedUrl.includes('.mp4')) contentType = 'video/mp4';
+      if (decodedUrl.includes('.m4s') || decodedUrl.includes('.mp4') || decodedUrl.includes('/api/custom-stream')) contentType = 'video/mp4';
 
       streamBinaryWithRedirects(decodedUrl, headers, res, contentType, 5);
       return;

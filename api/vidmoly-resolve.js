@@ -38,7 +38,7 @@ export default async function handler(req) {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': data?.success ? 'public, max-age=1800' : 'no-cache, no-store',
         },
       });
     }
@@ -58,7 +58,10 @@ export default async function handler(req) {
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store',
+        },
       }
     );
   } catch (err) {

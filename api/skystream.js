@@ -9,6 +9,21 @@ function cleanQuery(str) {
     .trim();
 }
 
+function isTitleMatch(expected, candidate) {
+  if (!expected || !candidate) return false;
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').trim().replace(/\s+/g, ' ');
+  const e = norm(expected);
+  const c = norm(candidate);
+  if (e === c) return true;
+  if (c.startsWith(e) || e.startsWith(c)) return true;
+  const eWords = e.split(' ').filter(w => w.length > 2);
+  if (eWords.length === 0) return true;
+  const cWords = new Set(c.split(' '));
+  const matched = eWords.filter(w => cWords.has(w));
+  if (matched.length / eWords.length >= 0.75 && c.length <= e.length * 1.6) return true;
+  return false;
+}
+
 const SEGMENT_TYPES = ['intro', 'recap', 'credits', 'preview'];
 
 async function fetchSkipSegments({ tmdbId, type, season, episode }) {
@@ -153,15 +168,25 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
         return i.kind === 'movie';
       });
 
-      const candidates = matchingType.length > 0 ? matchingType : items;
+      if (matchingType.length === 0) {
+        return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
+      }
+
+      const candidates = matchingType;
+
+      // Filtrer les candidats qui correspondent réellement au titre demandé
+      const validCandidates = candidates.filter((i) => isTitleMatch(title, i.title));
+      if (validCandidates.length === 0) {
+        return { success: false, error: `Titre « ${title} » introuvable sur SkyStream` };
+      }
 
       // Meilleur match par année si disponible
       if (year) {
         const yNum = parseInt(year, 10);
-        match = candidates.find((i) => Math.abs(parseInt(i.year, 10) - yNum) <= 1);
+        match = validCandidates.find((i) => Math.abs(parseInt(i.year, 10) - yNum) <= 1);
       }
       if (!match) {
-        match = candidates[0];
+        match = validCandidates[0];
       }
 
       if (match) {
@@ -218,13 +243,22 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       }
     }
 
-    // Priorité 2 : Flux direct fourni
-    if (!streamUrl && data.url) {
+    // Priorité 2 : Flux direct fourni ou fallback custom-stream si BunnyCDN est suspendu
+    const isBunnyCdn = Boolean(data.url && (data.url.includes('b-cdn.net') || data.url.includes('bunnycdn')));
+    if (!streamUrl && isBunnyCdn && data.fallbackUrl) {
+      streamUrl = `https://skystream.fun${data.fallbackUrl.startsWith('/') ? '' : '/'}${data.fallbackUrl}`;
+    }
+
+    if (!streamUrl && data.url && !isBunnyCdn) {
       if (data.url.startsWith('http')) {
         streamUrl = data.url;
       } else {
         streamUrl = `https://skystream.fun${data.url.startsWith('/') ? '' : '/'}${data.url}`;
       }
+    }
+
+    if (!streamUrl && data.fallbackUrl) {
+      streamUrl = `https://skystream.fun${data.fallbackUrl.startsWith('/') ? '' : '/'}${data.fallbackUrl}`;
     }
 
     if (!streamUrl) {
@@ -254,7 +288,7 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       new Promise((resolve) => setTimeout(() => resolve([]), 300)),
     ]);
 
-    const proxiedStreamUrl = streamUrl.includes('.m3u8')
+    const proxiedStreamUrl = (streamUrl.includes('.m3u8') || streamUrl.includes('.mp4') || streamUrl.includes('/api/custom-stream') || streamUrl.includes('b-cdn.net'))
       ? `/api/hls-proxy?v=2&url=${encodeURIComponent(streamUrl)}`
       : streamUrl;
 

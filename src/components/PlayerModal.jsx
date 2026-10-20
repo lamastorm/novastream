@@ -646,7 +646,27 @@ export default function PlayerModal({
   }, [selectedServer?.id, currentMedia.id, season, episode]);
 
   // Résolution directe pour Pamdor (0 Pub • HLS Direct VF)
-  useEffect(() => {
+    const handlePlayerError = (source, errMsg) => {
+    console.warn('[PlayerModal] Error from ' + source + ':', errMsg);
+    if (source === 'skystream') {
+      setSkyStreamUrl(null);
+      setSkyStreamError(errMsg || 'Flux SkyStream inaccessible');
+      const fallback = availableServers.find((s) => s.id !== 'skystream_direct') || availableServers[1];
+      if (fallback) setSelectedServer(fallback);
+    } else if (source === 'vidmoly') {
+      setVidmolyDirectStream(null);
+      setVidmolyError(errMsg || 'Flux VidMoly inaccessible');
+      const fallback = availableServers.find((s) => s.id !== 'skystream_direct' && s.id !== 'vidmoly_vf');
+      if (fallback) setSelectedServer(fallback);
+    } else if (source === 'pamdor') {
+      setPamdorDirectStream(null);
+      setPamdorError(errMsg || 'Flux Pamdor inaccessible');
+      const fallback = availableServers.find((s) => s.id !== 'skystream_direct' && s.id !== 'vidmoly_vf' && s.id !== 'pamdor_vf');
+      if (fallback) setSelectedServer(fallback);
+    }
+  };
+
+useEffect(() => {
     if (!selectedServer?.isPamdorDirect && selectedServer?.id !== "pamdor_vf") {
       setPamdorDirectStream(null);
       setIsPamdorLoading(false);
@@ -1243,6 +1263,7 @@ export default function PlayerModal({
               <HlsPlayer
                 key={skyStreamUrl}
                 streamUrl={skyStreamUrl}
+                onError={(msg) => handlePlayerError("skystream", msg)}
                 title={title}
                 poster={
                   currentMedia.backdrop_path
@@ -1390,6 +1411,7 @@ export default function PlayerModal({
               <HlsPlayer
                 key={vidmolyDirectStream}
                 streamUrl={vidmolyDirectStream}
+                onError={(msg) => handlePlayerError("vidmoly", msg)}
                 title={title}
                 poster={
                   currentMedia.backdrop_path
@@ -1432,15 +1454,15 @@ export default function PlayerModal({
                 >
                   🔄 Réessayer
                 </button>
-                <button
-                  onClick={() => {
-                    const sky = availableServers.find((s) => s.id === "skystream_direct");
-                    if (sky) setSelectedServer(sky);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs border border-white/10 transition-all cursor-pointer"
-                >
-                  ⚡ Lecteur Principal (SkyStream)
-                </button>
+                {availableServers.filter(s => s.id !== activeServer?.id).map((srv) => (
+                  <button
+                    key={srv.id}
+                    onClick={() => setSelectedServer(srv)}
+                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs border border-white/10 transition-all cursor-pointer"
+                  >
+                    ▶ Basculer sur {srv.name ? srv.name.split('(')[0].trim() : 'ce serveur'}
+                  </button>
+                ))}
               </div>
             </div>
           )
@@ -1458,6 +1480,7 @@ export default function PlayerModal({
               <HlsPlayer
                 key={pamdorDirectStream}
                 streamUrl={pamdorDirectStream}
+                onError={(msg) => handlePlayerError("pamdor", msg)}
                 title={title}
                 poster={
                   currentMedia.backdrop_path
