@@ -243,13 +243,8 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       }
     }
 
-    // Priorité 2 : Flux direct fourni ou fallback custom-stream si BunnyCDN est suspendu
-    const isBunnyCdn = Boolean(data.url && (data.url.includes('b-cdn.net') || data.url.includes('bunnycdn')));
-    if (!streamUrl && isBunnyCdn && data.fallbackUrl) {
-      streamUrl = `https://skystream.fun${data.fallbackUrl.startsWith('/') ? '' : '/'}${data.fallbackUrl}`;
-    }
-
-    if (!streamUrl && data.url && !isBunnyCdn) {
+    // Priorité 2 : Flux direct fourni
+    if (!streamUrl && data.url && !data.url.includes('b-cdn.net') && !data.url.includes('bunnycdn')) {
       if (data.url.startsWith('http')) {
         streamUrl = data.url;
       } else {
@@ -257,12 +252,9 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       }
     }
 
-    if (!streamUrl && data.fallbackUrl) {
-      streamUrl = `https://skystream.fun${data.fallbackUrl.startsWith('/') ? '' : '/'}${data.fallbackUrl}`;
-    }
-
-    if (!streamUrl) {
-      return { success: false, error: 'Flux vidéo direct indisponible sur ce titre' };
+    // Exiger un flux HLS valide (.m3u8) pour éviter les blocages de chargement infini sur les vieux flux BunnyCDN suspendus
+    if (!streamUrl || !streamUrl.includes('.m3u8')) {
+      return { success: false, error: 'Flux vidéo HD direct HLS indisponible sur ce titre. Bascule automatique vers le lecteur de secours...' };
     }
 
     // Extraire tmdbId depuis l'URL CDN (ex: /tv/1399-noog8/ ou /movies/27205-izjy4/) ou depuis le paramètre
@@ -288,9 +280,7 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       new Promise((resolve) => setTimeout(() => resolve([]), 300)),
     ]);
 
-    const proxiedStreamUrl = (streamUrl.includes('.m3u8') || streamUrl.includes('.mp4') || streamUrl.includes('/api/custom-stream') || streamUrl.includes('b-cdn.net'))
-      ? `/api/hls-proxy?v=2&url=${encodeURIComponent(streamUrl)}`
-      : streamUrl;
+    const proxiedStreamUrl = `/api/hls-proxy?v=2&url=${encodeURIComponent(streamUrl)}`;
 
     const proxiedSubtitles = (Array.isArray(data.subtitles) ? data.subtitles : []).map((sub) => ({
       ...sub,
