@@ -82,7 +82,7 @@ function MediaCard({
           onSelect(item);
         }
       }}
-      className="group relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-orange-500/50 cursor-pointer transition-all duration-300 hover:scale-[1.035] hover:shadow-[0_10px_28px_rgba(139,92,246,0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 flex-shrink-0 shadow-lg select-none"
+      className="group relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/10 hover:border-orange-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 flex-shrink-0 select-none"
     >
       {/* Full-bleed Poster */}
       <img
@@ -90,15 +90,15 @@ function MediaCard({
         alt={title}
         loading="lazy"
         decoding="async"
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        className="w-full h-full object-cover"
       />
 
       {/* Permanent Resume Pill for History Items */}
       {hasProgress && (
-        <div className="absolute bottom-2 left-2 right-2 z-10 rounded-lg bg-black/90 backdrop-blur-md border border-orange-500/45 shadow-lg text-white group-hover:opacity-0 transition-opacity duration-200 overflow-hidden">
+        <div className="absolute bottom-2 left-2 right-2 z-10 rounded-lg bg-black/95 border border-orange-500/50 text-white overflow-hidden">
           <div className="flex items-center justify-between px-2.5 py-1.5">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
               <span className="text-[11px] font-bold text-white truncate">
                 {isSeries ? `S${seasonNum}E${episodeNum}` : "En cours"}
                 {item.currentTime > 10

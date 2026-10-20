@@ -79,13 +79,8 @@ export default function HeroBanner({
     setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
   }, [slides.length]);
 
-  useEffect(() => {
-    if (slides.length <= 1 || isPaused) return;
-    const timer = setInterval(() => {
-      nextSlide();
-    }, 6500);
-    return () => clearInterval(timer);
-  }, [slides.length, isPaused, nextSlide]);
+  // Auto-slide désactivé pour zéro recalcul RAM et GPU
+  const isAutoSlideDisabled = true;
 
   // Preload official TMDB transparent logo for current slide
   const currentItem = slides[currentIndex] || slides[0];

@@ -419,11 +419,11 @@ export default function HlsPlayer({
         enableWebVTT: true,
         subtitleDisplay: true,
         // Continuous sliding-window buffer that fits within all browser MSE quotas
-        // Mode Console & TV (Xbox, PS5, Smart TV) : buffer allégé pour éviter l'épuisement VRAM et les écrans noirs
-        maxBufferLength: isTvDevice ? 45 : 120,
-        maxMaxBufferLength: isTvDevice ? 80 : 300,
-        maxBufferSize: isTvDevice ? 30 * 1000 * 1000 : 120 * 1000 * 1000,
-        backBufferLength: isTvDevice ? 10 : 20,
+        // Buffer ultra-léger universel : 30 Mo max pour zéro fuite de RAM et zéro crash
+        maxBufferLength: 40,
+        maxMaxBufferLength: 70,
+        maxBufferSize: 30 * 1000 * 1000,
+        backBufferLength: 10,
         startFragPrefetch: true,
         maxBufferHole: 0.8,
         maxFragLookUpTolerance: 0.25,

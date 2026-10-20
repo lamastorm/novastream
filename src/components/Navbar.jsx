@@ -47,7 +47,7 @@ export default function Navbar({
                 title="Spectateurs connectés sur Erodium"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/45 backdrop-blur-md border border-white/15 text-[11px] font-bold text-white shadow-lg"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 <span className="text-emerald-300">{liveViewers.toLocaleString("fr-FR")}</span>
                 <span className="hidden sm:inline text-zinc-300">en ligne</span>
               </div>
@@ -56,7 +56,7 @@ export default function Navbar({
                 <button
                   onClick={onRandomSurprise}
                   title="Titre aléatoire"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md border border-orange-500/35 hover:border-orange-400 text-[11px] font-bold text-orange-200 hover:text-white transition-all duration-300 hover:scale-105 cursor-pointer shadow-lg"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-orange-500/35 hover:border-orange-400 text-[11px] font-bold text-orange-200 hover:text-white transition-colors cursor-pointer"
                 >
                   <Dice5 className="w-3.5 h-3.5 text-orange-400" />
                   <span>Surprise</span>

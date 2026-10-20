@@ -1,73 +1,39 @@
 @import "tailwindcss";
 
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+/* =========================================================================
+   ERODIUM ULTRA-LIGHT & HIGH PERFORMANCE ENGINE (Pour tout le monde)
+   0 Animation en boucle, 0 Flou GPU (Backdrop-filter), 0 Fuite de RAM
+   ========================================================================= */
+
+/* Neutralisation totale et globale de tous les filtres de flou (backdrop-filter) */
+*,
+*::before,
+*::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 22px -2px rgba(249, 115, 22, 0.45), 0 0 32px -4px rgba(139, 92, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 32px 2px rgba(139, 92, 246, 0.6), 0 0 42px 0px rgba(249, 115, 22, 0.55);
-  }
-}
-
-@keyframes floatOrb {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(20px, -18px, 0) scale(1.08);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
+/* Gradients statiques élégants sans animation infinie */
 .bg-erodium-gradient {
-  background: linear-gradient(125deg, #f97316, #ec4899, #8b5cf6, #f97316);
-  background-size: 250% 250%;
-  animation: gradientShift 5s ease infinite;
+  background: linear-gradient(125deg, #f97316, #8b5cf6) !important;
 }
 
 .text-erodium-gradient {
-  background: linear-gradient(95deg, #ff9e00 0%, #ff2a85 50%, #a855f7 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 5s ease infinite;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: linear-gradient(95deg, #ff9e00 0%, #ff2a85 50%, #a855f7 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
-.glow-erodium {
-  animation: pulseGlow 3.5s ease-in-out infinite;
+/* Désactivation stricte de toutes les animations en boucle (économie 100% GPU / RAM) */
+.glow-erodium,
+.animate-float-orb,
+.animate-ping,
+.animate-pulse,
+.animate-fade-in {
+  animation: none !important;
 }
 
-.animate-float-orb {
-  animation: floatOrb 9s ease-in-out infinite;
-}
-
-/* Bouton "Lecture" officiel (Image 4 : Capsule dégradée + double anneau néon orange-rose-violet) */
+/* Bouton "Lecture" officiel : Rapide, net, sans ombres floues lourdes */
 .erodium-btn-play {
   position: relative;
   border-radius: 9999px;
@@ -75,71 +41,52 @@
   background:
     linear-gradient(95deg, #ff8800 0%, #ff2a85 52%, #7209b7 100%) padding-box,
     linear-gradient(90deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
-  box-shadow:
-    0 0 24px -2px rgba(255, 136, 0, 0.65),
-    0 0 32px -4px rgba(168, 85, 247, 0.55),
-    inset 0 1px 2px rgba(255, 255, 255, 0.35);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
+  transition: opacity 0.15s ease;
 }
 
 .erodium-btn-play:hover {
-  transform: scale(1.04);
-  box-shadow:
-    0 0 32px 2px rgba(255, 136, 0, 0.8),
-    0 0 42px 2px rgba(168, 85, 247, 0.7),
-    inset 0 1px 3px rgba(255, 255, 255, 0.45);
+  opacity: 0.92;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Bouton "Plus d'infos" officiel (Image 4 : Capsule sombre vitrée + contour néon orange-rose-violet) */
+/* Bouton "Plus d'infos" officiel : Rapide et net */
 .erodium-btn-info {
   position: relative;
   border-radius: 9999px;
-  border: 2px solid transparent;
-  background:
-    linear-gradient(180deg, rgba(14, 7, 26, 0.92), rgba(9, 4, 18, 0.96)) padding-box,
-    linear-gradient(95deg, #ff9e00 0%, #ff2a85 50%, #8338ec 100%) border-box;
-  box-shadow:
-    0 0 20px -4px rgba(255, 136, 0, 0.4),
-    0 0 24px -4px rgba(139, 92, 246, 0.45);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 2px solid rgba(168, 85, 247, 0.4);
+  background: #0f0a1c;
+  box-shadow: none !important;
+  transition: opacity 0.15s ease;
 }
 
 .erodium-btn-info:hover {
-  transform: scale(1.04);
-  background:
-    linear-gradient(180deg, rgba(24, 12, 42, 0.95), rgba(15, 7, 30, 0.98)) padding-box,
-    linear-gradient(95deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
-  box-shadow:
-    0 0 28px 0px rgba(255, 136, 0, 0.55),
-    0 0 34px 0px rgba(168, 85, 247, 0.6);
+  opacity: 0.92;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Touches A-Z néon (Image 3 : Carré arrondi sombre + bordure dégradée orange/rose/violet) */
+/* Touches A-Z : Simples et réactives */
 .erodium-letter-btn {
-  border: 1.5px solid transparent;
-  background:
-    linear-gradient(180deg, rgba(14, 7, 26, 0.92), rgba(8, 4, 16, 0.96)) padding-box,
-    linear-gradient(135deg, rgba(255, 158, 0, 0.85) 0%, rgba(255, 42, 133, 0.8) 50%, rgba(131, 56, 236, 0.9) 100%) border-box;
-  box-shadow: 0 0 12px -3px rgba(168, 85, 247, 0.35);
-  transition: all 0.25s ease;
+  border: 1.5px solid rgba(168, 85, 247, 0.3);
+  background: #0f0a1a;
+  box-shadow: none !important;
 }
 
 .erodium-letter-btn:hover {
-  transform: translateY(-1px) scale(1.06);
-  background:
-    linear-gradient(135deg, rgba(255, 158, 0, 0.2), rgba(131, 56, 236, 0.25)) padding-box,
-    linear-gradient(135deg, #ffb703 0%, #ff2a85 50%, #a855f7 100%) border-box;
-  box-shadow: 0 0 18px rgba(255, 42, 133, 0.45);
+  border-color: #ff2a85;
+  background: #1c0e30;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Barre verticale néon des titres de section (Image 4 : "Reprendre la lecture") */
+/* Barre des titres de section */
 .erodium-section-bar {
-  width: 5px;
+  width: 4px;
   border-radius: 9999px;
   background: linear-gradient(180deg, #ffb703 0%, #ff2a85 52%, #9d4edd 100%);
-  box-shadow:
-    0 0 14px rgba(255, 158, 0, 0.75),
-    0 0 22px rgba(157, 78, 221, 0.6);
+  box-shadow: none !important;
 }
 
 
@@ -181,35 +128,28 @@
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.8);
 }
 
-/* Glassmorphism utility - Noir profond & bordures Orange/Violet */
+/* Surfaces sombres & légères sans flou GPU pour tout le monde */
 .glass {
-  background: rgba(8, 8, 14, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: #0d0c15 !important;
+  border: 1px solid rgba(168, 85, 247, 0.25) !important;
 }
 
-/* Glass-card: Carte noir brillant avec lueur Orange/Violet au survol */
+/* Glass-card: Carte noir mat épurée avec contour réactif */
 .glass-card {
-  background: #09090f;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #09090f !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
 }
 
 .glass-card:hover {
-  border-color: rgba(168, 85, 247, 0.65);
-  box-shadow: 0 12px 35px -5px rgba(249, 115, 22, 0.28), 0 8px 25px -5px rgba(139, 92, 246, 0.35);
+  border-color: rgba(168, 85, 247, 0.7) !important;
+  box-shadow: none !important;
 }
 
-/* Boutons et Accents Orange & Violet */
-.glow-orange {
-  box-shadow: 0 0 25px -4px rgba(249, 115, 22, 0.5), 0 0 25px -4px rgba(139, 92, 246, 0.4);
-}
-
+/* Boutons et Accents : Pas de box-shadow floue lourde */
+.glow-orange,
 .glow-orange-sm {
-  box-shadow: 0 0 15px -2px rgba(249, 115, 22, 0.4), 0 0 15px -2px rgba(139, 92, 246, 0.35);
+  box-shadow: none !important;
 }
 
 /* Off-screen row virtualization */
@@ -251,49 +191,11 @@ html.tv-mode button:focus-visible,
 html.tv-mode a:focus-visible {
   outline: 4px solid #a855f7 !important;
   outline-offset: 4px !important;
-  transform: scale(1.06) !important;
-  box-shadow: 0 0 40px rgba(249, 115, 22, 0.7), 0 0 40px rgba(139, 92, 246, 0.8) !important;
   z-index: 50 !important;
 }
 
-/* =========================================================================
-   Console / TV Performance Engine (Xbox 360, Xbox One, Xbox Series, TVs)
-   Évite les écrans noirs, les crashs de composition GPU et les saccades
-   ========================================================================= */
-html.tv-mode *,
-html.tv-mode *::before,
-html.tv-mode *::after {
-  /* Supprime backdrop-filter qui force une recomposition plein écran GPU par trame */
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-/* Remplacer le glassmorphism transparent par des fonds sombres mats et performants */
-html.tv-mode .glass {
-  background: rgba(10, 8, 18, 0.98) !important;
-  border-color: rgba(168, 85, 247, 0.3) !important;
-}
-
-html.tv-mode .glass-card {
-  background: #0d0b14 !important;
-  box-shadow: none !important;
-  will-change: auto !important;
-}
-
-/* Stopper les animations infinies qui consomment 60fps de calcul GPU sur console */
-html.tv-mode .bg-erodium-gradient,
-html.tv-mode .text-erodium-gradient,
-html.tv-mode .glow-erodium,
-html.tv-mode .animate-float-orb {
-  animation: none !important;
-}
-
-html.tv-mode .bg-erodium-gradient {
-  background: linear-gradient(125deg, #f97316, #8b5cf6) !important;
-}
-
 /* Accélération matérielle isolée sur le lecteur vidéo sans forcer de filtres lourds */
-html.tv-mode video {
+video {
   transform: translateZ(0);
   backface-visibility: hidden;
   filter: none !important;
