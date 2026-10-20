@@ -6,14 +6,12 @@ import MediaCard from "./components/MediaCard";
 import Top10Row from "./components/Top10Row";
 import PlatformFilter, { PLATFORMS } from "./components/PlatformFilter";
 import AlphabetBar from "./components/AlphabetBar";
+import DetailModal from "./components/DetailModal";
+import PlayerModal from "./components/PlayerModal";
+import SettingsModal from "./components/SettingsModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import BottomNav from "./components/BottomNav";
 import ErodiumIconBadge from "./components/ErodiumIconBadge";
-
-// Lazy-loading ultra-rapide des modales : économise 60% du poids initial au démarrage
-const DetailModal = React.lazy(() => import("./components/DetailModal"));
-const PlayerModal = React.lazy(() => import("./components/PlayerModal"));
-const SettingsModal = React.lazy(() => import("./components/SettingsModal"));
 import { tmdbApi } from "./api/tmdb";
 import { catalogProvider } from "./services/catalogProvider";
 import { anilistApi } from "./api/anilist";
@@ -27,8 +25,8 @@ import MoodSelector from "./components/MoodSelector";
 import LiveCatalogStats from "./components/LiveCatalogStats";
 import VpnBanner from "./components/VpnBanner";
 import SearchOverlay from "./components/SearchOverlay";
-const DonateModal = React.lazy(() => import("./components/DonateModal"));
-const DmcaModal = React.lazy(() => import("./components/DmcaModal"));
+import DonateModal from "./components/DonateModal";
+import DmcaModal from "./components/DmcaModal";
 import { MONETIZATION_CONFIG } from "./config/monetization";
 import { seoService } from "./services/seoService";
 import {
@@ -1795,7 +1793,6 @@ export default function App() {
           onReset={() => setSelectedMedia(null)}
           resetLabel="Fermer la fiche"
         >
-          <React.Suspense fallback={null}>
             <DetailModal
               media={selectedMedia}
               onClose={() => setSelectedMedia(null)}
@@ -1803,7 +1800,6 @@ export default function App() {
               isFavorite={isItemFavorite(selectedMedia)}
               onToggleFavorite={toggleFavorite}
             />
-          </React.Suspense>
         </ErrorBoundary>
       )}
 
@@ -1817,50 +1813,42 @@ export default function App() {
           }}
           resetLabel="Fermer le lecteur"
         >
-          <React.Suspense fallback={null}>
-            <PlayerModal
-              media={activePlayer.media}
-              initialSeason={activePlayer.season}
-              initialEpisode={activePlayer.episode}
-              initialLanguage={activePlayer.language || "vf"}
-              onClose={() => {
-                setActivePlayer(null);
-                setHistory(storage.getHistory());
-              }}
-            />
-          </React.Suspense>
+          <PlayerModal
+            media={activePlayer.media}
+            initialSeason={activePlayer.season}
+            initialEpisode={activePlayer.episode}
+            initialLanguage={activePlayer.language || "vf"}
+            onClose={() => {
+              setActivePlayer(null);
+              setHistory(storage.getHistory());
+            }}
+          />
         </ErrorBoundary>
       )}
 
       {/* MODAL: PARAMÈTRES */}
       {settingsOpen && (
-        <React.Suspense fallback={null}>
-          <SettingsModal
-            onClose={() => setSettingsOpen(false)}
-            onOpenDmca={() => {
-              setSettingsOpen(false);
-              setDmcaOpen(true);
-            }}
-            onDataCleared={() => {
-              setFavorites(storage.getWatchlist());
-              setHistory(storage.getHistory());
-            }}
-          />
-        </React.Suspense>
+        <SettingsModal
+          onClose={() => setSettingsOpen(false)}
+          onOpenDmca={() => {
+            setSettingsOpen(false);
+            setDmcaOpen(true);
+          }}
+          onDataCleared={() => {
+            setFavorites(storage.getWatchlist());
+            setHistory(storage.getHistory());
+          }}
+        />
       )}
 
       {/* MODAL: DONS & SOUTIEN */}
       {donateOpen && (
-        <React.Suspense fallback={null}>
-          <DonateModal onClose={() => setDonateOpen(false)} />
-        </React.Suspense>
+        <DonateModal onClose={() => setDonateOpen(false)} />
       )}
 
       {/* MODAL: MENTIONS LÉGALES & DMCA */}
       {dmcaOpen && (
-        <React.Suspense fallback={null}>
-          <DmcaModal onClose={() => setDmcaOpen(false)} />
-        </React.Suspense>
+        <DmcaModal onClose={() => setDmcaOpen(false)} />
       )}
     </div>
   );

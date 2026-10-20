@@ -419,11 +419,11 @@ export default function HlsPlayer({
         enableWebVTT: true,
         subtitleDisplay: true,
         // Continuous sliding-window buffer that fits within all browser MSE quotas
-        // Buffer ultra-léger universel : 30 Mo max pour zéro fuite de RAM et zéro crash
-        maxBufferLength: 40,
-        maxMaxBufferLength: 70,
-        maxBufferSize: 30 * 1000 * 1000,
-        backBufferLength: 10,
+        // Buffer HLS fluide et stable : 60 Mo pour zéro saccade et préchargement continu
+        maxBufferLength: 90,
+        maxMaxBufferLength: 180,
+        maxBufferSize: 60 * 1000 * 1000,
+        backBufferLength: 20,
         startFragPrefetch: true,
         maxBufferHole: 0.8,
         maxFragLookUpTolerance: 0.25,
@@ -665,11 +665,6 @@ export default function HlsPlayer({
         if (hlsRef.current === hls) {
           hlsRef.current = null;
         }
-        try {
-          video.pause();
-          video.removeAttribute("src");
-          video.load();
-        } catch {}
       };
     } else {
       if (hlsRef.current) {
@@ -679,13 +674,6 @@ export default function HlsPlayer({
       video.src = streamUrl;
       video.load();
       video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-      return () => {
-        try {
-          video.pause();
-          video.removeAttribute("src");
-          video.load();
-        } catch {}
-      };
     }
   }, [streamUrl, preferredLanguage, resolvedMeta.tmdbId, resolvedMeta.isTV, resolvedMeta.season, resolvedMeta.episode]);
 
