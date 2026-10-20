@@ -58,7 +58,6 @@ export default function HlsPlayer({
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
-  const bufferTimeoutRef = useRef(null);
   const autoNextTriggeredRef = useRef(false);
   const hasRestoredPositionRef = useRef(false);
   const initialStartSecRef = useRef(-1);
@@ -112,22 +111,7 @@ export default function HlsPlayer({
     autoNextTriggeredRef.current = false;
     hasRestoredPositionRef.current = false;
     hasAutoSelectedAudioRef.current = false;
-
-    // Watchdog anti-blocage : si le flux ne démarre pas après 14 secondes de chargement
-    if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
-    bufferTimeoutRef.current = setTimeout(() => {
-      const v = videoRef.current;
-      if (v && v.paused && (v.currentTime || 0) === 0 && !v.ended) {
-        console.warn("[HlsPlayer] Dépassement délai de chargement initial (14s)");
-        setIsBuffering(false);
-        onError?.("Le flux vidéo met trop de temps à répondre");
-      }
-    }, 14000);
-
-    return () => {
-      if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
-    };
-  }, [streamUrl, preferredLanguage, tmdbId, season, episode, onError]);
+  }, [streamUrl, preferredLanguage, tmdbId, season, episode]);
 
   // Extract tmdbId / season / episode from streamUrl as fallback if needed
   const resolvedMeta = useMemo(() => {
@@ -988,23 +972,19 @@ export default function HlsPlayer({
         onDurationChange={handleTimeUpdate}
         onPlay={() => {
           setIsPlaying(true);
-          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
         }}
         onError={() => {
           console.warn("HTML5 Video error:", videoRef.current?.error);
           setIsBuffering(false);
-          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
           const errCode = videoRef.current?.error?.code;
           const msg = errCode === 4 ? "Format ou flux vidéo inaccessible (Erreur 403/404)" : "Erreur de lecture du lecteur vidéo";
           onError?.(msg);
         }}
         onCanPlay={() => {
           setIsBuffering(false);
-          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
         }}
         onLoadedData={() => {
           setIsBuffering(false);
-          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
           handleTimeUpdate();
         }}
         onPause={() => {

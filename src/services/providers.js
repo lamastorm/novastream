@@ -411,7 +411,7 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
   }
 
-  // CAS 2 : SÉRIES (TV) -> SkyStream 0 Pub (#1) + VidMoly (#2) + AnyEmbed Secours (#3)
+  // CAS 2 : SÉRIES (TV) -> SkyStream 0 Pub (#1) + VidMoly (#2)
   const isTv =
     media?.media_type === "tv" ||
     Boolean(media?.name && !media?.title) ||
@@ -421,16 +421,14 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
     return [
       SKYSTREAM_SERVER,
       VIDMOLY_VF_SERVER,
-      ANYEMBED_VF_SERVER,
     ];
   }
 
-  // CAS 3 : FILMS -> SkyStream (#1) + VidMoly (#2) + Pamdor (#3) + AnyEmbed Secours (#4)
+  // CAS 3 : FILMS -> SkyStream (#1) + VidMoly (#2) + Pamdor (#3)
   return [
     SKYSTREAM_SERVER,
     VIDMOLY_VF_SERVER,
     PAMDO_VF_SERVER,
-    ANYEMBED_VF_SERVER,
   ];
 };
 
