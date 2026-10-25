@@ -18,7 +18,10 @@ const httpAgent = new http.Agent({
 });
 
 function getRefererForUrl(url) {
-  if (url.includes('finepulfe.xyz') || url.includes('skystream') || url.includes('b-cdn.net') || url.includes('bunnycdn')) {
+  if (url.includes('finepulfe.xyz')) {
+    return null;
+  }
+  if (url.includes('skystream') || url.includes('b-cdn.net') || url.includes('bunnycdn')) {
     return 'https://skystream.fun/';
   }
   if (url.includes('cloudwindow-route') || url.includes('voe.sx') || url.includes('frembed') || url.includes('vidmoly')) {
@@ -62,6 +65,7 @@ function fetchPlaylistText(url, redirectsLeft = 5) {
 function fetchUpstreamDirect(url, redirectsLeft = 5) {
   return new Promise((resolve, reject) => {
     const client = getClient(url);
+    const ref = getRefererForUrl(url);
     const req = client.get(url, {
       agent: getAgent(url),
       timeout: 12000,
@@ -69,7 +73,7 @@ function fetchUpstreamDirect(url, redirectsLeft = 5) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': '*/*',
         'Connection': 'keep-alive',
-        'Referer': getRefererForUrl(url)
+        ...(ref ? { 'Referer': ref } : {})
       }
     }, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
@@ -249,10 +253,11 @@ export default async function handler(req, res) {
       (decodedUrl.includes('seg-') && !decodedUrl.includes('.m3u8'));
 
     if (isBinaryChunk) {
+      const ref = getRefererForUrl(decodedUrl);
       const headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': '*/*',
-        'Referer': getRefererForUrl(decodedUrl)
+        ...(ref ? { 'Referer': ref } : {})
       };
       if (req.headers['range']) {
         headers['Range'] = req.headers['range'];

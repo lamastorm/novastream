@@ -252,8 +252,8 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       }
     }
 
-    // Exiger un flux HLS valide (.m3u8) pour éviter les blocages de chargement infini sur les vieux flux BunnyCDN suspendus
-    if (!streamUrl || !streamUrl.includes('.m3u8')) {
+    // Exiger un flux HLS valide (.m3u8 ou /api/hls-master) pour éviter les blocages de chargement infini sur les vieux flux BunnyCDN suspendus
+    if (!streamUrl || (!streamUrl.includes('.m3u8') && !streamUrl.includes('/api/hls-master'))) {
       return { success: false, error: 'Flux vidéo HD direct HLS indisponible sur ce titre. Bascule automatique vers le lecteur de secours...' };
     }
 
