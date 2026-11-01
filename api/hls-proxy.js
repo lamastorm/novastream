@@ -21,6 +21,15 @@ function getRefererForUrl(url) {
   if (url.includes('finepulfe.xyz')) {
     return null;
   }
+  if (url.includes('vmget.') || url.includes('vmcld.') || url.includes('ansembed')) {
+    return 'https://ansembed.net/';
+  }
+  if (url.includes('uqload.')) {
+    return 'https://uqload.vc/';
+  }
+  if (url.includes('sibnet.')) {
+    return 'https://video.sibnet.ru/';
+  }
   if (url.includes('skystream') || url.includes('b-cdn.net') || url.includes('bunnycdn')) {
     return 'https://skystream.fun/';
   }

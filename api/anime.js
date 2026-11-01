@@ -1,13 +1,14 @@
 import https from 'https';
 import { applySecurity } from '../lib/security.js';
 
-function fetchText(url, timeoutMs = 7000) {
+function fetchText(url, timeoutMs = 7000, customReferer = 'https://anime-sama.to/') {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': customReferer
       },
       timeout: timeoutMs
     }, res => {
@@ -16,7 +17,7 @@ function fetchText(url, timeoutMs = 7000) {
         if (!redirectUrl.startsWith('http')) {
           redirectUrl = new URL(redirectUrl, url).toString();
         }
-        return fetchText(redirectUrl, timeoutMs).then(resolve).catch(reject);
+        return fetchText(redirectUrl, timeoutMs, customReferer).then(resolve).catch(reject);
       }
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -32,21 +33,79 @@ function fetchText(url, timeoutMs = 7000) {
   });
 }
 
+async function extractDirectAnimeStream(embedUrl) {
+  if (!embedUrl || !embedUrl.startsWith('http')) return null;
+  try {
+    const res = await fetchText(embedUrl, 4500, 'https://anime-sama.to/');
+    if (res.status !== 200 || !res.body) return null;
+    const html = res.body;
+
+    // 1. Plain sources: [{ file: 'https://...m3u8...' }] (AnsEmbed / VidMoly)
+    const plainMatch = html.match(/sources\s*:\s*\[\s*\{\s*file\s*:\s*['"](https?:\/\/[^'"]+\.(?:m3u8|mp4)[^'"]*)['"]/i);
+    if (plainMatch && plainMatch[1]) {
+      return `/api/hls-proxy?v=2&url=${encodeURIComponent(plainMatch[1])}`;
+    }
+
+    // 2. Dean Edwards Packer (Uqload / VidMoly / Sendvid)
+    const m = html.match(/return p\}\('([\s\S]*?)',(\d+),(\d+),'([\s\S]*?)'\.split\('\|'\)\)/);
+    if (m) {
+      let p = m[1];
+      const a = parseInt(m[2], 10);
+      let c = parseInt(m[3], 10);
+      const k = m[4].split('|');
+      while (c--) {
+        if (k[c]) {
+          p = p.replace(new RegExp('\\b' + c.toString(a) + '\\b', 'g'), k[c]);
+        }
+      }
+      const urlMatch = p.match(/https?:\/\/[^"'\s]+\.(?:m3u8|mp4)[^"'\s]*/i);
+      if (urlMatch && urlMatch[0]) {
+        return `/api/hls-proxy?v=2&url=${encodeURIComponent(urlMatch[0])}`;
+      }
+    }
+
+    // 3. Sibnet direct MP4 extraction
+    if (embedUrl.includes('sibnet.ru')) {
+      const sibMatch = html.match(/src\s*:\s*['"](\/v\/[^'"]+\.mp4)['"]/i);
+      if (sibMatch && sibMatch[1]) {
+        const fullSib = `https://video.sibnet.ru${sibMatch[1]}`;
+        return `/api/hls-proxy?v=2&url=${encodeURIComponent(fullSib)}`;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 function parseAnimeCards(html) {
   const cards = [];
-  const cardRegex = /<a[^>]+href=["'](https?:\/\/anime-sama\.(?:to|si)\/catalogue\/([a-zA-Z0-9_\-]+)\/?|\/catalogue\/([a-zA-Z0-9_\-]+)\/?)["'][^>]*>([\s\S]*?)<\/a>/gi;
-  
-  for (const match of html.matchAll(cardRegex)) {
-    const slug = match[2] || match[3];
-    if (!slug || slug === 'catalogue' || slug === 'search') continue;
+  const seen = new Set();
 
-    const inner = match[4];
-    const titleMatch = inner.match(/<h2[^>]*class=["'][^"']*card-title[^"']*["'][^>]*>([\s\S]*?)<\/h2>/i);
+  // Nouveau format Anime-Sama (as-carte)
+  const newCardRegex = /<div[^>]+class=["'][^"']*as-carte[^"']*["'][^>]+data-url=["']\/?catalogue\/([a-zA-Z0-9_\-]+)\/?["'][^>]*data-nom=["']([^"']+)["'][^>]*>/gi;
+  for (const match of html.matchAll(newCardRegex)) {
+    const slug = match[1];
+    const cardTitle = match[2]?.trim() || slug;
+    if (!slug || slug === 'catalogue' || slug === 'search' || seen.has(slug)) continue;
+    seen.add(slug);
+    cards.push({ slug, title: cardTitle, altTitles: [] });
+  }
+
+  // Ancien format ou liens directs <a href=".../catalogue/slug">
+  const cardRegex = /<a[^>]+href=["'](?:https?:\/\/anime-sama\.(?:to|si|org))?\/catalogue\/([a-zA-Z0-9_\-]+)\/?["'][^>]*>([\s\S]*?)<\/a>/gi;
+  for (const match of html.matchAll(cardRegex)) {
+    const slug = match[1];
+    if (!slug || slug === 'catalogue' || slug === 'search' || seen.has(slug)) continue;
+
+    const inner = match[2];
+    const titleMatch =
+      inner.match(/<h[23][^>]*class=["'][^"']*(?:card-title|as-carte-titre)[^"']*["'][^>]*>([\s\S]*?)<\/h[23]>/i) ||
+      inner.match(/title=["']([^"']+)["']/i);
     const altMatch = inner.match(/<p[^>]*class=["'][^"']*alternate-titles[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
     
-    const cardTitle = titleMatch ? titleMatch[1].trim() : slug;
+    const cardTitle = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : slug;
     const altTitles = altMatch ? altMatch[1].split(',').map(s => s.trim()) : [];
 
+    seen.add(slug);
     cards.push({
       slug,
       title: cardTitle,
@@ -278,39 +337,27 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
 
     const epIndex = episodeIndex;
 
-    const players = [];
+    const rawPlayers = [];
     if (eps1[epIndex]) {
       const u = eps1[epIndex];
-      const name = u.includes('sibnet') ? 'Sibnet (VF Rapide • Recommandé)' : (u.includes('sendvid') ? 'Sendvid' : 'Lecteur 1');
-      players.push({ name, url: u, type: 'sibnet' });
+      const name = u.includes('sibnet') ? 'Sibnet (VF Rapide)' : (u.includes('uqload') ? 'Uqload FHD' : 'Source 1');
+      rawPlayers.push({ name, url: u, type: 's1' });
     }
     if (eps2[epIndex]) {
       const u = eps2[epIndex];
-      const name = (u.includes('ansembed') || u.includes('vidmoly')) ? 'VidMoly (Recommandé)' : 'Lecteur 2 (Miroir)';
-      players.push({ name, url: u, type: 'alt' });
+      const name = (u.includes('ansembed') || u.includes('vidmoly')) ? 'AnsEmbed / VidMoly FHD' : 'Source 2';
+      rawPlayers.push({ name, url: u, type: 's2' });
     }
     if (eps3[epIndex]) {
       const u = eps3[epIndex];
-      const name = u.includes('vidmoly') ? 'Vidmoly' : 'Lecteur 3';
-      players.push({ name, url: u, type: 'vidmoly' });
+      const name = u.includes('vidmoly') ? 'VidMoly' : 'Source 3';
+      rawPlayers.push({ name, url: u, type: 's3' });
     }
     if (eps4[epIndex]) {
-      players.push({ name: 'Lecteur 4', url: eps4[epIndex], type: 'alt' });
+      rawPlayers.push({ name: 'Source 4', url: eps4[epIndex], type: 's4' });
     }
 
-    // Prioritize working hosts: Sibnet (1) > VidMoly/AnsEmbed (2) > others > Sendvid (down)
-    players.sort((a, b) => {
-      const getPriority = (url) => {
-        if (url.includes('sibnet')) return 1;
-        if (url.includes('ansembed') || url.includes('vidmoly')) return 2;
-        if (url.includes('smoothpre') || url.includes('myvi')) return 3;
-        if (url.includes('sendvid')) return 10;
-        return 5;
-      };
-      return getPriority(a.url) - getPriority(b.url);
-    });
-
-    if (players.length === 0) {
+    if (rawPlayers.length === 0) {
       return {
         success: false,
         error: `Épisode ${episode} non disponible (Total saison : ${eps1.length})`,
@@ -318,6 +365,40 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
         language: actualLang
       };
     }
+
+    // Débridage automatique en parallèle vers le Lecteur Erodium Natif (.m3u8 / .mp4 0 Pub)
+    const players = await Promise.all(
+      rawPlayers.map(async (p, idx) => {
+        const directStream = await extractDirectAnimeStream(p.url);
+        if (directStream) {
+          return {
+            name: `⚡ Erodium Direct ${idx + 1} (${p.name} • 0 Pub)`,
+            url: directStream,
+            embedUrl: p.url,
+            isDirect: true,
+            type: p.type,
+          };
+        }
+        return {
+          ...p,
+          isDirect: false,
+        };
+      })
+    );
+
+    // Prioriser les flux débridés 100% natifs Erodium (.m3u8/.mp4) en premier !
+    players.sort((a, b) => {
+      if (a.isDirect && !b.isDirect) return -1;
+      if (!a.isDirect && b.isDirect) return 1;
+      const getPriority = (url) => {
+        if (url.includes('vmget') || url.includes('ansembed') || url.includes('vidmoly')) return 1;
+        if (url.includes('uqload')) return 2;
+        if (url.includes('sibnet')) return 3;
+        if (url.includes('sendvid')) return 10;
+        return 5;
+      };
+      return getPriority(a.embedUrl || a.url) - getPriority(b.embedUrl || b.url);
+    });
 
     return {
       success: true,

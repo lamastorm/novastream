@@ -75,6 +75,8 @@ class AdBlockerService {
               dest.hostname.includes("youtube.com") ||
               dest.hostname.includes("frembed.") ||
               dest.hostname.includes("vidmoly.") ||
+              dest.hostname.includes("sslip.io") ||
+              dest.hostname.includes("141.145.199.149") ||
               dest.hostname.includes("vercel.app");
 
             if (!isInternal) {

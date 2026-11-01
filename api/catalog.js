@@ -76,17 +76,31 @@ function parseCardsFromHtml(html) {
 // Extraction des animes depuis Anime-Sama
 function parseAnimeCards(html) {
   const cards = [];
-  const cardRegex = /<a[^>]+href=["'](https?:\/\/anime-sama\.(?:to|si)\/catalogue\/([a-zA-Z0-9_\-]+)\/?|\/catalogue\/([a-zA-Z0-9_\-]+)\/?)["'][^>]*>([\s\S]*?)<\/a>/gi;
-  
-  for (const match of html.matchAll(cardRegex)) {
-    const slug = match[2] || match[3];
-    if (!slug || slug === 'catalogue' || slug === 'search') continue;
+  const seen = new Set();
 
-    const inner = match[4];
-    const titleMatch = inner.match(/<h2[^>]*class=["'][^"']*card-title[^"']*["'][^>]*>([\s\S]*?)<\/h2>/i);
-    const cardTitle = titleMatch ? titleMatch[1].trim() : slug;
+  const newCardRegex = /<div[^>]+class=["'][^"']*as-carte[^"']*["'][^>]+data-url=["']\/?catalogue\/([a-zA-Z0-9_\-]+)\/?["'][^>]*data-nom=["']([^"']+)["'][^>]*?(?:data-img=["']([^"']+)["'])?[^>]*>/gi;
+  for (const match of html.matchAll(newCardRegex)) {
+    const slug = match[1];
+    const cardTitle = match[2]?.trim() || slug;
+    const poster = match[3] || null;
+    if (!slug || slug === 'catalogue' || slug === 'search' || seen.has(slug)) continue;
+    seen.add(slug);
+    cards.push({ slug, title: cardTitle, poster });
+  }
+
+  const cardRegex = /<a[^>]+href=["'](?:https?:\/\/anime-sama\.(?:to|si|org))?\/catalogue\/([a-zA-Z0-9_\-]+)\/?["'][^>]*>([\s\S]*?)<\/a>/gi;
+  for (const match of html.matchAll(cardRegex)) {
+    const slug = match[1];
+    if (!slug || slug === 'catalogue' || slug === 'search' || seen.has(slug)) continue;
+
+    const inner = match[2];
+    const titleMatch =
+      inner.match(/<h[23][^>]*class=["'][^"']*(?:card-title|as-carte-titre)[^"']*["'][^>]*>([\s\S]*?)<\/h[23]>/i) ||
+      inner.match(/title=["']([^"']+)["']/i);
+    const cardTitle = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : slug;
     const imgMatch = inner.match(/<img[^>]+src=["']([^"']+)["']/i);
 
+    seen.add(slug);
     cards.push({
       slug,
       title: cardTitle,

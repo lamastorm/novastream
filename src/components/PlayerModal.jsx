@@ -1397,6 +1397,39 @@ useEffect(() => {
               ⚡ Basculer sur un autre lecteur
             </button>
           </div>
+        ) : activeServer?.isAnimeSama && animeStreamUrl && (animeStreamUrl.includes("/api/hls-proxy") || animeStreamUrl.includes(".m3u8") || animeStreamUrl.includes(".mp4")) ? (
+          <div className="w-full h-full relative">
+            <HlsPlayer
+              key={animeStreamUrl}
+              streamUrl={animeStreamUrl}
+              onError={() => {
+                const nextPlayer = animeData?.players?.find((p) => p.url && p.url !== animeStreamUrl);
+                if (nextPlayer) {
+                  setAnimeStreamUrl(nextPlayer.url);
+                }
+              }}
+              title={title}
+              poster={
+                currentMedia.backdrop_path
+                  ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                  : undefined
+              }
+              onEnded={handleNextEpisode}
+              videoFilter={videoFilter}
+              preferredLanguage={selectedLanguage}
+              tmdbId={currentMedia.id}
+              mediaType={mediaType}
+              season={season}
+              episode={episode}
+              isTV={isTV}
+              nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+              onNextEpisode={isTV ? handleNextEpisode : null}
+              onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+              onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+              autoNext={autoNext}
+              onVideoRef={(el) => { hlsVideoRef.current = el; }}
+            />
+          </div>
         ) : (activeServer?.isVidmolyDirect || activeServer?.id === "vidmoly_vf") ? (
           isVidmolyLoading ? (
             <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">

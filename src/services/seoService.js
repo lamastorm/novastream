@@ -2,7 +2,7 @@
  * Service de gestion dynamique du référencement (SEO) et des Rich Snippets Schema.org
  */
 
-const BASE_URL = "https://erodium.vercel.app";
+const BASE_URL = "https://erodium.141-145-199-149.sslip.io";
 const DEFAULT_TITLE = "Erodium • Streaming Gratuit VF & VOSTFR sans Pub (Films, Séries, Animes)";
 const DEFAULT_DESC = "Regardez vos films, séries et animes préférés en streaming HD 1080p et 4K VF / VOSTFR sans publicité intrusive, sans inscription et sans coupure sur Erodium.";
 

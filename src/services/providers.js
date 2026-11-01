@@ -400,15 +400,15 @@ export const isDesktopApp = () => {
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
 
-  // CAS 1 : ANIMÉS -> Lecteur Erodium (VF / VOSTFR) en #1 + VidMoly
+  // CAS 1 : ANIMÉS -> Lecteur Erodium Anime (VF / VOSTFR) en #1 + Lecteur Principal (SkyStream) en #2 + VidMoly en #3
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
-      return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
+      return [ERODIUM_VF_SERVER, SKYSTREAM_SERVER, VIDMOLY_VF_SERVER];
     }
     if (lang === "vostfr") {
-      return [ERODIUM_VOSTFR_SERVER, VIDMOLY_VF_SERVER];
+      return [ERODIUM_VOSTFR_SERVER, SKYSTREAM_SERVER, VIDMOLY_VF_SERVER];
     }
-    return [ERODIUM_VF_SERVER, VIDMOLY_VF_SERVER];
+    return [ERODIUM_VF_SERVER, SKYSTREAM_SERVER, VIDMOLY_VF_SERVER];
   }
 
   // CAS 2 : SÉRIES (TV) -> SkyStream 0 Pub (#1) + VidMoly (#2)
