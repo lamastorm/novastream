@@ -27,6 +27,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           client_id: GOOGLE_CLIENT_ID,
           callback: async (response) => {
             if (!response?.credential) return;
+            if (googleBtnRef.current) {
+              googleBtnRef.current.innerHTML = "";
+            }
             setError(null);
             setLoading(true);
             try {
@@ -76,11 +79,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return () => {
         cancelled = true;
         script.removeEventListener("load", initGoogleButton);
+        if (googleBtnRef.current) googleBtnRef.current.innerHTML = "";
       };
     }
 
     return () => {
       cancelled = true;
+      if (googleBtnRef.current) googleBtnRef.current.innerHTML = "";
     };
   }, [isOpen, currentUser, mode, onAuthSuccess]);
 
@@ -177,7 +182,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         {currentUser ? (
           /* CONNECTED VIEW */
-          <div className="pt-5 space-y-4">
+          <div key="connected-view" className="pt-5 space-y-4">
             <div className="flex items-center gap-3 p-3.5 rounded-xl bg-zinc-900 border border-white/10">
               {currentUser.picture ? (
                 <img
@@ -261,7 +266,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         ) : (
           /* LOGIN VIEW */
-          <div className="pt-4 space-y-4">
+          <div key="login-view" className="pt-4 space-y-4">
             {/* Mode Switcher */}
             <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-900 border border-white/10">
               <button
