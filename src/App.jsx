@@ -27,6 +27,7 @@ import VpnBanner from "./components/VpnBanner";
 import SearchOverlay from "./components/SearchOverlay";
 import DonateModal from "./components/DonateModal";
 import DmcaModal from "./components/DmcaModal";
+import AuthModal from "./components/AuthModal";
 import { MONETIZATION_CONFIG } from "./config/monetization";
 import { seoService } from "./services/seoService";
 import {
@@ -107,11 +108,24 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
   const [dmcaOpen, setDmcaOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => storage.getUser());
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
 
   // Watchlist & History
   const [favorites, setFavorites] = useState(storage.getWatchlist());
   const [history, setHistory] = useState(storage.getHistory());
+
+  // Synchronisation automatique au démarrage avec le Cloud Oracle si l'utilisateur est connecté
+  useEffect(() => {
+    const unsub = storage.subscribe(() => {
+      setCurrentUser(storage.getUser());
+      setFavorites(storage.getWatchlist());
+      setHistory(storage.getHistory());
+    });
+    storage.pullFromCloud();
+    return () => unsub();
+  }, []);
 
   // Fast O(1) favorite lookup set to prevent expensive array iterations on 175+ cards
   const favoriteSet = React.useMemo(() => {
@@ -730,6 +744,8 @@ export default function App() {
         onOpenDonate={() => setDonateOpen(true)}
         onRandomSurprise={handleRandomSurprise}
         onOpenSearch={() => setSearchOverlayOpen(true)}
+        user={currentUser}
+        onOpenAuth={() => setAuthOpen(true)}
       />
 
       {/* Mobile Search Overlay — completely isolated from Navbar re-renders */}
@@ -1850,6 +1866,17 @@ export default function App() {
       {dmcaOpen && (
         <DmcaModal onClose={() => setDmcaOpen(false)} />
       )}
+
+      {/* MODAL: CONNEXION GOOGLE & CLOUD ORACLE */}
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthSuccess={(u) => {
+          setCurrentUser(u);
+          setFavorites(storage.getWatchlist());
+          setHistory(storage.getHistory());
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,138 @@
 const WATCHLIST_KEY = "novastream_watchlist";
 const HISTORY_KEY = "novastream_history";
+const USER_KEY = "erodium_user_profile";
+
+const syncListeners = new Set();
+let pushTimeout = null;
+
+function notifySyncListeners() {
+  for (const cb of syncListeners) {
+    try {
+      cb();
+    } catch {}
+  }
+}
 
 export const storage = {
+  subscribe: (cb) => {
+    syncListeners.add(cb);
+    return () => syncListeners.delete(cb);
+  },
+
+  getUser: () => {
+    try {
+      const raw = localStorage.getItem(USER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem(USER_KEY);
+    notifySyncListeners();
+  },
+
+  loginAndSync: async ({ email, name, picture, credential, pin }) => {
+    const watchlist = storage.getWatchlist();
+    const history = storage.getHistory();
+    let playbackPositions = {};
+    try {
+      playbackPositions = JSON.parse(localStorage.getItem("erodium_playback_positions") || "{}");
+    } catch {}
+
+    const res = await fetch("/api/user-sync?action=login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        name,
+        picture,
+        credential,
+        pin,
+        watchlist,
+        history,
+        playbackPositions,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || "Erreur de connexion au serveur Erodium");
+    }
+
+    localStorage.setItem(USER_KEY, JSON.stringify(json.user));
+    if (json.data) {
+      if (Array.isArray(json.data.watchlist)) {
+        localStorage.setItem(WATCHLIST_KEY, JSON.stringify(json.data.watchlist));
+      }
+      if (Array.isArray(json.data.history)) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(json.data.history));
+      }
+      if (json.data.playbackPositions && typeof json.data.playbackPositions === "object") {
+        localStorage.setItem("erodium_playback_positions", JSON.stringify(json.data.playbackPositions));
+      }
+    }
+
+    notifySyncListeners();
+    return json.user;
+  },
+
+  pullFromCloud: async () => {
+    const user = storage.getUser();
+    if (!user?.id) return null;
+    try {
+      const res = await fetch(`/api/user-sync?action=get&userId=${encodeURIComponent(user.id)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        if (json.user) {
+          localStorage.setItem(USER_KEY, JSON.stringify(json.user));
+        }
+        if (Array.isArray(json.data.watchlist)) {
+          localStorage.setItem(WATCHLIST_KEY, JSON.stringify(json.data.watchlist));
+        }
+        if (Array.isArray(json.data.history)) {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(json.data.history));
+        }
+        if (json.data.playbackPositions && typeof json.data.playbackPositions === "object") {
+          localStorage.setItem("erodium_playback_positions", JSON.stringify(json.data.playbackPositions));
+        }
+        notifySyncListeners();
+        return json.data;
+      }
+    } catch {}
+    return null;
+  },
+
+  pushToCloud: (options = {}) => {
+    const user = storage.getUser();
+    if (!user?.id) return;
+
+    if (pushTimeout) clearTimeout(pushTimeout);
+    pushTimeout = setTimeout(async () => {
+      pushTimeout = null;
+      try {
+        let playbackPositions = {};
+        try {
+          playbackPositions = JSON.parse(localStorage.getItem("erodium_playback_positions") || "{}");
+        } catch {}
+
+        await fetch("/api/user-sync?action=save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            watchlist: storage.getWatchlist(),
+            history: storage.getHistory(),
+            playbackPositions,
+            replaceWatchlist: Boolean(options.replaceWatchlist),
+            replaceHistory: Boolean(options.replaceHistory),
+          }),
+        });
+      } catch {}
+    }, options.immediate ? 100 : 3500);
+  },
   // Watchlist
   getWatchlist: () => {
     try {
@@ -50,6 +181,7 @@ export const storage = {
       ];
     }
     localStorage.setItem(WATCHLIST_KEY, JSON.stringify(updated));
+    storage.pushToCloud({ immediate: true, replaceWatchlist: true });
     return updated;
   },
 
@@ -64,6 +196,7 @@ export const storage = {
       return i;
     });
     localStorage.setItem(WATCHLIST_KEY, JSON.stringify(updated));
+    storage.pushToCloud({ immediate: true, replaceWatchlist: true });
     return updated;
   },
 
@@ -167,6 +300,7 @@ export const storage = {
     ].slice(0, 30); // keep last 30
 
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    storage.pushToCloud({ immediate: true });
     return updated;
   },
 
@@ -226,6 +360,7 @@ export const storage = {
           }
         }
       }
+      storage.pushToCloud();
     } catch {}
   },
 

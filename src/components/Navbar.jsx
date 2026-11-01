@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Settings, Heart, Dice5 } from "lucide-react";
+import { Search, Settings, Heart, Dice5, User } from "lucide-react";
 import { useLiveViewers } from "../services/liveCounter";
 import DesktopSearchBar from "./DesktopSearchBar";
 import ErodiumIconBadge from "./ErodiumIconBadge";
@@ -13,6 +13,8 @@ export default function Navbar({
   onOpenDonate,
   onRandomSurprise,
   onOpenSearch,
+  user,
+  onOpenAuth,
 }) {
   const liveViewers = useLiveViewers();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -64,8 +66,8 @@ export default function Navbar({
               )}
             </div>
 
-            {/* Top-Right: Search Bar + Support + Settings */}
-            <div className="flex items-center gap-2 flex-1 max-w-[340px] justify-end">
+            {/* Top-Right: Search Bar + Account + Support + Settings */}
+            <div className="flex items-center gap-2 flex-1 max-w-[440px] justify-end">
               <div className="hidden md:flex flex-1">
                 <DesktopSearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
               </div>
@@ -77,6 +79,26 @@ export default function Navbar({
                 <Search className="w-3.5 h-3.5 text-orange-400" />
                 <span className="truncate max-w-[95px]">{searchQuery || "Rechercher..."}</span>
               </button>
+
+              {onOpenAuth && (
+                <button
+                  onClick={onOpenAuth}
+                  title={user ? `Connecté : ${user.email} (Code Xbox: ${user.pin})` : "Connexion Google & Sauvegarde Cloud"}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/15 text-white text-xs font-bold transition-colors cursor-pointer flex-shrink-0"
+                >
+                  {user ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="truncate max-w-[90px]">{user.name || "Mon Compte"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-3.5 h-3.5 text-orange-400" />
+                      <span>Connexion</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               <button
                 onClick={onOpenDonate}
