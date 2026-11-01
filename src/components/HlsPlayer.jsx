@@ -384,7 +384,7 @@ export default function HlsPlayer({
 
     const baseOrigin = typeof window !== 'undefined' && window.location.origin.startsWith('http')
       ? window.location.origin
-      : 'https://erodium.141-145-199-149.sslip.io';
+      : 'https://erodium.duckdns.org';
 
     const resolvedStreamUrl = (streamUrl.startsWith('/api/') || streamUrl.startsWith('file:///api/'))
       ? `${baseOrigin}${streamUrl.replace(/^file:\/\//, '')}`

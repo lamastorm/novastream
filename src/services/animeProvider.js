@@ -3,7 +3,7 @@
 
 const getApiHost = () => {
   if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    return 'https://erodium.141-145-199-149.sslip.io';
+    return 'https://erodium.duckdns.org';
   }
   return '';
 };
