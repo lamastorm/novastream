@@ -146,44 +146,52 @@ export default async function handler(req, res) {
 
     const body = await readJsonBody(req);
 
-    // 2. LOGIN / REGISTER via Google Email, Google JWT credential, or 4-digit Xbox PIN
+    const GOOGLE_CLIENT_ID = '715880740963-mofbtrjh9t2g8n3lduon4gqka0r7fg10.apps.googleusercontent.com';
+
+    // 2. LOGIN / REGISTER via Official Google OAuth JWT or 4-digit Xbox PIN
     if (action === 'login' || action === 'google') {
-      let email = String(body.email || '').trim().toLowerCase();
-      let name = String(body.name || '').trim();
-      let picture = String(body.picture || '').trim();
+      let email = '';
+      let name = '';
+      let picture = '';
       const pinInput = String(body.pin || '').trim();
 
-      // If logging in with a 4-digit Xbox PIN code
-      if (!email && pinInput) {
+      // Mode A: 4-digit Xbox / TV PIN code
+      if (pinInput && !body.credential) {
         const matchedUserId = usersDb.pins[pinInput];
         if (!matchedUserId || !usersDb.users[matchedUserId]) {
           return res.status(400).json({
             success: false,
-            error: 'Code Xbox / TV invalide. Vérifiez les 4 chiffres sur votre autre appareil.',
+            error: 'Code Xbox / TV invalide. Connectez-vous d’abord avec Google sur votre PC ou téléphone pour obtenir votre code à 4 chiffres.',
           });
         }
         email = matchedUserId;
       }
 
-      // If a Google JWT credential is provided, verify it with Google's tokeninfo endpoint
+      // Mode B: Official Google OAuth 2.0 JWT ID Token verification
       if (body.credential) {
-        try {
-          const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(body.credential)}`);
-          if (gRes.ok) {
-            const gData = await gRes.json();
-            if (gData && gData.email) {
-              email = gData.email.toLowerCase();
-              name = gData.name || gData.given_name || name;
-              picture = gData.picture || picture;
-            }
-          }
-        } catch {}
+        const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(body.credential)}`);
+        if (!gRes.ok) {
+          return res.status(401).json({
+            success: false,
+            error: 'Jeton Google invalide ou expiré. Veuillez réessayer.',
+          });
+        }
+        const gData = await gRes.json();
+        if (gData.aud !== GOOGLE_CLIENT_ID || !gData.email) {
+          return res.status(401).json({
+            success: false,
+            error: 'Identifiant client OAuth Google non autorisé.',
+          });
+        }
+        email = gData.email.toLowerCase();
+        name = gData.name || gData.given_name || email.split('@')[0];
+        picture = gData.picture || '';
       }
 
       if (!email || !email.includes('@')) {
         return res.status(400).json({
           success: false,
-          error: 'Veuillez saisir une adresse Google (Gmail) valide ou un code à 4 chiffres.',
+          error: 'Veuillez vous connecter avec le bouton officiel Google ou saisir votre code Xbox à 4 chiffres.',
         });
       }
 

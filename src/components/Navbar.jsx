@@ -88,7 +88,16 @@ export default function Navbar({
                 >
                   {user ? (
                     <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      {user.picture ? (
+                        <img
+                          src={user.picture}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          className="w-4 h-4 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      )}
                       <span className="truncate max-w-[90px]">{user.name || "Mon Compte"}</span>
                     </>
                   ) : (

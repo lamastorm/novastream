@@ -36,14 +36,18 @@ class AdBlockerService {
           return originalOpen.call(window, url, target, features);
         }
 
-        // Autoriser uniquement les ouvertures légitimes initiées par Erodium (YouTube, TMDB, Cloudflare)
+        // Autoriser les ouvertures hors lecteur vidéo actif ainsi que Google OAuth, YouTube, TMDB, Cloudflare
         if (
-          url &&
-          (url.includes("youtube.com") ||
-            url.includes("themoviedb.org") ||
-            url.includes("one.one.one.one") ||
-            url.includes("cloudflare.com") ||
-            url.startsWith(window.location.origin))
+          !this.isPlayerActive ||
+          !url ||
+          url === "about:blank" ||
+          url.includes("accounts.google.com") ||
+          url.includes("google.com") ||
+          url.includes("youtube.com") ||
+          url.includes("themoviedb.org") ||
+          url.includes("one.one.one.one") ||
+          url.includes("cloudflare.com") ||
+          url.startsWith(window.location.origin)
         ) {
           return originalOpen.call(window, url, target, features);
         }
