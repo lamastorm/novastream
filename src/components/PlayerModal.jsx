@@ -2115,9 +2115,8 @@ useEffect(() => {
                   <span>Lecteurs :</span>
                 </div>
 
-                {availableServers.map((server) => {
+                {availableServers.map((server, idx) => {
                   const isSelected = selectedServer.id === server.id;
-                  const details = getServerDetails(server, currentMedia, selectedLanguage);
                   return (
                     <button
                       key={server.id}
@@ -2131,19 +2130,7 @@ useEffect(() => {
                           : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-white/10 hover:border-purple-500/40"
                       }`}
                     >
-                      <span className="text-sm">{details.flagDisplay}</span>
-                      <span className="font-semibold">
-                        {server.name.replace(/Serveur \d+ \((.*?)\)/, "$1")}
-                      </span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
-                          isSelected
-                            ? "bg-black/25 text-white border border-white/25"
-                            : "bg-orange-500/15 text-orange-300 border border-orange-500/30"
-                        }`}
-                      >
-                        {details.badge}
-                      </span>
+                      <span className="font-semibold">Lecteur {idx + 1}</span>
                     </button>
                   );
                 })}
