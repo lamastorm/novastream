@@ -301,33 +301,45 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
       }
     }
 
-    // 3. Fetch episodes.js
+    // 3. Fetch season page (nouveau format 12/11/2026 avec epsJeton + /api/lien.php) ou episodes.js en secours
     const targetLang = (lang || 'vf').toLowerCase() === 'vf' ? 'vf' : 'vostfr';
-    let epJsUrl = `${primaryBase}/catalogue/${chosenSlug}/${targetFolder}/${targetLang}/episodes.js`;
-    let epJsRes = await fetchText(epJsUrl);
+    let seasonPageUrl = `${primaryBase}/catalogue/${chosenSlug}/${targetFolder}/${targetLang}/`;
+    let epRes = await fetchText(seasonPageUrl);
 
     let actualLang = targetLang;
     // Fallback to VOSTFR if VF doesn't exist
-    if (epJsRes.status !== 200 && targetLang === 'vf') {
-      epJsUrl = `${primaryBase}/catalogue/${chosenSlug}/${targetFolder}/vostfr/episodes.js`;
-      epJsRes = await fetchText(epJsUrl);
+    if (epRes.status !== 200 && targetLang === 'vf') {
+      seasonPageUrl = `${primaryBase}/catalogue/${chosenSlug}/${targetFolder}/vostfr/`;
+      epRes = await fetchText(seasonPageUrl);
       actualLang = 'vostfr';
     }
 
-    if (epJsRes.status !== 200) {
-      return {
-        success: false,
-        error: `Saison ${season} introuvable sur Anime-Sama pour ${chosenCard?.title || title}`,
-        slug: chosenSlug
-      };
+    if (epRes.status !== 200) {
+      // Fallback legacy episodes.js
+      const legacyUrl = `${primaryBase}/catalogue/${chosenSlug}/${targetFolder}/${actualLang}/episodes.js`;
+      epRes = await fetchText(legacyUrl);
+      if (epRes.status !== 200) {
+        return {
+          success: false,
+          error: `Saison ${season} introuvable sur Anime-Sama pour ${chosenCard?.title || title}`,
+          slug: chosenSlug
+        };
+      }
     }
 
-    // 4. Parse episode players
+    // 4. Parse episode players (supports both "lien:<id>" + epsJeton and legacy direct URLs)
+    const epsJeton = epRes.body.match(/epsJeton\s*=\s*['"]([^'"]+)['"]/)?.[1] || '';
+    let epsMeta = {};
+    try {
+      const metaMatch = epRes.body.match(/var\s+epsMeta\s*=\s*(\{[\s\S]*?\})\s*;/i);
+      if (metaMatch) epsMeta = JSON.parse(metaMatch[1]);
+    } catch {}
+
     const parseArray = (varName) => {
-      const regex = new RegExp(`var\\s+${varName}\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'i');
-      const match = epJsRes.body.match(regex);
+      const regex = new RegExp(`var\\s+${varName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*;`, 'i');
+      const match = epRes.body.match(regex);
       if (!match) return [];
-      return [...match[1].matchAll(/['"](https?:[^'"]+)['"]/g)].map(m => m[1]);
+      return [...match[1].matchAll(/['"]((?:https?:|lien:)[^'"]+)['"]/g)].map(m => m[1]);
     };
 
     const eps1 = parseArray('eps1');
@@ -335,27 +347,58 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
     const eps3 = parseArray('eps3');
     const eps4 = parseArray('eps4');
 
-    const epIndex = episodeIndex;
+    const resolveLienRef = async (val) => {
+      if (!val) return null;
+      if (val.startsWith('http')) return val;
+      if (val.startsWith('lien:') && epsJeton) {
+        const lienId = val.slice(5);
+        try {
+          const lienRes = await fetchText(
+            `${primaryBase}/api/lien.php?j=${encodeURIComponent(epsJeton)}&l=${encodeURIComponent(lienId)}`,
+            6000,
+            seasonPageUrl
+          );
+          if (lienRes.status === 200 && lienRes.body) {
+            const parsed = JSON.parse(lienRes.body);
+            if (parsed?.u && parsed.u.startsWith('http')) return parsed.u;
+          }
+        } catch {}
+      }
+      return null;
+    };
 
-    const rawPlayers = [];
-    if (eps1[epIndex]) {
-      const u = eps1[epIndex];
-      const name = u.includes('sibnet') ? 'Sibnet (VF Rapide)' : (u.includes('uqload') ? 'Uqload FHD' : 'Source 1');
-      rawPlayers.push({ name, url: u, type: 's1' });
+    const epIndex = episodeIndex;
+    const rawRefs = [
+      { ref: eps1[epIndex], type: 's1' },
+      { ref: eps2[epIndex], type: 's2' },
+      { ref: eps3[epIndex], type: 's3' },
+      { ref: eps4[epIndex], type: 's4' },
+    ].filter(item => Boolean(item.ref));
+
+    if (rawRefs.length === 0) {
+      return {
+        success: false,
+        error: `Épisode ${episode} non disponible (Total saison : ${eps1.length})`,
+        totalEpisodes: eps1.length,
+        language: actualLang
+      };
     }
-    if (eps2[epIndex]) {
-      const u = eps2[epIndex];
-      const name = (u.includes('ansembed') || u.includes('vidmoly')) ? 'AnsEmbed / VidMoly FHD' : 'Source 2';
-      rawPlayers.push({ name, url: u, type: 's2' });
-    }
-    if (eps3[epIndex]) {
-      const u = eps3[epIndex];
-      const name = u.includes('vidmoly') ? 'VidMoly' : 'Source 3';
-      rawPlayers.push({ name, url: u, type: 's3' });
-    }
-    if (eps4[epIndex]) {
-      rawPlayers.push({ name: 'Source 4', url: eps4[epIndex], type: 's4' });
-    }
+
+    const resolvedRaw = await Promise.all(
+      rawRefs.map(async (item) => {
+        const u = await resolveLienRef(item.ref);
+        if (!u) return null;
+        const name = u.includes('sibnet')
+          ? 'Sibnet (VF Rapide)'
+          : u.includes('uqload')
+          ? 'Uqload FHD'
+          : (u.includes('ansembed') || u.includes('vidmoly'))
+          ? 'AnsEmbed / VidMoly FHD'
+          : `Source ${item.type.replace('s', '')}`;
+        return { name, url: u, type: item.type };
+      })
+    );
+    const rawPlayers = resolvedRaw.filter(Boolean);
 
     if (rawPlayers.length === 0) {
       return {

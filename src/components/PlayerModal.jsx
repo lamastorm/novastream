@@ -412,6 +412,9 @@ export default function PlayerModal({
           setAnimeData(null);
           setAnimeStreamUrl(null);
           setAnimeError(res?.error || "Épisode non disponible sur Anime-Sama pour le moment.");
+          const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+          const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+          if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
         }
         setIsAnimeLoading(false);
       })
@@ -421,6 +424,9 @@ export default function PlayerModal({
         setAnimeStreamUrl(null);
         setAnimeError(err.message || "Erreur de connexion à Anime-Sama");
         setIsAnimeLoading(false);
+        const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+        const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+        if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
       });
 
     return () => {
@@ -554,13 +560,9 @@ export default function PlayerModal({
               : (res?.error || "Titre non répertorié sur le catalogue SkyStream. Bascule automatique vers le lecteur de secours...")
           );
           setIsSkyStreamLoading(false);
-          // Bascule automatique fluide vers VidMoly ou le serveur de secours suivant
-          const fallback = availableServers.find((s) => s.id !== "skystream_direct") || availableServers[1];
-          if (fallback) {
-            setTimeout(() => {
-              if (isMounted) setSelectedServer(fallback);
-            }, 1800);
-          }
+          const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+          const fallback = (curIdx >= 0 ? availableServers[curIdx + 1] : null) || availableServers.find((sv) => sv.id !== "skystream_direct");
+          if (fallback) setTimeout(() => { if (isMounted) setSelectedServer(fallback); }, 400);
         }
       })
       .catch((err) => {
@@ -570,12 +572,9 @@ export default function PlayerModal({
         setSkyStreamSkipSegments([]);
         setSkyStreamError(err.message || "Erreur de connexion SkyStream. Bascule vers le lecteur de secours...");
         setIsSkyStreamLoading(false);
-        const fallback = availableServers.find((s) => s.id !== "skystream_direct") || availableServers[1];
-        if (fallback) {
-          setTimeout(() => {
-            if (isMounted) setSelectedServer(fallback);
-          }, 1800);
-        }
+        const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+        const fallback = (curIdx >= 0 ? availableServers[curIdx + 1] : null) || availableServers.find((sv) => sv.id !== "skystream_direct");
+        if (fallback) setTimeout(() => { if (isMounted) setSelectedServer(fallback); }, 400);
       });
 
     return () => {
@@ -631,6 +630,9 @@ export default function PlayerModal({
         } else {
           setVidmolyDirectStream(null);
           setVidmolyError(res?.error || "Extraction du flux VidMoly impossible pour ce titre.");
+          const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+          const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+          if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
         }
       })
       .catch((err) => {
@@ -638,6 +640,9 @@ export default function PlayerModal({
         setIsVidmolyLoading(false);
         setVidmolyDirectStream(null);
         setVidmolyError(err?.message || "Erreur de connexion au serveur de débridage");
+        const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+        const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+        if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
       });
 
     return () => {
@@ -699,6 +704,9 @@ useEffect(() => {
         } else {
           setPamdorDirectStream(null);
           setPamdorError(res?.error || "Film introuvable sur Pamdor.");
+          const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+          const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+          if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
         }
       })
       .catch((err) => {
@@ -706,6 +714,9 @@ useEffect(() => {
         setIsPamdorLoading(false);
         setPamdorDirectStream(null);
         setPamdorError(err?.message || "Erreur de connexion au serveur Pamdor");
+        const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+        const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+        if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
       });
 
     return () => {
