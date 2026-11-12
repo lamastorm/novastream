@@ -119,6 +119,18 @@ export const getServerDetails = (server, media, selectedLanguage) => {
     };
   }
 
+  if (server?.isPapadustreamDirect || server?.id === "papadustream_vf") {
+    return {
+      flag: "⚡ 🇫🇷",
+      flagDisplay: "⚡ 🇫🇷",
+      audio: "Multi-Audio VF & VO (Direct)",
+      subs: "Sous-titres & Audio sélectionnables",
+      badge: "⚡ 1080p VF 0 Pub",
+      subBadge: "1080p FHD Direct",
+      description: "Flux Full HD 1080p direct avec piste audio française (VF) & VO sans aucune publicité ni pop-up.",
+    };
+  }
+
   if (server?.isPamdorDirect || server?.id === "pamdor_vf") {
     return {
       flag: "⚡ 🇫🇷",
@@ -194,6 +206,16 @@ export const VIDMOLY_VF_SERVER = {
   badge: "⚡ 1080p 0 Pub",
   isVidmolyDirect: true,
   description: "Lecteur VidMoly 100% débridé sans aucune publicité, sans redirection ni pop-up (Qualité Full HD 1080p).",
+  getUrl: () => "",
+};
+
+export const PAPADU_VF_SERVER = {
+  id: "papadustream_vf",
+  name: "Serveur 2 (PapaduStream • 1080p VF 0 Pub)",
+  flag: "⚡ 🇫🇷",
+  badge: "⚡ 1080p VF 0 Pub",
+  isPapadustreamDirect: true,
+  description: "Lecteur 1080p Full HD multi-audio (VF & VO) direct sans aucune publicité ni pop-up.",
   getUrl: () => "",
 };
 
@@ -400,18 +422,18 @@ export const isDesktopApp = () => {
 export const getStreamingServersForMedia = (media, lang = "vf") => {
   const mediaInfo = getMediaLanguageInfo(media);
 
-  // CAS 1 : ANIMÉS -> Lecteur Erodium Anime (VF / VOSTFR) en #1 + Lecteur Principal (SkyStream) en #2 + VidMoly en #3
+  // CAS 1 : ANIMÉS -> Lecteur Erodium Anime (VF / VOSTFR) en #1 + Lecteur Principal (SkyStream) en #2 + PapaduStream en #3 + VidMoly en #4
   if (mediaInfo.isAnime) {
     if (lang === "vf") {
-      return [ERODIUM_VF_SERVER, SKYSTREAM_SERVER, VIDMOLY_VF_SERVER];
+      return [ERODIUM_VF_SERVER, SKYSTREAM_SERVER, PAPADU_VF_SERVER, VIDMOLY_VF_SERVER];
     }
     if (lang === "vostfr") {
-      return [ERODIUM_VOSTFR_SERVER, SKYSTREAM_SERVER, VIDMOLY_VF_SERVER];
+      return [ERODIUM_VOSTFR_SERVER, SKYSTREAM_SERVER, PAPADU_VF_SERVER, VIDMOLY_VF_SERVER];
     }
-    return [ERODIUM_VF_SERVER, SKYSTREAM_SERVER, VIDMOLY_VF_SERVER];
+    return [ERODIUM_VF_SERVER, SKYSTREAM_SERVER, PAPADU_VF_SERVER, VIDMOLY_VF_SERVER];
   }
 
-  // CAS 2 : SÉRIES (TV) -> SkyStream 0 Pub (#1) + VidMoly (#2)
+  // CAS 2 : SÉRIES (TV) -> SkyStream 0 Pub (#1) + PapaduStream 1080p VF (#2) + VidMoly (#3)
   const isTv =
     media?.media_type === "tv" ||
     Boolean(media?.name && !media?.title) ||
@@ -420,13 +442,15 @@ export const getStreamingServersForMedia = (media, lang = "vf") => {
   if (isTv) {
     return [
       SKYSTREAM_SERVER,
+      PAPADU_VF_SERVER,
       VIDMOLY_VF_SERVER,
     ];
   }
 
-  // CAS 3 : FILMS -> SkyStream (#1) + Pamdor (#2) + VidMoly (#3)
+  // CAS 3 : FILMS -> SkyStream (#1) + PapaduStream 1080p VF (#2) + Pamdor (#3) + VidMoly (#4)
   return [
     SKYSTREAM_SERVER,
+    PAPADU_VF_SERVER,
     PAMDO_VF_SERVER,
     VIDMOLY_VF_SERVER,
   ];

@@ -239,6 +239,11 @@ export default function PlayerModal({
   const [isPamdorLoading, setIsPamdorLoading] = useState(false);
   const [pamdorError, setPamdorError] = useState(null);
 
+  // État spécifique pour PapaduStream (0 Pub • 1080p VF & Multi-Audio)
+  const [papaduDirectStream, setPapaduDirectStream] = useState(null);
+  const [isPapaduLoading, setIsPapaduLoading] = useState(false);
+  const [papaduError, setPapaduError] = useState(null);
+
   // Mini-player mode (Picture-in-Picture)
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
@@ -650,6 +655,66 @@ export default function PlayerModal({
     };
   }, [selectedServer?.id, currentMedia.id, season, episode]);
 
+  // Résolution directe pour PapaduStream (1080p VF & Multi-Audio 0 Pub)
+  useEffect(() => {
+    if (!selectedServer?.isPapadustreamDirect && selectedServer?.id !== "papadustream_vf") {
+      setPapaduDirectStream(null);
+      setIsPapaduLoading(false);
+      setPapaduError(null);
+      return;
+    }
+
+    let isMounted = true;
+    setIsPapaduLoading(true);
+    setPapaduError(null);
+
+    const isTv =
+      currentMedia.media_type === "tv" ||
+      Boolean(currentMedia.name && !currentMedia.title) ||
+      Boolean(currentMedia.number_of_seasons) ||
+      isKnownTV ||
+      (season && Number(season) > 0 && episode && Number(episode) > 0 && !isExplicitMovie);
+
+    const params = new URLSearchParams({
+      tmdbId: String(currentMedia.id || ""),
+      imdbId: String(currentMedia.imdb_id || currentMedia.external_ids?.imdb_id || ""),
+      title: String(currentMedia.title || currentMedia.name || ""),
+      type: isTv ? "tv" : "movie",
+      season: String(season || 1),
+      episode: String(episode || 1),
+    });
+
+    fetch(`/api/papadustream-resolve?${params.toString()}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (!isMounted) return;
+        setIsPapaduLoading(false);
+        if (res && res.success && res.streamUrl) {
+          setPapaduDirectStream(res.streamUrl);
+          setPapaduError(null);
+        } else {
+          setPapaduDirectStream(null);
+          setPapaduError(res?.error || "Titre indisponible sur PapaduStream.");
+          const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+          const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+          if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setIsPapaduLoading(false);
+        setPapaduDirectStream(null);
+        setPapaduError(err?.message || "Erreur de connexion au serveur PapaduStream");
+        const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+        const nextServer = curIdx >= 0 ? availableServers[curIdx + 1] : null;
+        if (nextServer) setTimeout(() => { if (isMounted) setSelectedServer(nextServer); }, 400);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedServer?.id, currentMedia.id, currentMedia.title, currentMedia.name, season, episode]);
+
   // Résolution directe pour Pamdor (0 Pub • HLS Direct VF)
     const handlePlayerError = (source, errMsg) => {
     console.warn('[PlayerModal] Error from ' + source + ':', errMsg);
@@ -662,6 +727,12 @@ export default function PlayerModal({
       setVidmolyDirectStream(null);
       setVidmolyError(errMsg || 'Flux VidMoly inaccessible');
       const fallback = availableServers.find((s) => s.id !== 'skystream_direct' && s.id !== 'vidmoly_vf');
+      if (fallback) setSelectedServer(fallback);
+    } else if (source === 'papadu') {
+      setPapaduDirectStream(null);
+      setPapaduError(errMsg || 'Flux PapaduStream inaccessible');
+      const curIdx = availableServers.findIndex((sv) => sv.id === selectedServer?.id);
+      const fallback = curIdx >= 0 ? availableServers[curIdx + 1] : null;
       if (fallback) setSelectedServer(fallback);
     } else if (source === 'pamdor') {
       setPamdorDirectStream(null);
@@ -1271,47 +1342,33 @@ useEffect(() => {
             </div>
           ) : skyStreamUrl ? (
             <div className="w-full h-full relative">
-              {(!skyStreamUrl.includes("/api/hls-proxy") &&
-                !skyStreamUrl.includes(".m3u8") &&
-                !skyStreamUrl.includes(".mp4")) ? (
-                <iframe
-                  key={skyStreamUrl}
-                  src={skyStreamUrl}
-                  title={title}
-                  className="w-full h-full border-0"
-                  allowFullScreen
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                  referrerPolicy="origin"
-                />
-              ) : (
-                <HlsPlayer
-                  key={skyStreamUrl}
-                  streamUrl={skyStreamUrl}
-                  onError={(msg) => handlePlayerError("skystream", msg)}
-                  title={title}
-                  poster={
-                    currentMedia.backdrop_path
-                      ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
-                      : undefined
-                  }
-                  onEnded={handleNextEpisode}
-                  videoFilter={videoFilter}
-                  preferredLanguage={selectedLanguage}
-                  externalSubtitles={skyStreamSubtitles}
-                  skipSegments={skyStreamSkipSegments}
-                  tmdbId={currentMedia.id}
-                  mediaType={mediaType}
-                  season={season}
-                  episode={episode}
-                  isTV={isTV}
-                  nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
-                  onNextEpisode={isTV ? handleNextEpisode : null}
-                  onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
-                  onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
-                  autoNext={autoNext}
-                  onVideoRef={(el) => { hlsVideoRef.current = el; }}
-                />
-              )}
+              <HlsPlayer
+                key={skyStreamUrl}
+                streamUrl={skyStreamUrl}
+                onError={(msg) => handlePlayerError("skystream", msg)}
+                title={title}
+                poster={
+                  currentMedia.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                    : undefined
+                }
+                onEnded={handleNextEpisode}
+                videoFilter={videoFilter}
+                preferredLanguage={selectedLanguage}
+                externalSubtitles={skyStreamSubtitles}
+                skipSegments={skyStreamSkipSegments}
+                tmdbId={currentMedia.id}
+                mediaType={mediaType}
+                season={season}
+                episode={episode}
+                isTV={isTV}
+                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                onNextEpisode={isTV ? handleNextEpisode : null}
+                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                autoNext={autoNext}
+                onVideoRef={(el) => { hlsVideoRef.current = el; }}
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">
@@ -1522,6 +1579,54 @@ useEffect(() => {
                   </button>
                 ))}
               </div>
+            </div>
+          )
+        ) : (activeServer?.isPapadustreamDirect || activeServer?.id === "papadustream_vf") ? (
+          isPapaduLoading ? (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+              <h3 className="text-base font-bold text-white">Connexion au flux PapaduStream 1080p VF...</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Chargement du flux Full HD VF 0 Pub pour « <strong>{title}</strong> »...
+              </p>
+            </div>
+          ) : papaduDirectStream ? (
+            <div className="w-full h-full relative">
+              <HlsPlayer
+                key={papaduDirectStream}
+                streamUrl={papaduDirectStream}
+                onError={(msg) => handlePlayerError("papadu", msg)}
+                title={title}
+                poster={
+                  currentMedia.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                    : undefined
+                }
+                onEnded={handleNextEpisode}
+                videoFilter={videoFilter}
+                preferredLanguage={selectedLanguage}
+                tmdbId={currentMedia.id}
+                mediaType={mediaType}
+                season={season}
+                episode={episode}
+                isTV={isTV}
+                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                onNextEpisode={isTV ? handleNextEpisode : null}
+                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                autoNext={autoNext}
+                onVideoRef={(el) => { hlsVideoRef.current = el; }}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-lg shadow-amber-500/20">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Titre indisponible sur PapaduStream</h3>
+              <p className="text-xs text-zinc-300 max-w-md leading-relaxed mb-3">
+                {papaduError || "Ce titre n'a pas été trouvé sur PapaduStream."}
+              </p>
             </div>
           )
         ) : (activeServer?.isPamdorDirect || activeServer?.id === "pamdor_vf") ? (
