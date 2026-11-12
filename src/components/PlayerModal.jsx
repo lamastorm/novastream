@@ -1271,33 +1271,47 @@ useEffect(() => {
             </div>
           ) : skyStreamUrl ? (
             <div className="w-full h-full relative">
-              <HlsPlayer
-                key={skyStreamUrl}
-                streamUrl={skyStreamUrl}
-                onError={(msg) => handlePlayerError("skystream", msg)}
-                title={title}
-                poster={
-                  currentMedia.backdrop_path
-                    ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
-                    : undefined
-                }
-                onEnded={handleNextEpisode}
-                videoFilter={videoFilter}
-                preferredLanguage={selectedLanguage}
-                externalSubtitles={skyStreamSubtitles}
-                skipSegments={skyStreamSkipSegments}
-                tmdbId={currentMedia.id}
-                mediaType={mediaType}
-                season={season}
-                episode={episode}
-                isTV={isTV}
-                nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
-                onNextEpisode={isTV ? handleNextEpisode : null}
-                onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
-                onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
-                autoNext={autoNext}
-                onVideoRef={(el) => { hlsVideoRef.current = el; }}
-              />
+              {(!skyStreamUrl.includes("/api/hls-proxy") &&
+                !skyStreamUrl.includes(".m3u8") &&
+                !skyStreamUrl.includes(".mp4")) ? (
+                <iframe
+                  key={skyStreamUrl}
+                  src={skyStreamUrl}
+                  title={title}
+                  className="w-full h-full border-0"
+                  allowFullScreen
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                  referrerPolicy="origin"
+                />
+              ) : (
+                <HlsPlayer
+                  key={skyStreamUrl}
+                  streamUrl={skyStreamUrl}
+                  onError={(msg) => handlePlayerError("skystream", msg)}
+                  title={title}
+                  poster={
+                    currentMedia.backdrop_path
+                      ? `https://image.tmdb.org/t/p/w1280${currentMedia.backdrop_path}`
+                      : undefined
+                  }
+                  onEnded={handleNextEpisode}
+                  videoFilter={videoFilter}
+                  preferredLanguage={selectedLanguage}
+                  externalSubtitles={skyStreamSubtitles}
+                  skipSegments={skyStreamSkipSegments}
+                  tmdbId={currentMedia.id}
+                  mediaType={mediaType}
+                  season={season}
+                  episode={episode}
+                  isTV={isTV}
+                  nextEpisodeLabel={isTV ? nextEpisodeLabel : null}
+                  onNextEpisode={isTV ? handleNextEpisode : null}
+                  onPrevEpisode={isTV && (episode > 1 || season > 1) ? handlePrevEpisode : null}
+                  onOpenEpisodes={isTV ? () => { setDrawerSeason(season); setShowEpisodeDrawer(true); } : null}
+                  autoNext={autoNext}
+                  onVideoRef={(el) => { hlsVideoRef.current = el; }}
+                />
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto animate-fade-in">

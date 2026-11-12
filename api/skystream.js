@@ -252,6 +252,27 @@ export async function resolveSkyStream({ title, year = null, type = 'movie', sea
       }
     }
 
+    // Fallback embed Fluxora / SkyStream si aucun flux HLS direct n'est fourni
+    if ((!streamUrl || (!streamUrl.includes('.m3u8') && !streamUrl.includes('/api/hls-master'))) && data.embedUrl && data.embedUrl.startsWith('http')) {
+      const embedPayload = {
+        success: true,
+        streamUrl: data.embedUrl,
+        embedUrl: data.embedUrl,
+        format: 'embed',
+        isEmbed: true,
+        subtitles: [],
+        audioTracks: Array.isArray(data.audioTracks) ? data.audioTracks : [],
+        skipSegments: [],
+        tmdbId: tmdbId || null,
+        title: match.title || title,
+        year: match.year,
+        provider: 'skystream-embed',
+      };
+      if (streamCache.size > 500) streamCache.clear();
+      streamCache.set(fullStreamKey, { ts: Date.now(), data: embedPayload });
+      return embedPayload;
+    }
+
     // Exiger un flux HLS valide (.m3u8 ou /api/hls-master) pour éviter les blocages de chargement infini sur les vieux flux BunnyCDN suspendus
     if (!streamUrl || (!streamUrl.includes('.m3u8') && !streamUrl.includes('/api/hls-master'))) {
       return { success: false, error: 'Flux vidéo HD direct HLS indisponible sur ce titre. Bascule automatique vers le lecteur de secours...' };
