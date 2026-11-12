@@ -34,16 +34,20 @@ function fetchText(url, timeoutMs = 7000, customReferer = 'https://anime-sama.to
 }
 
 async function extractDirectAnimeStream(embedUrl) {
-  if (!embedUrl || !embedUrl.startsWith('http')) return null;
+  if (!embedUrl || !embedUrl.startsWith('http')) return { url: null, dead: true };
   try {
     const res = await fetchText(embedUrl, 4500, 'https://anime-sama.to/');
-    if (res.status !== 200 || !res.body) return null;
+    if (res.status >= 400 || !res.body) return { url: null, dead: res.status === 404 || res.status === 410 };
     const html = res.body;
+
+    if (/this video not found|file was deleted|no such file|video has been removed|404 not found/i.test(html)) {
+      return { url: null, dead: true };
+    }
 
     // 1. Plain sources: [{ file: 'https://...m3u8...' }] (AnsEmbed / VidMoly)
     const plainMatch = html.match(/sources\s*:\s*\[\s*\{\s*file\s*:\s*['"](https?:\/\/[^'"]+\.(?:m3u8|mp4)[^'"]*)['"]/i);
     if (plainMatch && plainMatch[1]) {
-      return `/api/hls-proxy?v=2&url=${encodeURIComponent(plainMatch[1])}`;
+      return { url: `/api/hls-proxy?v=2&url=${encodeURIComponent(plainMatch[1])}`, dead: false };
     }
 
     // 2. Dean Edwards Packer (Uqload / VidMoly / Sendvid)
@@ -60,7 +64,7 @@ async function extractDirectAnimeStream(embedUrl) {
       }
       const urlMatch = p.match(/https?:\/\/[^"'\s]+\.(?:m3u8|mp4)[^"'\s]*/i);
       if (urlMatch && urlMatch[0]) {
-        return `/api/hls-proxy?v=2&url=${encodeURIComponent(urlMatch[0])}`;
+        return { url: `/api/hls-proxy?v=2&url=${encodeURIComponent(urlMatch[0])}`, dead: false };
       }
     }
 
@@ -69,11 +73,11 @@ async function extractDirectAnimeStream(embedUrl) {
       const sibMatch = html.match(/src\s*:\s*['"](\/v\/[^'"]+\.mp4)['"]/i);
       if (sibMatch && sibMatch[1]) {
         const fullSib = `https://video.sibnet.ru${sibMatch[1]}`;
-        return `/api/hls-proxy?v=2&url=${encodeURIComponent(fullSib)}`;
+        return { url: `/api/hls-proxy?v=2&url=${encodeURIComponent(fullSib)}`, dead: false };
       }
     }
   } catch {}
-  return null;
+  return { url: null, dead: false };
 }
 
 function parseAnimeCards(html) {
@@ -327,107 +331,106 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
       }
     }
 
-    // 4. Parse episode players (supports both "lien:<id>" + epsJeton and legacy direct URLs)
-    const epsJeton = epRes.body.match(/epsJeton\s*=\s*['"]([^'"]+)['"]/)?.[1] || '';
-    let epsMeta = {};
-    try {
-      const metaMatch = epRes.body.match(/var\s+epsMeta\s*=\s*(\{[\s\S]*?\})\s*;/i);
-      if (metaMatch) epsMeta = JSON.parse(metaMatch[1]);
-    } catch {}
-
-    const parseArray = (varName) => {
-      const regex = new RegExp(`var\\s+${varName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*;`, 'i');
-      const match = epRes.body.match(regex);
-      if (!match) return [];
-      return [...match[1].matchAll(/['"]((?:https?:|lien:)[^'"]+)['"]/g)].map(m => m[1]);
-    };
-
-    const eps1 = parseArray('eps1');
-    const eps2 = parseArray('eps2');
-    const eps3 = parseArray('eps3');
-    const eps4 = parseArray('eps4');
-
-    const resolveLienRef = async (val) => {
-      if (!val) return null;
-      if (val.startsWith('http')) return val;
-      if (val.startsWith('lien:') && epsJeton) {
-        const lienId = val.slice(5);
-        try {
-          const lienRes = await fetchText(
-            `${primaryBase}/api/lien.php?j=${encodeURIComponent(epsJeton)}&l=${encodeURIComponent(lienId)}`,
-            6000,
-            seasonPageUrl
-          );
-          if (lienRes.status === 200 && lienRes.body) {
-            const parsed = JSON.parse(lienRes.body);
-            if (parsed?.u && parsed.u.startsWith('http')) return parsed.u;
-          }
-        } catch {}
-      }
-      return null;
-    };
-
-    const epIndex = episodeIndex;
-    const rawRefs = [
-      { ref: eps1[epIndex], type: 's1' },
-      { ref: eps2[epIndex], type: 's2' },
-      { ref: eps3[epIndex], type: 's3' },
-      { ref: eps4[epIndex], type: 's4' },
-    ].filter(item => Boolean(item.ref));
-
-    if (rawRefs.length === 0) {
-      return {
-        success: false,
-        error: `Épisode ${episode} non disponible (Total saison : ${eps1.length})`,
-        totalEpisodes: eps1.length,
-        language: actualLang
+    // Helper to extract and filter out dead embeds from a season page
+    const extractPlayersFromPage = async (pageBody, pageUrl) => {
+      const jeton = pageBody.match(/epsJeton\s*=\s*['"]([^'"]+)['"]/)?.[1] || '';
+      const parseArr = (varName) => {
+        const regex = new RegExp(`var\\s+${varName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*;`, 'i');
+        const match = pageBody.match(regex);
+        if (!match) return [];
+        return [...match[1].matchAll(/['"]((?:https?:|lien:)[^'"]+)['"]/g)].map(m => m[1]);
       };
-    }
+      const e1 = parseArr('eps1');
+      const e2 = parseArr('eps2');
+      const e3 = parseArr('eps3');
+      const e4 = parseArr('eps4');
 
-    const resolvedRaw = await Promise.all(
-      rawRefs.map(async (item) => {
-        const u = await resolveLienRef(item.ref);
-        if (!u) return null;
-        const name = u.includes('sibnet')
-          ? 'Sibnet (VF Rapide)'
-          : u.includes('uqload')
-          ? 'Uqload FHD'
-          : (u.includes('ansembed') || u.includes('vidmoly'))
-          ? 'AnsEmbed / VidMoly FHD'
-          : `Source ${item.type.replace('s', '')}`;
-        return { name, url: u, type: item.type };
-      })
-    );
-    const rawPlayers = resolvedRaw.filter(Boolean);
-
-    if (rawPlayers.length === 0) {
-      return {
-        success: false,
-        error: `Épisode ${episode} non disponible (Total saison : ${eps1.length})`,
-        totalEpisodes: eps1.length,
-        language: actualLang
-      };
-    }
-
-    // Débridage automatique en parallèle vers le Lecteur Erodium Natif (.m3u8 / .mp4 0 Pub)
-    const players = await Promise.all(
-      rawPlayers.map(async (p, idx) => {
-        const directStream = await extractDirectAnimeStream(p.url);
-        if (directStream) {
-          return {
-            name: `⚡ Erodium Direct ${idx + 1} (${p.name} • 0 Pub)`,
-            url: directStream,
-            embedUrl: p.url,
-            isDirect: true,
-            type: p.type,
-          };
+      const resolveLienRef = async (val) => {
+        if (!val) return null;
+        if (val.startsWith('http')) return val;
+        if (val.startsWith('lien:') && jeton) {
+          const lienId = val.slice(5);
+          try {
+            const lienRes = await fetchText(
+              `${primaryBase}/api/lien.php?j=${encodeURIComponent(jeton)}&l=${encodeURIComponent(lienId)}`,
+              6000,
+              pageUrl
+            );
+            if (lienRes.status === 200 && lienRes.body) {
+              const parsed = JSON.parse(lienRes.body);
+              if (parsed?.u && parsed.u.startsWith('http')) return parsed.u;
+            }
+          } catch {}
         }
-        return {
-          ...p,
-          isDirect: false,
-        };
-      })
-    );
+        return null;
+      };
+
+      const rawRefs = [
+        { ref: e1[episodeIndex], type: 's1' },
+        { ref: e2[episodeIndex], type: 's2' },
+        { ref: e3[episodeIndex], type: 's3' },
+        { ref: e4[episodeIndex], type: 's4' },
+      ].filter(item => Boolean(item.ref));
+
+      const resolvedRaw = (await Promise.all(
+        rawRefs.map(async (item) => {
+          const u = await resolveLienRef(item.ref);
+          if (!u) return null;
+          const name = u.includes('sibnet')
+            ? 'Sibnet (VF Rapide)'
+            : u.includes('uqload')
+            ? 'Uqload FHD'
+            : (u.includes('ansembed') || u.includes('vidmoly'))
+            ? 'AnsEmbed / VidMoly FHD'
+            : `Source ${item.type.replace('s', '')}`;
+          return { name, url: u, type: item.type };
+        })
+      )).filter(Boolean);
+
+      const checked = (await Promise.all(
+        resolvedRaw.map(async (p, idx) => {
+          const extracted = await extractDirectAnimeStream(p.url);
+          if (extracted?.dead) return null;
+          if (extracted?.url) {
+            return {
+              name: `⚡ Erodium Direct ${idx + 1} (${p.name} • 0 Pub)`,
+              url: extracted.url,
+              embedUrl: p.url,
+              isDirect: true,
+              type: p.type,
+            };
+          }
+          return { ...p, isDirect: false };
+        })
+      )).filter(Boolean);
+
+      return { players: checked, totalEpisodes: e1.length };
+    };
+
+    let { players, totalEpisodes } = await extractPlayersFromPage(epRes.body, seasonPageUrl);
+
+    // Si tous les lecteurs VF sont morts/supprimés (ex: "Sorry This video not found!"), basculer automatiquement sur VOSTFR
+    if (players.length === 0 && actualLang === 'vf') {
+      const vostfrUrl = `${primaryBase}/catalogue/${chosenSlug}/${targetFolder}/vostfr/`;
+      const vostfrRes = await fetchText(vostfrUrl);
+      if (vostfrRes.status === 200) {
+        const vResult = await extractPlayersFromPage(vostfrRes.body, vostfrUrl);
+        if (vResult.players.length > 0) {
+          players = vResult.players;
+          totalEpisodes = vResult.totalEpisodes;
+          actualLang = 'vostfr';
+        }
+      }
+    }
+
+    if (players.length === 0) {
+      return {
+        success: false,
+        error: `Épisode ${episode} indisponible sur Anime-Sama (sources supprimées ou manquantes)`,
+        totalEpisodes,
+        language: actualLang
+      };
+    }
 
     // Prioriser les flux débridés 100% natifs Erodium (.m3u8/.mp4) en premier !
     players.sort((a, b) => {
@@ -452,7 +455,7 @@ export async function resolveAnimeSama({ title, season = 1, episode = 1, lang = 
       language: actualLang,
       streamUrl: players[0].url,
       players,
-      totalEpisodes: eps1.length
+      totalEpisodes
     };
   } catch (err) {
     return { success: false, error: err.message };
